@@ -1310,7 +1310,7 @@ class Request(MutableMapping):
                     self._params["info"] = list(info)
             # When neither 'continue' nor 'rawcontinue' is present and the
             # version number is at least 1.25wmf5 we add a dummy rawcontinue
-            # parameter. Querying siteinfo is save as it adds 'continue'.
+            # parameter. Querying siteinfo is safe as it adds 'continue'.
             if ('continue' not in self._params and
                     'rawcontinue' not in self._params and
                     MediaWikiVersion(self.site.version()) >= MediaWikiVersion('1.25wmf5')):
@@ -1622,12 +1622,12 @@ class Request(MutableMapping):
                 status = self.site._loginstatus  # save previous login status
                 if (('error' in result and
                      result['error']['code'].endswith('limit')) or
-                    (status >= 0 and
+                    (status >= 0 and hasattr(self.site, '_userinfo') and
                         self.site._userinfo['name'] != self.site._username[status])):
                     # user is no longer logged in (session expired?)
                     # reset userinfo, then make user log in again
                     del self.site._userinfo
-                    self.site._loginstatus = -1
+                    self.site._loginstatus = pywikibot.site.LoginStatus.NOT_LOGGED_IN
                     if status < 0:
                         status = 0  # default to non-sysop login
                     self.site.login(status)
@@ -1803,20 +1803,47 @@ class CachedRequest(Request):
         @rtype: unicode
         """
         login_status = self.site._loginstatus
+        userinfo = None
 
-        if login_status > pywikibot.site.LoginStatus.NOT_LOGGED_IN and \
-                hasattr(self.site, '_userinfo') and \
-                'name' in self.site._userinfo:
-            # This uses the format of Page.__repr__, without performing
-            # config.console_encoding as done by Page.__repr__.
-            # The returned value cant be encoded to anything other than
-            # ascii otherwise it creates an exception when _create_file_name()
-            # tries to encode it as utf-8.
-            user_key = u'User(User:%s)' % self.site._userinfo['name']
+        # If we have a response, and it is a query, it should contain
+        # userinfo, which must be used instead of the userinfo which is
+        # cached in the site object, as the site object will be updated
+        # once this API request is handled by superclass Request()
+        if self._data:
+            if 'query' in self._data and 'userinfo' in self._data['query']:
+                userinfo = self._data['query']['userinfo']
+        elif (login_status > pywikibot.site.LoginStatus.NOT_LOGGED_IN and
+                hasattr(self.site, '_userinfo')):
+            userinfo = self.site._userinfo
+
+        username = None
+        if userinfo:
+            if 'anon' in userinfo:
+                login_status = min(login_status,
+                                   pywikibot.site.LoginStatus.NOT_LOGGED_IN)
+            else:
+                username = userinfo['name']
+
+        if username:
+            user_key = 'User(User:' + username + ')'
         else:
-            user_key = pywikibot.site.LoginStatus(
-                max(login_status, pywikibot.site.LoginStatus.NOT_LOGGED_IN))
-            user_key = repr(user_key)
+            # This allows cache entries to be pushed into login status 0 or 1
+            # when a userinfo/username has not been identified, to avoid
+            # it polluting the cache of lower levels which will cause a
+            # serious bug for bot operators.
+            # If the entry is cached with login status 0 or 1, it is a less
+            # serious bug which causes a useless cache entry, which can be
+            # investigated and may mean that the caching can be improved.
+
+            # Known instances of caching before the username is identified:
+            # - 'action=paraminfo' with 'paraminfo' as only key in results
+            # - 'action=expandtemplates' of text: {{CURRENTTIMESTAMP}}
+            if (login_status > pywikibot.site.LoginStatus.NOT_LOGGED_IN
+                    and self._data and 'paraminfo' not in self._data
+                    and self._params.get('text') != ['{{CURRENTTIMESTAMP}}']):
+                pywikibot.warning('API cache key using login status %d '
+                                  'with no username found' % login_status)
+            user_key = repr(pywikibot.site.LoginStatus(login_status))
 
         request_key = repr(sorted(list(self._encoded_items().items())))
         return repr(self.site) + user_key + request_key
@@ -1845,6 +1872,7 @@ class CachedRequest(Request):
         @rtype: bool
         """
         self._add_defaults()
+        filename = None
         try:
             filename = self._cachefile_path()
             with open(filename, 'rb') as f:
@@ -1857,11 +1885,12 @@ class CachedRequest(Request):
                             % (self.__class__.__name__, filename, uniquedescr),
                             _logger)
             return True
-        except IOError as e:
+        except IOError:
             # file not found
             return False
         except Exception as e:
-            pywikibot.output("Could not load cache: %r" % e)
+            pywikibot.error('Loading API cache entry %s failed: %r'
+                            % (filename, e))
             return False
 
     def _write_cache(self, data):
@@ -2536,7 +2565,7 @@ class LoginManager(login.LoginManager):
                                 action="login",
                                 lgname=self.username,
                                 lgpassword=self.password)
-        self.site._loginstatus = -2
+        self.site._loginstatus = pywikibot.site.LoginStatus.IN_PROGRESS
         while True:
             login_result = login_request.submit()
             if u"login" not in login_result:
