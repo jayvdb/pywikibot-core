@@ -33,11 +33,13 @@ if sys.version_info < (2, 7):
 else:
     import unittest
 
+import pywikibot.data.api
+
 from pywikibot import config
 from pywikibot import i18n
-import pywikibot.data.api
 from pywikibot.data.api import Request as _original_Request
 from pywikibot.data.api import CachedRequest
+from pywikibot.site import LoginStatus
 
 _tests_dir = os.path.split(__file__)[0]
 _cache_dir = os.path.join(_tests_dir, 'apicache')
@@ -61,6 +63,7 @@ library_test_modules = [
     'namespace',
     'dry_api',
     'dry_site',
+    'login',
     'api',
     'family',
     'site',
@@ -203,7 +206,13 @@ warnings.filterwarnings("always")
 
 class TestRequest(CachedRequest):
 
-    """Add caching to every Request except logins."""
+    """Add caching to every Request except logins.
+
+    site.login() and api.LoginManager set site._loginstatus
+    to IN_PROGRESS.  However, to be sure, also check the API request
+    for parameter 'lgpassword'.
+
+    """
 
     def __init__(self, *args, **kwargs):
         """Constructor."""
@@ -220,6 +229,8 @@ class TestRequest(CachedRequest):
             cache_misses += 1
             return False
 
+        key = self._uniquedescriptionstr()
+
         # tokens need careful management in the cache
         # and cant be aggressively cached.
         # FIXME: remove once 'badtoken' is reliably handled in api.py
@@ -227,7 +238,8 @@ class TestRequest(CachedRequest):
             self._data = None
             return False
 
-        if 'lgpassword' in self._uniquedescriptionstr():
+        if (self.site._loginstatus == LoginStatus.IN_PROGRESS or
+                'lgpassword' in key):
             self._data = None
             return False
 
@@ -238,11 +250,20 @@ class TestRequest(CachedRequest):
 
     def _write_cache(self, data):
         """Write data except login details."""
+        key = self._uniquedescriptionstr()
         if 'intoken' in self._uniquedescriptionstr():
             return
 
-        if 'lgpassword' in self._uniquedescriptionstr():
+        if (self.site._loginstatus == LoginStatus.IN_PROGRESS or
+                'lgpassword' in key):
             return
+
+        # Do not cache userinfo with siteinfo
+        # They cache key will still contain 'userinfo', and pywikibot will
+        # gracefully handle the response not including the requested userinfo.
+        if (self.site._loginstatus > LoginStatus.NOT_LOGGED_IN and
+                'siteinfo|userinfo' in key):
+            del data['query']['userinfo']
 
         return super(TestRequest, self)._write_cache(data)
 

@@ -559,6 +559,7 @@ class BaseSite(ComparableMixin):
         # following are for use with lock_page and unlock_page methods
         self._pagemutex = threading.Lock()
         self._locked_pages = []
+        self._login_count = 0
 
     @property
     @deprecated("APISite.siteinfo['case'] or Namespace.case == 'case-sensitive'")
@@ -1637,6 +1638,11 @@ class APISite(BaseSite):
 
     def login(self, sysop=False):
         """Log the user in if not already logged in."""
+        self._login_count += 1
+        pywikibot.debug(
+            '%s: login(%r): count %d; status %d'
+            % (self, sysop, self._login_count, self._loginstatus),
+            _logger)
         # TODO: this should include an assert that loginstatus
         #       is not already IN_PROGRESS, however the
         #       login status may be left 'IN_PROGRESS' because
@@ -1649,6 +1655,9 @@ class APISite(BaseSite):
                 u'%r.login(%r) called when a previous login was in progress.'
                 % (self, sysop)
             )
+
+        prev_login_status = self._loginstatus
+
         # There are several ways that the site may already be
         # logged in, and we do not need to hit the server again.
         # logged_in() is False if _userinfo exists, which means this
@@ -1658,27 +1667,57 @@ class APISite(BaseSite):
                                  if sysop else LoginStatus.AS_USER)
             return
         # check whether a login cookie already exists for this user
-        self._loginstatus = LoginStatus.IN_PROGRESS
         if hasattr(self, "_userinfo"):
+            prev_userinfo = self._userinfo
             del self._userinfo
+        else:
+            prev_userinfo = None
+
+        self._loginstatus = LoginStatus.IN_PROGRESS
         try:
             self.getuserinfo()
-            if self.userinfo['name'] == self._username[sysop] and \
-               self.logged_in(sysop):
-                return
+            if self.userinfo['name'] in self._username:
+                self._loginstatus = LoginStatus.AS_USER
+                if self.logged_in(sysop):
+                    if sysop:
+                        self._loginstatus = LoginStatus.AS_SYSOP
+                    return
         except api.APIError:  # May occur if you are not logged in (no API read permissions).
             pass
-        loginMan = api.LoginManager(site=self, sysop=sysop,
-                                    user=self._username[sysop])
-        if loginMan.login(retry=True):
-            self._username[sysop] = loginMan.username
-            if hasattr(self, "_userinfo"):
-                del self._userinfo
-            self.getuserinfo()
+
+        try:
+            loginMan = api.LoginManager(site=self, sysop=sysop,
+                                        user=self._username[sysop])
+            login_result = loginMan.login(retry=True)
+        except:
+            pywikibot.log('Exception in LoginManager; resetting')
+            self._loginstatus = prev_login_status
+            if prev_userinfo:
+                self._userinfo = prev_userinfo
+            raise
+
+        if login_result:
+            if self._username[sysop] != loginMan.username:
+                pywikibot.warning('Changing username to %s'
+                                  % loginMan.username)
+                self._username[sysop] = loginMan.username
             self._loginstatus = (LoginStatus.AS_SYSOP
                                  if sysop else LoginStatus.AS_USER)
         else:
-            self._loginstatus = LoginStatus.NOT_LOGGED_IN  # failure
+            if prev_login_status == LoginStatus.AS_USER and sysop:
+                pywikibot.log('Failed to login as sysop; continuing as user')
+                self._loginstatus = LoginStatus.AS_USER
+            else:
+                self._loginstatus = LoginStatus.NOT_LOGGED_IN  # failure
+
+        if hasattr(self, '_userinfo'):
+            del self._userinfo
+
+        if login_result:
+            # TODO: If should not be necessary to getuserinfo, as userinfo
+            # will be loaded as part of the next request.  However we'll
+            # maintain it for the successful login code path.
+            self.getuserinfo()
 
     # alias for backward-compatibility
     forceLogin = redirect_func(login, old_name='forceLogin',
@@ -1719,6 +1758,9 @@ class APISite(BaseSite):
                 meta="userinfo",
                 uiprop="blockinfo|hasmsg|groups|rights"
             )
+            # With 1.25wmf5 it'll require continue or rawcontinue.
+            # As we don't continue anyway we just always use continue.
+            uirequest['continue'] = True
             uidata = uirequest.submit()
             assert 'query' in uidata, \
                    "API userinfo response lacks 'query' key"
