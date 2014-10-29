@@ -367,6 +367,37 @@ class DequeGenerator(deque):
 # only one arg, and that arg be a callable, as it will be detected as
 # a deprecator without any arguments.
 
+_is_rst_parser = None
+
+
+def is_rst_parser():
+    """
+    Detect RST parser, such as epydoc or sphinx.
+
+    @return: True if loaded by an rst parser
+    @rtype: bool
+    """
+    global _is_rst_parser
+
+    if _is_rst_parser is not None:
+        return _is_rst_parser
+
+    caller = inspect.currentframe().f_back.f_back
+    while caller:
+        caller_module = inspect.getmodule(caller)
+        if hasattr(caller_module, '__name__'):
+            package_name = caller_module.__name__.split('.', 1)[0]
+            if package_name in ['epydoc', 'sphinx']:
+                warning('rst parser detected; '
+                        'decorators and wrappers disabled')
+                _is_rst_parser = True
+                return True
+
+        caller = caller.f_back
+
+    _is_rst_parser = False
+    return False
+
 
 def add_decorated_full_name(obj):
     """Extract full object name, including class, and store in __full_name__.
@@ -448,6 +479,9 @@ def add_full_name(obj):
         else:
             return inner_wrapper
 
+    if is_rst_parser():
+        return obj
+
     return outer_wrapper
 
 
@@ -483,6 +517,9 @@ def deprecated(*args, **kwargs):
                 warning(u"%s is deprecated." % (name))
             return obj(*args, **kwargs)
 
+        if is_rst_parser():
+            return obj
+
         wrapper.__doc__ = obj.__doc__
         wrapper.__name__ = obj.__name__
         wrapper.__module__ = obj.__module__
@@ -498,6 +535,9 @@ def deprecated(*args, **kwargs):
 
     # When called as @deprecated, return a replacement function
     if without_parameters:
+        if is_rst_parser():
+            return args[0]
+
         return decorator(args[0])
     # Otherwise return a decorator, which returns a replacement function
     else:
@@ -558,6 +598,9 @@ def deprecated_args(**arg_pairs):
                     del __kw[old_arg]
             return obj(*__args, **__kw)
 
+        if is_rst_parser():
+            return obj
+
         wrapper.__doc__ = obj.__doc__
         wrapper.__name__ = obj.__name__
         wrapper.__module__ = obj.__module__
@@ -616,6 +659,10 @@ def redirect_func(target, source_module=None, target_module=None,
                                        old=old_name or target.__name__,
                                        target=target_module,
                                        source=source_module)
+
+    if is_rst_parser():
+        return target
+
     return call
 
 
@@ -638,7 +685,9 @@ class ModuleDeprecationWrapper(object):
         super(ModuleDeprecationWrapper, self).__setattr__('_deprecated', {})
         super(ModuleDeprecationWrapper, self).__setattr__('_module', module)
         super(ModuleDeprecationWrapper, self).__setattr__('__doc__', module.__doc__)
-        sys.modules[module.__name__] = self
+
+        if not is_rst_parser():
+            sys.modules[module.__name__] = self
 
     def _add_deprecated_attr(self, name, replacement=None,
                              replacement_name=None):

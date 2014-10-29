@@ -29,7 +29,7 @@ import pywikibot
 import pywikibot.family
 from pywikibot.tools import (
     itergroup, deprecated, deprecate_arg, UnicodeMixin, ComparableMixin,
-    redirect_func, add_decorated_full_name, deprecated_args,
+    redirect_func, add_decorated_full_name, deprecated_args, is_rst_parser,
     SelfCallDict, SelfCallString,
 )
 from pywikibot.tools import MediaWikiVersion as LV
@@ -940,6 +940,10 @@ def must_be(group=None, right=None):
             else:
                 raise Exception("Not implemented")
             return fn(self, *args, **kwargs)
+
+        if is_rst_parser():
+            return fn
+
         callee.__name__ = fn.__name__
         callee.__doc__ = fn.__doc__
         callee.__module__ = callee.__module__
@@ -967,6 +971,10 @@ def need_version(version):
                     u"isn't implemented in MediaWiki version < %s"
                     % (fn.__name__, version))
             return fn(self, *args, **kwargs)
+
+        if is_rst_parser():
+            return fn
+
         callee.__name__ = fn.__name__
         callee.__doc__ = fn.__doc__
         callee.__module__ = fn.__module__
