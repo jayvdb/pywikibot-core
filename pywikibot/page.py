@@ -34,14 +34,13 @@ if sys.version_info[0] > 2:
     long = int
     from html import entities as htmlentitydefs
     from urllib.parse import quote_from_bytes, unquote_to_bytes
-    from urllib.request import urlopen
 else:
     import htmlentitydefs
     from urllib import quote as quote_from_bytes, unquote as unquote_to_bytes
-    from urllib import urlopen
 
 import pywikibot
 from pywikibot import config
+from pywikibot.comms import http
 from pywikibot.family import Family
 from pywikibot.site import Namespace
 from pywikibot.exceptions import (
@@ -1864,7 +1863,6 @@ class FilePage(Page):
         same FilePage object, the page will only be downloaded once.
         """
         if not hasattr(self, '_imagePageHtml'):
-            from pywikibot.comms import http
             path = "%s/index.php?title=%s" \
                    % (self.site.scriptpath(), self.title(asUrl=True))
             self._imagePageHtml = http.request(self.site, path)
@@ -1906,10 +1904,10 @@ class FilePage(Page):
         """Return image file's MD5 checksum."""
 # FIXME: MD5 might be performed on incomplete file due to server disconnection
 # (see bug #1795683).
-        f = urlopen(self.fileUrl())
+        req = http.fetch(self.fileUrl())
         # TODO: check whether this needs a User-Agent header added
         h = hashlib.md5()
-        h.update(f.read())
+        h.update(req.raw)
         md5Checksum = h.hexdigest()
         f.close()
         return md5Checksum

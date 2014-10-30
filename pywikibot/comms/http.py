@@ -208,7 +208,8 @@ def user_agent(site=None, format_string=None):
 
 
 @deprecate_arg('ssl', None)
-def request(site=None, uri=None, *args, **kwargs):
+def request(site=None, uri=None, method='GET', body=None, headers=None,
+            **kwargs):
     """
     Request to Site with default error handling and response decoding.
 
@@ -229,9 +230,10 @@ def request(site=None, uri=None, *args, **kwargs):
     """
     assert(site or uri)
     if not site:
-        # TODO: deprecate this usage, once the library code has been
-        # migrated to using the other request methods.
-        r = fetch(uri, *args, **kwargs)
+        pywikibot.warning(
+            'Invoking http.request without argument site is deprecated. '
+            'Use http.fetch.')
+        r = fetch(uri, method, body, headers, **kwargs)
         return r.content
 
     proto = site.protocol()
@@ -245,10 +247,15 @@ def request(site=None, uri=None, *args, **kwargs):
     kwargs.setdefault("disable_ssl_certificate_validation",
                       site.ignore_certificate_error())
 
-    format_string = kwargs.setdefault("headers", {}).get("user-agent")
-    kwargs["headers"]["user-agent"] = user_agent(site, format_string)
+    if not headers:
+        headers = {}
+        format_string = None
+    else:
+        format_string = headers.get("user-agent", None)
 
-    r = fetch(baseuri, *args, **kwargs)
+    headers["user-agent"] = user_agent(site, format_string)
+
+    r = fetch(baseuri, method, body, headers, **kwargs)
     return r.content
 
 

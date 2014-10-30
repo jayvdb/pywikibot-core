@@ -147,12 +147,13 @@ def github_svn_rev2hash(tag, rev):
     from pywikibot.comms import http
 
     uri = 'https://github.com/wikimedia/%s/!svn/vcc/default' % tag
-    data = http.request(site=None, uri=uri, method='PROPFIND',
-                        body="<?xml version='1.0' encoding='utf-8'?>"
-                        "<propfind xmlns=\"DAV:\"><allprop/></propfind>",
-                        headers={'label': str(rev), 'user-agent': 'SVN/1.7.5 {pwb}'})
+    req = http.fetch(uri=uri, method='PROPFIND',
+                     body="<?xml version='1.0' encoding='utf-8'?>"
+                          "<propfind xmlns=\"DAV:\"><allprop/></propfind>",
+                     headers={'label': str(rev),
+                              'user-agent': 'SVN/1.7.5 {pwb}'})
 
-    dom = xml.dom.minidom.parse(StringIO(data))
+    dom = xml.dom.minidom.parse(StringIO(req.content))
     hsh = dom.getElementsByTagName("C:git-commit")[0].firstChild.nodeValue
     return hsh
 
@@ -244,8 +245,8 @@ def getversion_onlinerepo(repo=None):
 
     url = repo or 'https://git.wikimedia.org/feed/pywikibot/core'
     hsh = None
-    buf = http.request(site=None, uri=url)
-    buf = buf.split('\r\n')
+    req = http.fetch(url)
+    buf = req.content.split('\r\n')
     try:
         hsh = buf[13].split('/')[5][:-1]
     except Exception as e:
