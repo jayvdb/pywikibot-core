@@ -16,6 +16,7 @@ import re
 
 import pywikibot
 from pywikibot import config
+from pywikibot.exceptions import UnknownSite
 from pywikibot.tools import MediaWikiVersion as LV
 from pywikibot.data import api
 
@@ -1972,6 +1973,41 @@ class TestSametitleSite(TestCase):
         self.assertFalse(site.sametitle('Invalid1:Foo', 'Invalid2:Foo'))
         self.assertFalse(site.sametitle('Invalid:Foo', ':Foo'))
         self.assertFalse(site.sametitle('Invalid:Foo', 'Invalid:foo'))
+
+
+class TestAutoSubdomains(TestCase):
+
+    """Test cases for automatically loading subdomains on wiki farms."""
+
+    family = 'wikia'
+    code = 'www'
+
+    def test_wikia(self):
+        s = self.get_site()
+        self.assertEqual(s.family.hostname('www'), 'www.wikia.com')
+        self.assertIsInstance(s.namespaces, dict)
+
+    def test_wikia_obsolete(self):
+        s = pywikibot.Site('wikia', 'wikia')
+        # 'obsolete' is False for obsolete sites with a new code.
+        # see BaseSite __init__
+        self.assertFalse(s.obsolete)
+        self.assertEqual(s.family.hostname('wikia'), False)
+        # It should be the same object as www.wikia
+        # However the obsolete check is not done until
+        # BaseSite __init__, by which stage a new object
+        # has already been instantiated.
+        self.assertNotEqual(id(s), id(self.get_site()))
+        self.assertIsInstance(s.namespaces, dict)
+
+    def test_wikia_dynamic(self):
+        s = pywikibot.Site('fr.lyrics', 'wikia')
+        self.assertEqual(s.family.hostname('fr.lyrics'), 'fr.lyrics.wikia.com')
+        self.assertIsInstance(s.namespaces, dict)
+
+    def test_wikia_invalid(self):
+        self.assertRaises(UnknownSite, pywikibot.Site, 'reallyinvalid', 'wikia')
+
 
 if __name__ == '__main__':
     try:

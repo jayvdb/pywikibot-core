@@ -434,6 +434,11 @@ class BaseSite(ComparableMixin):
         else:
             self.__family = fam
 
+        # langs may be a custom dict such as AutoLangDict, and the following
+        # 'in' condition will fire __contains__ which allows for custom
+        # behaviour, including setting of obsolete.
+        exists = self.__code in self.__family.langs
+
         self.obsolete = False
         # if we got an outdated language code, use the new one instead.
         if self.__code in self.__family.obsolete:
@@ -442,7 +447,7 @@ class BaseSite(ComparableMixin):
             else:
                 # no such language anymore
                 self.obsolete = True
-        elif self.__code not in self.languages():
+        elif not exists:
             if self.__family.name in list(self.__family.langs.keys()) and \
                len(self.__family.langs) == 1:
                 oldcode = self.__code

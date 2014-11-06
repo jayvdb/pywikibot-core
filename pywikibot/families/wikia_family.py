@@ -6,33 +6,34 @@ __version__ = '$Id$'
 from pywikibot import family
 
 
-# The Wikia Search family
-# user-config.py: usernames['wikia']['wikia'] = 'User name'
-class Family(family.Family):
+class Family(family.AutoSubdomainFamily):
 
-    """Family class for Wikia."""
+    """Family class for the Wikia wikis."""
 
-    def __init__(self):
-        """Constructor."""
-        family.Family.__init__(self)
-        self.name = u'wikia'
+    name = u'wikia'
+    domain = 'wikia.com'
 
-        self.langs = {
-            u'wikia': None,
-        }
+    # Only these codes are considered to be have native support
+    # currently in pywikibot, and will load without a warning.
 
-    def hostname(self, code):
-        """Return the hostname for every site in this family."""
-        return u'www.wikia.com'
+    codes = ['www', 'community', 'lyrics']
 
-    def version(self, code):
-        """Return the version for this family."""
-        return "1.19.20"
+    # If you just want the warning to go away, add your Wikia subdomain to
+    # the codes variable above.
+
+    # TODO: improve the detection logic and test suite to better
+    # understand the Wikia farm naming system, in order that additional
+    # sites can be natively supported yet ensuring that this family class
+    # can not instantiate an invalid wiki site object without a warning.
+
+    obsolete = {
+        'wikia': 'www',
+        'en': 'www',
+    }
+
+    # This is part of the invalid wiki detection algorithm.  See family.py
+    invalid_redirect_target_codes = ['community']
 
     def scriptpath(self, code):
         """Return the script path for this family."""
         return ''
-
-    def apipath(self, code):
-        """Return the path to api.php for this family."""
-        return '/api.php'

@@ -37,6 +37,37 @@ def empty_iterator():
     yield
 
 
+class ContainsKeyDefaultDict(collections.defaultdict):
+
+    """defaultdict that also invokes __missing__ for __contains__."""
+
+    def __contains__(self, key):
+        """Invoke __missing__ for missing keys."""
+        if key in self.keys():
+            return True
+        else:
+            try:
+                self[key] = self.__missing__(key)
+                return True
+            except KeyError:
+                return False
+
+
+class DetachedMissingDefaultDict(collections.defaultdict):
+
+    """defaultdict with default_factory attached to another object.
+
+    defaultdict calls default_factory using self.default_factory(key)
+    which fails when default_factory is an instance method of another
+    object.
+    """
+
+    def __missing__(self, key):
+        """Call default_factory."""
+        default_factory = self.default_factory
+        return default_factory(key)
+
+
 class UnicodeMixin(object):
 
     """Mixin class to add __str__ method in Python 2 or 3."""
