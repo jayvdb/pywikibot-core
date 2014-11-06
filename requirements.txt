@@ -40,6 +40,12 @@ argparse
 # scripts/flickrripper.py
 Pillow
 flickrapi
+# On Python 2, flickrapi 1.4 or 2.x may be used.  On Python 3, it must be 2.x.
+# The above automatically selects 2.x, which depends on requests 2.x, which
+# may cause pip to report an error like the following...
+# pkg_resources.VersionConflict: (requests 1.2.3 (/usr/lib/python2.7/site-packages), Requirement.parse('requests>=2.2.1'))
+# If you see that on Python 2, change the above to flickrapi==1.4.5
+# On Python 3, force pip to install requests 2.2.1, or remove flickrapi above.
 
 # scripts/tests/test_data_ingestion.py
 test_utils
