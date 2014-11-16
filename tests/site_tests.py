@@ -624,6 +624,13 @@ class TestSiteObject(DefaultSiteTestCase):
             self.assertIsInstance(link, pywikibot.Page)
             self.assertIn(link.namespace(), (2, 3))
 
+    def testAncientpages(self):
+        """Test the site.ancientpages() method."""
+        mysite = self.get_site()
+        wl = list(mysite.ancientpages(total=20))
+        self.assertLessEqual(len(wl), 20)
+        self.assertTrue(all(isinstance(data, tuple) for data in wl))
+
 
 class TestImageUsage(DefaultSiteTestCase):
 

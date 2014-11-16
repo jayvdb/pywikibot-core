@@ -7,8 +7,11 @@
 #
 __version__ = '$Id$'
 
-from collections import Container, MutableMapping
-from pywikibot.comms import http
+from collections import Container, MutableMapping, Mapping
+try:
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
 from email.mime.nonmultipart import MIMENonMultipart
 import datetime
 import hashlib
@@ -24,6 +27,7 @@ import traceback
 import time
 
 import pywikibot
+from pywikibot.comms import http
 from pywikibot import config, login
 from pywikibot.tools import MediaWikiVersion as LV, deprecated, itergroup
 from pywikibot.exceptions import (
@@ -1303,19 +1307,24 @@ class QueryGenerator(object):
         self.limit = None
         self.query_limit = self.api_limit
         if "generator" in kwargs:
-            self.resultkey = "pages"        # name of the "query" subelement key
-        else:                               # to look for when iterating
+            self.resultkey = "pages"  # name of the "query" subelement key
+        else:                         # to look for when iterating
             self.resultkey = self.modules[0]
 
         # usually the (query-)continue key is the same as the querymodule,
         # but not always
-        # API can return more than one query-continue key, if multiple properties
-        # are requested by the query, e.g.
+        # API can return more than one query-continue key, if multiple
+        # properties are requested by the query, e.g.
         # "query-continue":{
         #     "langlinks":{"llcontinue":"12188973|pt"},
         #     "templates":{"tlcontinue":"310820|828|Namespace_detect"}}
         # self.continuekey is a list
         self.continuekey = self.modules
+
+        # if self.resultkey == 'pages', result must be buffered, as
+        # there is no guarantee that all data for an item arrived in one
+        # response. Some data will appear in the following response, etc.
+        self.query_buffer = OrderedDict()
 
     def set_query_increment(self, value):
         """Set the maximum number of items to be retrieved per API query.
@@ -1397,17 +1406,65 @@ class QueryGenerator(object):
                 value = str(value)
             self.request[key] = value
 
+    def querydata_update(self, orig_dict, new_dict):
+        """Update nested data structure.
+
+        See http://stackoverflow.com/questions/3232943/
+            update-value-of-a-nested-dictionary-of-varying-depth
+
+        """
+        for key, val in new_dict.items():
+            if isinstance(val, Mapping):
+                tmp = self.querydata_update(orig_dict.get(key, {}), val)
+                orig_dict[key] = tmp
+            elif isinstance(val, list):
+                orig_dict[key] = orig_dict.get(key, []) + val
+            else:
+                orig_dict[key] = new_dict[key]
+        return orig_dict
+
     def __iter__(self):
         """Submit request and iterate the response based on self.resultkey.
 
         Continues response as needed until limit (if any) is reached.
 
+        Results are not yielded until all data for an entry is collected.
+        This can happen when results for a page are fetched with several
+        requests, in case of (query-)continue.
+
+        This is based on the fact that the API, when continuing,
+        keeps on repeating the same pages until all requested data
+        are fetched.
+
         """
         previous_result_had_data = True
         prev_limit = new_limit = None
 
+        def count(start=0, step=1):
+            """Return iterator of evenly spaced values.
+
+            Taken from itertools.count() docs, step arg not supported in py2.6.
+
+            """
+            n = start
+            while True:
+                yield n
+                n += step
+
+        # Counters to generate unique keys for query_buffer dictionary.
+        pos_key_gen = count()
+        neg_key_gen = count(-1, step=-1)
+
+        # Negative keys (e.g. u'-1') for missing pages
+        # (e.g. imagepages hosted on shared repos)
+        # needs to be replaced at each request, as they are
+        # reused for different pages in each request.
+        def unique_key(k):
+            return k if int(k) > 0 else str(next(neg_key_gen))
+
         count = 0
         while True:
+            # New limit computation shall be done at each iteration.
             if self.query_limit is not None:
                 prev_limit = new_limit
                 if self.limit is None:
@@ -1424,9 +1481,9 @@ class QueryGenerator(object):
                 else:
                     new_limit = None
 
-                if new_limit and \
-                        "rvprop" in self.request \
-                        and "content" in self.request["rvprop"]:
+                if (new_limit and
+                        "rvprop" in self.request and
+                        "content" in self.request["rvprop"]):
                     # queries that retrieve page content have lower limits
                     # Note: although API allows up to 500 pages for content
                     #   queries, these sometimes result in server-side errors
@@ -1448,53 +1505,79 @@ class QueryGenerator(object):
                            self.prefix + "limit",
                            self.request[self.prefix + "limit"]),
                         _logger)
+
+            # Get data.
             if not hasattr(self, "data"):
                 self.data = self.request.submit()
             if not self.data or not isinstance(self.data, dict):
                 pywikibot.debug(
-                    u"%s: stopped iteration because no dict retrieved from api."
+                    u"%s: stopped iteration, no dict retrieved from api."
                     % self.__class__.__name__,
                     _logger)
-                return
+                break
             if "query" not in self.data:
                 pywikibot.debug(
-                    u"%s: stopped iteration because 'query' not found in api "
+                    u"%s: stopped iteration, 'query' not found in api "
                     u"response." % self.__class__.__name__,
                     _logger)
                 pywikibot.debug(unicode(self.data), _logger)
-                return
+                break
+
             if self.resultkey in self.data["query"]:
+
                 resultdata = self.data["query"][self.resultkey]
+                if "results" in resultdata:
+                    # Used in https://www.mediawiki.org/wiki/API:Querypage
+                    resultdata = resultdata["results"]
+
+                # Convert resultdata to ordered dictionary.
+                # Keys are used to understand if all data for an item are
+                # collected before yielding result from query_buffer.
+                # For lists it is not strictly necessary but simplifies the
+                # logic avoiding branches, as all data are handled in the
+                # same way.
                 if isinstance(resultdata, dict):
                     pywikibot.debug(u"%s received %s; limit=%s"
                                     % (self.__class__.__name__,
                                        list(resultdata.keys()),
                                        self.limit),
                                     _logger)
-                    if "results" in resultdata:
-                        resultdata = resultdata["results"]
-                    elif "pageids" in self.data["query"]:
-                        # this ensures that page data will be iterated
-                        # in the same order as received from server
-                        resultdata = [resultdata[k]
-                                      for k in self.data["query"]["pageids"]]
-                    else:
-                        resultdata = [resultdata[k]
-                                      for k in sorted(resultdata.keys())]
+
+                    # This ensures that page data will be iterated
+                    # in the same order as received from server
+                    query_keys = self.data["query"].get(
+                        "pageids", sorted(resultdata.keys()))
+
+                    resultdata = OrderedDict(
+                        (unique_key(k), resultdata[k]) for k in query_keys)
                 else:
                     pywikibot.debug(u"%s received %s; limit=%s"
                                     % (self.__class__.__name__,
                                        resultdata,
                                        self.limit),
                                     _logger)
+                    # Convert list to dict and assign arbitrary unique key.
+                    resultdata = OrderedDict(zip(pos_key_gen, resultdata))
+
                 if "normalized" in self.data["query"]:
                     self.normalized = dict((item['to'], item['from'])
                                            for item in
                                            self.data["query"]["normalized"])
                 else:
                     self.normalized = {}
-                for item in resultdata:
-                    yield self.result(item)
+
+                # If keys in query_buffer are not present in resultdata,
+                # page is complete and can be yielded and removed from buffer.
+                for pageid in self.query_buffer:
+                    if pageid not in resultdata:
+                        yield self.result(self.query_buffer.pop(pageid))
+
+                for pageid, item in resultdata.items():
+                    # Insert or update page in query_buffer.
+                    querydata = self.query_buffer.get(pageid, {})
+                    querydata = self.querydata_update(querydata, item)
+                    self.query_buffer[pageid] = querydata
+
                     if isinstance(item, dict) and set(self.continuekey) & set(item.keys()):
                         # if we need to count elements contained in items in
                         # self.data["query"]["pages"], we want to count
@@ -1507,6 +1590,9 @@ class QueryGenerator(object):
                         count += 1
                     # note: self.limit could be -1
                     if self.limit and self.limit > 0 and count >= self.limit:
+                        # Flush buffer, if any, when completing the iteration.
+                        for pageid in self.query_buffer:
+                            yield self.result(self.query_buffer.pop(pageid))
                         return
                 # self.resultkey in data in last request.submit()
                 previous_result_had_data = True
@@ -1514,8 +1600,7 @@ class QueryGenerator(object):
                 # if (query-)continue is present, self.resultkey might not have
                 # been fetched yet
                 if self.continue_name not in self.data:
-                    # No results.
-                    return
+                    break  # No results.
                 # self.resultkey not in data in last request.submit()
                 # only "(query-)continue" was retrieved.
                 previous_result_had_data = False
@@ -1525,11 +1610,17 @@ class QueryGenerator(object):
                 del self.data  # a new request is needed
                 continue
             if self.continue_name not in self.data:
-                return
+                break
             if self.continue_update():
-                return
+                break
 
             del self.data  # a new request with (query-)continue is needed
+
+        # Flush buffer, if any, when completing the iteration.
+        # Clean the buffer (api_tests.TestDryPageGenerator do not
+        # re-instantiate the generator but just change a few params).
+        for pageid in self.query_buffer:
+            yield self.result(self.query_buffer.pop(pageid))
 
     def result(self, data):
         """Process result data as needed for particular subclass."""
