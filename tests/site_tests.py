@@ -624,6 +624,16 @@ class TestSiteObject(DefaultSiteTestCase):
             self.assertIsInstance(link, pywikibot.Page)
             self.assertIn(link.namespace(), (2, 3))
 
+    def test_ancientpages(self):
+        """Test the site.ancientpages() method."""
+        mysite = self.get_site()
+        wl = list(mysite.ancientpages(total=20))
+        self.assertLessEqual(len(wl), 20)
+        self.assertTrue(all(isinstance(data, tuple) for data in wl))
+
+    # TODO: test newimages, longpages, shortpages, ancientpages, unwatchedpages
+    #       and the other following methods in site.py
+
 
 class TestImageUsage(DefaultSiteTestCase):
 
@@ -1200,9 +1210,6 @@ class SiteRandomTestCase(DefaultSiteTestCase):
         for rndpage in mysite.randompages(total=5, namespaces=[6, 7]):
             self.assertIsInstance(rndpage, pywikibot.Page)
             self.assertIn(rndpage.namespace(), [6, 7])
-
-    # TODO: test newimages, longpages, shortpages, ancientpages, unwatchedpages
-    #       and the other following methods in site.py
 
 
 class TestSiteTokens(DefaultSiteTestCase):

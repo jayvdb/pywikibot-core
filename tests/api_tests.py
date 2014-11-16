@@ -8,6 +8,7 @@
 __version__ = '$Id$'
 
 import datetime
+import sys
 import types
 
 import pywikibot.data.api as api
@@ -249,10 +250,15 @@ class TestDryPageGenerator(TestCase):
 
     dry = True
 
-    # api.py sorts 'pages' using the string key, which is not a
-    # numeric comparison.
-    titles = ("Broadcaster (definition)", "Wiktionary", "Broadcaster.com",
-              "Wikipedia:Disambiguation")
+    # api previously sorted 'pages' using the string key, which is not a
+    # numeric comparison.  It now orders them ... ??
+
+    if sys.version_info[0] == 2:
+        titles = ("Broadcaster.com", "Wikipedia:Disambiguation",
+                  "Broadcaster (definition)", "Wiktionary")
+    else:
+        titles = ["Broadcaster (definition)", "Wikipedia:Disambiguation",
+                  "Wiktionary", "Broadcaster.com"]
 
     def setUp(self):
         super(TestDryPageGenerator, self).setUp()
