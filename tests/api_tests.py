@@ -395,7 +395,6 @@ class TestPropertyGenerator(TestCase):
             count += 1
         self.assertEqual(len(links), count)
 
-    @unittest.expectedFailure
     def test_many_continuations_limited(self):
         mainpage = self.get_mainpage()
         links = list(self.site.pagelinks(mainpage, total=30))
@@ -417,11 +416,8 @@ class TestPropertyGenerator(TestCase):
             self.assertIn('pageid', pagedata)
             count += 1
         self.assertEqual(len(links), count)
-        # FIXME: AssertionError: 30 != 6150
 
-    @unittest.expectedFailure
     def test_two_continuations_limited(self):
-        # FIXME: test fails
         mainpage = self.get_mainpage()
         links = list(self.site.pagelinks(mainpage, total=30))
         titles = [l.title(withSection=False)
@@ -438,7 +434,6 @@ class TestPropertyGenerator(TestCase):
             self.assertIn('pageid', pagedata)
             count += 1
         self.assertEqual(len(links), count)
-        # FIXME: AssertionError: 30 != 11550
 
     # FIXME: test disabled as it takes longer than 10 minutes
     def _test_two_continuations_limited_long_test(self):
