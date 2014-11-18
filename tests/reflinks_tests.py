@@ -84,6 +84,7 @@ class TestXMLPageGenerator(TestCase):
         self.assertPagelistTitles(pages, (u'Fake page', u'Talk:Fake page'),
                                   site=self.get_site())
 
+    @unittest.expectedFailure
     def test_namespace_names(self):
         """Test namespaces with namespace names."""
         gen = XmlDumpPageGenerator(
@@ -203,6 +204,7 @@ class TestReferencesBotConstructor(ScriptMainTestCase):
         self.assertPagelistTitles(pages, [u'Talk:Fake page'],
                                   site=self.get_site())
 
+    @unittest.expectedFailure
     def test_xml_namespace_name(self):
         main('-xml:' + os.path.join(_xml_data_dir, 'dummy-reflinks.xml'),
              '-namespace:Talk', '-xmlstart:Fake page')
