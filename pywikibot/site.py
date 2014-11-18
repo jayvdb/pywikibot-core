@@ -266,6 +266,35 @@ class Namespace(Iterable, ComparableMixin, UnicodeMixin):
         else:
             return len(self.aliases) + 2
 
+    def __call__(self):
+        """
+        Return the namespace id.
+
+        This functionality exists only to provide backwards compatibility for
+        Page.namespace.
+
+        Page.namespace was a method, which returned the namespace as an int.
+             i.e. page.namespace() returned an int
+        Page.namespace has been converted to a property which returns a
+        Namespace object, which if called will invoke this method, which will
+        return the namespace id.
+            i.e. page.namespace returns Namespace,
+            and  page.namespace() returns int
+        """
+        return self.id
+
+    @deprecated('Namespace.id')
+    def __bool__(self):
+        """
+        Truth operator.
+
+        This method is needed because __call__ makes Namespace callable,
+        which would make it always True in boolean contexts.
+        """
+        return self.id != 0
+
+    __nonzero__ = __bool__
+
     def __iter__(self):
         """Return an iterator."""
         return iter(self._distinct())
@@ -763,9 +792,11 @@ class BaseSite(ComparableMixin):
         @return: The matching Namespace object on this Site
         @rtype: Namespace, or None if invalid
         """
-        return Namespace.lookup_name(namespace, self.namespaces)
+        ns = Namespace.lookup_name(namespace, self.namespaces)
+        return int(ns) if ns is not None else None
 
     # for backwards-compatibility
+    # FIXME: replace uses of this in scripts/
     getNamespaceIndex = redirect_func(ns_index, old_name='getNamespaceIndex',
                                       class_name='BaseSite')
 
@@ -903,7 +934,7 @@ class BaseSite(ComparableMixin):
             ns, delim, name = title.partition(':')
             if delim:
                 ns = Namespace.lookup_name(ns, self.namespaces)
-            if not delim or not ns:
+            if not delim or ns is None:
                 return default_ns, title
             else:
                 return ns, name
