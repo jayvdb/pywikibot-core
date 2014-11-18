@@ -154,11 +154,18 @@ class BasePage(pywikibot.UnicodeMixin, ComparableMixin):
         """Return the Site object for the data repository."""
         return self.site.data_repository()
 
+    @property
     def namespace(self):
-        """Return the number of the namespace of the page.
+        """Return a Namespace object for the page.
+
+        Page.namespace was a method which was invoked like
+            page.namespace() returns int
+
+        That calling convention is still supported, as the Namespace
+        object is callable, and when called will return an int.
 
         @return: namespace of the page
-        @rtype: int
+        @rtype: Namespace
         """
         return self._link.namespace
 
@@ -2872,7 +2879,7 @@ class WikibasePage(BasePage):
                 raise ValueError('Wikibase entity type "%s" unknown'
                                  % entity_type)
 
-            if self._namespace:
+            if self._namespace is not None:
                 if self._namespace != entity_type_ns:
                     raise ValueError('Namespace "%d" is not valid for Wikibase'
                                      ' entity type "%s"'
@@ -2959,12 +2966,14 @@ class WikibasePage(BasePage):
         return params
 
     def namespace(self):
-        """Return the number of the namespace of the entity.
+        """Return the namespace of the entity.
 
-        @return: Namespace id
-        @rtype: int
+        @return: Namespace
+        @rtype: Namespace
         """
-        return self._namespace.id
+        if self._namespace is None:
+            raise AttributeError('namespace is None')
+        return self._namespace
 
     def exists(self):
         """
@@ -4298,7 +4307,7 @@ class Link(ComparableMixin):
 
         self._text = text
         self._source = source or pywikibot.Site()
-        self._defaultns = defaultNamespace
+        self._defaultns = self._source.namespaces[defaultNamespace]
 
         # preprocess text (these changes aren't site-dependent)
         # First remove anchor, which is stored unchanged, if there is one
@@ -4401,7 +4410,7 @@ class Link(ComparableMixin):
         while u":" in t:
             # Initial colon indicates main namespace rather than default
             if t.startswith(u":"):
-                self._namespace = 0
+                self._namespace = self._site.namespaces[0]
                 # remove the colon but continue processing
                 # remove any subsequent whitespace
                 t = t.lstrip(u":").lstrip(u" ")
@@ -4525,6 +4534,9 @@ class Link(ComparableMixin):
         """
         if not hasattr(self, "_namespace"):
             self.parse()
+        if not isinstance(self._namespace, Namespace):
+            pywikibot.error(u'Link(%r)._namespace expects Namespace: got %r'
+                            % (self._text, self._namespace))
         return self._namespace
 
     @property
