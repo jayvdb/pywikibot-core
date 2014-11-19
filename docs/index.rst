@@ -1,10 +1,5 @@
-.. Pywikibot documentation master file, created by
-   sphinx-quickstart on Wed Nov  5 15:50:05 2014.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-Welcome to Pywikibot's documentation!
-=====================================
+Pywikibot API documentation
+===========================
 
 Contents:
 
@@ -12,7 +7,6 @@ Contents:
    :maxdepth: 2
 
    pywikibot
-   scripts
 
 
 Indices and tables
