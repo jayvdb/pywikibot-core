@@ -24,6 +24,8 @@ argparse
 
 # scripts/flickrripper.py
 Pillow
+requests
+urllib3
 flickrapi
 
 # scripts/tests/test_data_ingestion.py
