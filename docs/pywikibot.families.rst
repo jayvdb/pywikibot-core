@@ -25,34 +25,10 @@ families Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`chii_family` Module
--------------------------
-
-.. automodule:: pywikibot.families.chii_family
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 :mod:`commons_family` Module
 ----------------------------
 
 .. automodule:: pywikibot.families.commons_family
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`gene_family` Module
--------------------------
-
-.. automodule:: pywikibot.families.gene_family
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`howtopedia_family` Module
--------------------------------
-
-.. automodule:: pywikibot.families.howtopedia_family
     :members:
     :undoc-members:
     :show-inheritance:
@@ -117,14 +93,6 @@ families Package
 -----------------------------
 
 .. automodule:: pywikibot.families.outreach_family
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`prepedia_family` Module
------------------------------
-
-.. automodule:: pywikibot.families.prepedia_family
     :members:
     :undoc-members:
     :show-inheritance:

@@ -162,19 +162,20 @@ except RuntimeError as err:
                     [])
     sys.exit(1)
 
-if len(sys.argv) > 1:
-    tryimport_pwb()
-    fn = sys.argv[1]
-    argv = sys.argv[1:]
-    argvu = pwb.argvu[1:]
-    if not fn.endswith('.py'):
-        fn += '.py'
-    if not os.path.exists(fn):
-        testpath = os.path.join(os.path.split(__file__)[0], 'scripts', fn)
-        if os.path.exists(testpath):
-            fn = testpath
-        else:
-            raise OSError("%s not found!" % fn)
-    run_python_file(fn, argv, argvu)
-elif __name__ == "__main__":
-    print(__doc__)
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        tryimport_pwb()
+        fn = sys.argv[1]
+        argv = sys.argv[1:]
+        argvu = pwb.argvu[1:]
+        if not fn.endswith('.py'):
+            fn += '.py'
+        if not os.path.exists(fn):
+            testpath = os.path.join(os.path.split(__file__)[0], 'scripts', fn)
+            if os.path.exists(testpath):
+                fn = testpath
+            else:
+                raise OSError("%s not found!" % fn)
+        run_python_file(fn, argv, argvu)
+    else:
+        print(__doc__)

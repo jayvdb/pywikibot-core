@@ -11,6 +11,8 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   pywikibot
+   scripts
 
 
 Indices and tables
