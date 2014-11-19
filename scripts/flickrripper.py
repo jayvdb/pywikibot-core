@@ -84,7 +84,8 @@ except ImportError as e:
 import pywikibot
 
 from pywikibot import config, textlib
-from scripts import upload
+
+from scripts.upload import UploadRobot
 
 flickr_allowed_license = {
     0: False,  # All Rights Reserved
@@ -332,11 +333,11 @@ def processPhoto(flickr=None, photo_id=u'', flickrreview=False, reviewer=u'',
             # Would be nice to check before I upload if the file is already at Commons
             # Not that important for this program, but maybe for derived programs
             if not skip:
-                bot = upload.UploadRobot(photoUrl,
-                                         description=newPhotoDescription,
-                                         useFilename=newFilename,
-                                         keepFilename=True,
-                                         verifyDescription=False)
+                bot = UploadRobot(photoUrl,
+                                  description=newPhotoDescription,
+                                  useFilename=newFilename,
+                                  keepFilename=True,
+                                  verifyDescription=False)
                 bot.upload_image(debug=False)
                 return 1
     else:

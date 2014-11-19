@@ -34,9 +34,12 @@ __version__ = '$Id$'
 
 import re
 import sys
+
 import pywikibot
-import upload
+
 from pywikibot import config, i18n, textlib
+
+from scripts.upload import UploadRobot
 
 copy_message = {
     'ar': u"هذه الصورة تم نقلها من %s. الوصف الأصلي كان:\r\n\r\n%s",
@@ -198,12 +201,12 @@ class ImageTransferBot:
             description = ''
             print("Image description page is redirect.")
         else:
-            bot = upload.UploadRobot(url=url, description=description,
-                                     targetSite=self.targetSite,
-                                     urlEncoding=sourceSite.encoding(),
-                                     keepFilename=self.keep_name,
-                                     verifyDescription=not self.keep_name,
-                                     ignore_warning=self.ignore_warning)
+            bot = UploadRobot(url=url, description=description,
+                              targetSite=self.targetSite,
+                              urlEncoding=sourceSite.encoding(),
+                              keepFilename=self.keep_name,
+                              verifyDescription=not self.keep_name,
+                              ignore_warning=self.ignore_warning)
             # try to upload
             targetFilename = bot.run()
             if targetFilename and self.targetSite.family.name == 'commons' and \

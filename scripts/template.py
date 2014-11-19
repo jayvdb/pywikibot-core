@@ -109,9 +109,12 @@ __version__ = '$Id$'
 #
 
 import re
+
 import pywikibot
+
 from pywikibot import i18n, pagegenerators, xmlreader, Bot
-from scripts import replace
+
+from scripts.replace import ReplaceRobot
 
 
 def UserEditFilterGenerator(generator, username, timestamp=None, skip=False):
@@ -283,10 +286,10 @@ class TemplateRobot(Bot):
                 replacements.append((templateRegex,
                                      '{{%s\g<parameters>}}' % new))
 
-        replaceBot = replace.ReplaceRobot(self.generator, replacements,
-                                          exceptions, acceptall=self.getOption('always'),
-                                          addedCat=self.getOption('addedCat'),
-                                          summary=self.getOption('summary'))
+        replaceBot = ReplaceRobot(self.generator, replacements, exceptions,
+                                  acceptall=self.getOption('always'),
+                                  addedCat=self.getOption('addedCat'),
+                                  summary=self.getOption('summary'))
         replaceBot.run()
 
 

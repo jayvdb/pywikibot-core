@@ -40,10 +40,13 @@ The image "Flag.svg" has been uploaded, making the old "Flag.jpg" obsolete:
 #
 __version__ = '$Id$'
 #
-import pywikibot
-import replace
-from pywikibot import i18n, pagegenerators, Bot
 import re
+
+import pywikibot
+
+from pywikibot import i18n, pagegenerators, Bot
+
+from scripts.replace import ReplaceRobot
 
 
 class ImageRobot(Bot):
@@ -159,9 +162,9 @@ class ImageRobot(Bot):
         else:
             replacements.append((image_regex, ''))
 
-        replaceBot = replace.ReplaceRobot(self.generator, replacements,
-                                          acceptall=self.getOption('always'),
-                                          summary=self.getOption('summary'))
+        replaceBot = ReplaceRobot(self.generator, replacements,
+                                  acceptall=self.getOption('always'),
+                                  summary=self.getOption('summary'))
         replaceBot.run()
 
 

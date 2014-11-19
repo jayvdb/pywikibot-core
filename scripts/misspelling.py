@@ -30,8 +30,10 @@ __version__ = '$Id$'
 #
 
 import pywikibot
+
 from pywikibot import i18n, pagegenerators
-from solve_disambiguation import DisambiguationRobot
+
+from scripts.solve_disambiguation import DisambiguationRobot
 
 HELP_MSG = """\n
 mispelling.py does not support site {site}.

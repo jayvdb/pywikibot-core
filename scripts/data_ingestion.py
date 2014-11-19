@@ -16,10 +16,8 @@ import sys
 import io
 
 import pywikibot
-# TODO: nosetests3 fails on 'import <other_script>', which is used by many
-# of our scripts, but only data_ingestion is directly imported (not via pwb).
-# https://github.com/nose-devs/nose/issues/839
-from scripts import upload
+
+from scripts.upload import UploadRobot
 
 if sys.version_info[0] > 2:
     from urllib.parse import urlparse
@@ -137,12 +135,12 @@ class DataIngestionBot:
         title = photo.getTitle(self.titlefmt)
         description = photo.getDescription(self.pagefmt)
 
-        bot = upload.UploadRobot(url=photo.URL,
-                                 description=description,
-                                 useFilename=title,
-                                 keepFilename=True,
-                                 verifyDescription=False,
-                                 targetSite=self.site)
+        bot = UploadRobot(url=photo.URL,
+                          description=description,
+                          useFilename=title,
+                          keepFilename=True,
+                          verifyDescription=False,
+                          targetSite=self.site)
         bot._contents = photo.downloadPhoto().getvalue()
         bot._retrieved = True
         bot.run()

@@ -74,12 +74,14 @@ __version__ = '$Id$'
 #
 
 import re
-from pywikibot.tools import MediaWikiVersion as LV
+
 import pywikibot
-import isbn
+
+from pywikibot.tools import deprecate_arg, MediaWikiVersion as LV
 from pywikibot import config, i18n, textlib, pagegenerators, Bot
 from pywikibot.page import url2unicode
-from pywikibot.tools import deprecate_arg
+
+from scripts.isbn import hyphenateIsbnNumbers, InvalidIsbnException
 
 warning = """
 ATTENTION: You can run this script as a stand-alone for testing purposes.
@@ -214,8 +216,8 @@ class CosmeticChangesToolkit:
     def isbn_execute(text):
         """Hyphenate ISBN numbers and catch 'InvalidIsbnException'."""
         try:
-            return isbn.hyphenateIsbnNumbers(text)
-        except isbn.InvalidIsbnException as error:
+            return hyphenateIsbnNumbers(text)
+        except InvalidIsbnException as error:
             pywikibot.log(u"ISBN error: %s" % error)
             return None
 

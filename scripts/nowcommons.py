@@ -57,15 +57,17 @@ Please fix these if you are capable and motivated:
 __version__ = '$Id$'
 #
 
-import sys
 import re
+import sys
 import webbrowser
 
 import pywikibot
+
 from pywikibot import i18n, Bot
 from pywikibot import pagegenerators as pg
-import image
-from imagetransfer import nowCommonsMessage
+
+from scripts.image import ImageRobot
+from scripts.imagetransfer import nowCommonsMessage
 
 nowCommons = {
     '_default': [
@@ -354,7 +356,7 @@ class NowCommonsDeleteBot(Bot):
                                     \"\03{lightgreen}%s\03{default}\".'
                                     % (localImagePage.title(withNamespace=False),
                                        commonsImagePage.title(withNamespace=False)))
-                                oImageRobot = image.ImageRobot(
+                                oImageRobot = ImageRobot(
                                     pg.FileLinksGenerator(localImagePage),
                                     localImagePage.title(withNamespace=False),
                                     commonsImagePage.title(withNamespace=False),
@@ -366,7 +368,7 @@ class NowCommonsDeleteBot(Bot):
                                 if len(list(pywikibot.FilePage(self.site,
                                                                 page.title()).usingPages())) > 0 and \
                                                                 self.getOption('replaceloose'):
-                                    oImageRobot = image.ImageRobot(
+                                    oImageRobot = ImageRobot(
                                         pg.FileLinksGenerator(
                                             localImagePage),
                                         localImagePage.title(

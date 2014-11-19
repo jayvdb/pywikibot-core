@@ -55,8 +55,10 @@ import sys
 import io
 
 import pywikibot
+
 from pywikibot import i18n, pagegenerators, textlib, xmlreader, Bot
-import noreferences
+
+from scripts.noreferences import NoReferencesBot
 
 # TODO: Convert to httlib2
 if sys.version_info[0] > 2:
@@ -440,7 +442,11 @@ class ReferencesRobot(Bot):
         else:
             bad = globalbadtitles
         self.titleBlackList = re.compile(bad, re.I | re.S | re.X)
-        self.norefbot = noreferences.NoReferencesBot(None, verbose=False)
+        # FIXME: norefbot is only needed to access two almost 'class' methods:
+        # lacksReferences & addReferences
+        # note: NoReferencesBot uses pywikibot.Site(), which will be the same
+        # as ReferencesRobot.site also obtained using pywikibot.Site().
+        self.norefbot = NoReferencesBot(generator=None, verbose=False)
         self.deduplicator = DuplicateReferences()
         try:
             self.stopPageRevId = self.stopPage.latestRevision()
