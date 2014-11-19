@@ -6,37 +6,11 @@ sphinx-epytext
 # mandatory; see README.conversion.txt
 httplib2>=0.9.0
 
-# core option 'daemonize':
-daemonize
-
-# core interwiki_graph.py:
-pydot
-
-# core pagegenerators
-yahoo
-google
-
-# scripts/script_wui.py:
-crontab
-
 # scipts/replicate_wiki.py
 argparse
 
 # scripts/flickrripper.py
 Pillow
 
-# scripts/tests/test_data_ingestion.py
-test_utils
-
-# incomplete core component botirc
-irc
-
 # textlib.py
 mwparserfromhell>=0.3.3
-
-# The mysql generator in pagegenerators depends on either oursql or MySQLdb
-# pywikibot prefers oursql
-oursql
-
-# scripts/script_wui.py depends on Lua, which is not available using pip
-# but can be obtained from: https://github.com/bastibe/lunatic-python
