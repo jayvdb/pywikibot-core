@@ -61,11 +61,6 @@ if sys.version_info[0] == 3:
 
     dependency_links.append('hg+https://bitbucket.org/sybren/flickrapi#egg=flickrapi')
 
-if os.name != 'nt':
-    # See bug 66010, Windows users will have issues
-    # when trying to build the C modules.
-    dependencies += extra_deps['mwparserfromhell']
-
 if os.name == 'nt':
     # FIXME: tests/ui_tests.py suggests pywinauto 0.4.2
     # which isnt provided on pypi.
