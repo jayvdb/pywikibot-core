@@ -6,11 +6,3 @@ sphinx-epytext
 # mandatory; see README.conversion.txt
 httplib2>=0.9.0
 
-# scipts/replicate_wiki.py
-argparse
-
-# scripts/flickrripper.py
-Pillow
-
-# textlib.py
-mwparserfromhell>=0.3.3
