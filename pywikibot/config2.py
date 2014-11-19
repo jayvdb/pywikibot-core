@@ -25,8 +25,9 @@ __version__ = '$Id$'
 import os
 import sys
 import collections
+from tools import is_rst_parser
 # Please keep _imported_modules in sync with the imports above
-_imported_modules = ('os', 'sys', 'collections')
+_imported_modules = ('os', 'sys', 'collections', 'tools')
 
 # IMPORTANT:
 # Do not change any of the variables in this file. Instead, make
@@ -211,7 +212,7 @@ def get_base_dir(test_directory=None):
         raise RuntimeError("Directory '%s' does not exist." % base_dir)
     if not exists(base_dir):
         exc_text = "No user-config.py found in directory '%s'.\n" % base_dir
-        if os.environ.get('PYWIKIBOT2_NO_USER_CONFIG', '0') == '1':
+        if os.environ.get('PYWIKIBOT2_NO_USER_CONFIG', '0') == '1' or os.environ.get('READTHEDOCS', None) == 'True' or is_rst_parser():
             print(exc_text)
         else:
             exc_text += "  Please check that user-config.py is stored in the correct location.\n"
@@ -776,7 +777,7 @@ for _key, _val in _glv.items():
 
 # Get the user files
 _thislevel = 0
-if os.environ.get('PYWIKIBOT2_NO_USER_CONFIG', '0') == '1' or os.environ.get('READTHEDOCS', None) == 'True':
+if os.environ.get('PYWIKIBOT2_NO_USER_CONFIG', '0') == '1' or os.environ.get('READTHEDOCS', None) == 'True' or is_rst_parser():
     print("WARNING: Skipping loading of user-config.py.")
     _fns = []
 else:
