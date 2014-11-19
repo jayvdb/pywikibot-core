@@ -776,7 +776,7 @@ for _key, _val in _glv.items():
 
 # Get the user files
 _thislevel = 0
-if os.environ.get('PYWIKIBOT2_NO_USER_CONFIG', '0') == '1':
+if os.environ.get('PYWIKIBOT2_NO_USER_CONFIG', '0') == '1' or os.environ.get('READTHEDOCS', None) == 'True':
     print("WARNING: Skipping loading of user-config.py.")
     _fns = []
 else:
