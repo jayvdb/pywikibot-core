@@ -2429,7 +2429,7 @@ class APISite(BaseSite):
                 props += '|templates'
             if langlinks:
                 props += '|langlinks'
-            rvgen = api.PropertyGenerator(props, site=self)
+            rvgen = api.PropertyGenerator(props, site=self, use_get=False)
             rvgen.set_maximum_items(-1)  # suppress use of "rvlimit" parameter
             if len(pageids) == len(sublist):
                 # only use pageids if all pages have them
