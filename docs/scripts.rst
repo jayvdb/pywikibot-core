@@ -542,6 +542,5 @@ Subpackages
 
 .. toctree::
 
-    scripts.i18n
     scripts.maintenance
 

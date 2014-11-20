@@ -8,6 +8,7 @@ Contents:
 
    pywikibot
    scripts
+   tests<./tests/index>
 
 
 Indices and tables
