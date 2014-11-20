@@ -12,7 +12,7 @@ original page will be automatically updated and the modified page uploaded.
 
 These command-line arguments can be used to specify which pages to work on:
 
-&pagegenerators_help;
+&params;
 
     -days:         Like -years, but runs through all date pages. Stops at
                    Dec 31.  If the argument is given in the form -days:X,
@@ -361,7 +361,7 @@ if sys.version_info[0] > 2:
     unicode = str
 
 docuReplacements = {
-    '&pagegenerators_help;': pagegenerators.parameterHelp
+    '&params;': pagegenerators.parameterHelp
 }
 
 

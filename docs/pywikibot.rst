@@ -151,6 +151,7 @@ pywikibot Package
 .. automodule:: pywikibot.site
     :members:
     :undoc-members:
+    :private-members:
     :show-inheritance:
 
 :mod:`textlib` Module
@@ -183,6 +184,7 @@ pywikibot Package
 .. automodule:: pywikibot.tools
     :members:
     :undoc-members:
+    :private-members:
     :show-inheritance:
 
 :mod:`version` Module

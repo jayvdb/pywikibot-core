@@ -45,6 +45,7 @@ if sys.version_info[0] > 2:
 else:
     from urllib import urlencode, urlopen
 
+first_exception = None
 try:
     if sys.version_info[0] > 2:
         from tkinter import (
@@ -62,7 +63,7 @@ except ImportError as e:
         'but may be packaged separately on your platform.\n'
         'See: https://www.mediawiki.org/wiki/Manual:Pywikibot/flickrripper.py')
     print(e)
-    sys.exit()
+    first_exception = e
 
 try:
     from PIL import Image, ImageTk
@@ -71,7 +72,8 @@ except ImportError as e:
         'This script requires ImageTk from the Python Imaging Library (PIL).\n'
         'See: https://www.mediawiki.org/wiki/Manual:Pywikibot/flickrripper.py')
     print(e)
-    sys.exit()
+    if not first_exception:
+        first_exception = e
 
 try:
     import flickrapi                  # see: http://stuvel.eu/projects/flickrapi
@@ -79,7 +81,11 @@ except ImportError as e:
     print('This script requires the python flickrapi module. \n'
           'See: http://stuvel.eu/projects/flickrapi')
     print(e)
-    sys.exit()
+    if not first_exception:
+        raise
+
+if first_exception:
+    raise first_exception
 
 import pywikibot
 

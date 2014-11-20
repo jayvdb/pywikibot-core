@@ -25,9 +25,10 @@ __version__ = '$Id$'
 import os
 import sys
 import collections
-from tools import is_rst_parser
+
+from pywikibot.tools import is_rst_parser
 # Please keep _imported_modules in sync with the imports above
-_imported_modules = ('os', 'sys', 'collections', 'tools')
+_imported_modules = ('os', 'sys', 'collections', 'is_rst_parser')
 
 # IMPORTANT:
 # Do not change any of the variables in this file. Instead, make

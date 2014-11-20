@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+"""Configuration file for Sphinx."""
 #
 # Pywikibot documentation build configuration file, created by
 # sphinx-quickstart on Wed Nov  5 15:50:05 2014.
@@ -11,7 +12,8 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
+import os
+import sys
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -183,8 +185,8 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'Pywikibot.tex', u'Pywikibot Documentation',
-   u'Pywikibot team', 'manual'),
+    ('index', 'Pywikibot.tex', u'Pywikibot Documentation',
+     u'Pywikibot team', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -227,9 +229,9 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'Pywikibot', u'Pywikibot Documentation',
-   u'Pywikibot team', 'Pywikibot', 'One line description of project.',
-   'Miscellaneous'),
+    ('index', 'Pywikibot', u'Pywikibot Documentation',
+     u'Pywikibot team', 'Pywikibot', 'One line description of project.',
+     'Miscellaneous'),
 ]
 
 # Documents to append as an appendix to all manuals.
@@ -240,3 +242,21 @@ texinfo_documents = [
 
 # How to display URL addresses: 'footnote', 'no', or 'inline'.
 #texinfo_show_urls = 'footnote'
+
+
+def pywikibot_script_docstring_fixups(
+        app, what, name, obj, options, lines):
+    """Pywikibot specific conversions."""
+    result = ['This script supports use of :py:mod:`pywikibot.pagegenerators` arguments.' if l == '&params;' else
+              '                  The available fixes are listed in :py:mod:`pywikibot.fixes`.' if l == '&fixes-help;' else
+              l + ':' if l.endswith(':') and not l.strip().startswith(':') and 'Traceback (most recent call last)' not in l else
+              ' ' + l if l.startswith('-') else
+              l.replace('                ', '                 ') if l.startswith('                ') else
+              '  ' + l.strip() if l.strip().startswith('python') else l
+              for l in lines]
+    lines[:] = result[:]
+
+
+def setup(app):
+    """Implicit Sphinx extension hook."""
+    app.connect('autodoc-process-docstring', pywikibot_script_docstring_fixups)
