@@ -1,7 +1,7 @@
 # This is a PIP requirements file, including all dependencies for pywikibot
 # and 'sphinx-epytext' which is required for sphinx documentation.
 
-sphinx==1.2.3
+sphinx==1.3b1
 sphinx-epytext>=0.0.3
 
 # mandatory; see README.conversion.txt
