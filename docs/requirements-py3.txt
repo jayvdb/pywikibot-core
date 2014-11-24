@@ -1,0 +1,46 @@
+# This is a PIP requirements file for building Sphinx documentation of pywikibot
+# using sphinx-1.3b1 on python3.4, and is used by readthedocs.org.
+
+sphinx==1.3b1
+sphinx-epytext>=0.0.3
+
+# mandatory; see README.conversion.txt
+httplib2>=0.9.0
+
+# core option 'daemonize':
+daemonize
+
+# core interwiki_graph.py:
+hg+https://bitbucket.org/prologic/pydot#egg=pydot
+
+# core pagegenerators
+# pYsearch: no py3 support available
+google
+
+# scripts/script_wui.py:
+crontab
+
+# scipts/replicate_wiki.py
+argparse
+
+# scripts/flickrripper.py
+Pillow
+flickrapi
+
+# scripts/states-redirect.py
+pycountry
+
+# incomplete core component botirc
+# irc
+# caused failure: https://readthedocs.org/builds/pywikibot/1892338/
+
+# textlib.py
+# mwparserfromhell>=0.3.3
+# caused failure: https://readthedocs.org/builds/pywikibot/1892381/
+
+# The mysql generator in pagegenerators depends on either oursql or MySQLdb
+# pywikibot prefers oursql
+https://launchpad.net/oursql/py3k/py3k-0.9.4/+download/oursql-0.9.4.zip
+
+# scripts/script_wui.py depends on Lua, which is not available using pip
+# but can be obtained from: https://github.com/bastibe/lunatic-python
