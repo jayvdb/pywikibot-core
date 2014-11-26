@@ -294,7 +294,7 @@ class TestDryPageGenerator(TestCase):
         self.assertPagelistTitles(self.gen, self.titles)
 
     def test_initial_limit(self):
-        self.assertEqual(self.gen.limit, None)  # limit is initally None
+        self.assertEqual(self.gen.limit, 0)
 
     def test_set_limit_as_number(self):
         for i in range(-2, 4):

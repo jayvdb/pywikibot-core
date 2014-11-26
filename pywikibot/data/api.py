@@ -981,8 +981,9 @@ class Request(MutableMapping):
                         value = self._params[param][0]
                         try:
                             self._params[param] = [str(int(value) // 2)]
-                            pywikibot.output(u"Set %s = %s"
-                                             % (param, self._params[param]))
+                            pywikibot.log(u"%s changing %s from %s to %s"
+                                          % (self.__class__.__name__, param,
+                                             value, self._params[param][0]))
                         except:
                             pass
                 self.wait()
@@ -1262,15 +1263,18 @@ class QueryGenerator(object):
                         % self.__class__.__name__)
 
         kwargs["indexpageids"] = ""  # always ask for list of pageids
-        if LV(self.site.version()) < LV('1.21'):
-            self.continue_name = 'query-continue'
+
+        # "random" module does not return "(query-)continue"
+        if self.modules[0] == "random":
+            self.continue_update = lambda: True
+        elif LV(self.site.version()) < LV('1.21'):
             self.continue_update = self._query_continue
         else:
-            self.continue_name = 'continue'
             self.continue_update = self._continue
             # Explicitly enable the simplified continuation
             kwargs['continue'] = ''
         self.request = Request(**kwargs)
+        self.data = None
 
         # This forces all paraminfo for all query modules to be bulk loaded.
         limited_modules = (
@@ -1300,7 +1304,7 @@ class QueryGenerator(object):
         if self.api_limit is not None and "generator" in kwargs:
             self.prefix = "g" + self.prefix
 
-        self.limit = None
+        self.limit = 0
         self.query_limit = self.api_limit
         if "generator" in kwargs:
             self.resultkey = "pages"        # name of the "query" subelement key
@@ -1315,7 +1319,10 @@ class QueryGenerator(object):
         #     "langlinks":{"llcontinue":"12188973|pt"},
         #     "templates":{"tlcontinue":"310820|828|Namespace_detect"}}
         # self.continuekey is a list
-        self.continuekey = self.modules
+        if self.modules[0] == "random":
+            self.continuekey = []
+        else:
+            self.continuekey = self.modules
 
     def set_query_increment(self, value):
         """Set the maximum number of items to be retrieved per API query.
@@ -1338,14 +1345,16 @@ class QueryGenerator(object):
     def set_maximum_items(self, value):
         """Set the maximum number of items to be retrieved from the wiki.
 
-        If not called, most queries will continue as long as there is
+        The initial setting is 0, which continues fetching while there is
         more data to be retrieved from the API.
 
-        If set to -1 (or any negative value), the "limit" parameter will be
-        omitted from the request. For some request types (such as
-        prop=revisions), this is necessary to signal that only current
-        revision is to be returned.
+        If set to -1, the "limit" parameter will be omitted from the request.
+        For some request types (such as prop=revisions), this is necessary
+        to signal that only current revision is to be returned.
 
+        @param value: a positive number to set the limit, 0 to fetch all data,
+            or -1 to omit the limit parameter.
+        @type value: int
         """
         self.limit = int(value)
 
@@ -1378,17 +1387,23 @@ class QueryGenerator(object):
             self.request[self.prefix + "namespace"] = namespaces
 
     def _query_continue(self):
-        if all(key not in self.data[self.continue_name]
+        if 'query-continue' not in self.data:
+            return False
+        if all(key not in self.data['query-continue']
                for key in self.continuekey):
             pywikibot.log(
-                u"Missing '%s' key(s) in ['%s'] value."
-                % (self.continuekey, self.continue_name))
-            return True
+                u"Missing '%s' key(s) in ['query-continue'] value."
+                % self.continuekey)
+            return False
         for query_continue_pair in self.data['query-continue'].values():
             self._add_continues(query_continue_pair)
+        return True
 
     def _continue(self):
+        if 'continue' not in self.data:
+            return False
         self._add_continues(self.data['continue'])
+        return True
 
     def _add_continues(self, continue_pair):
         for key, value in continue_pair.items():
@@ -1403,98 +1418,106 @@ class QueryGenerator(object):
         Continues response as needed until limit (if any) is reached.
 
         """
+        assert(isinstance(self.limit, int))
+
+        # Set limit to max if no limit was set
+        if self.query_limit is not None and self.limit == 0:
+            self.request[self.prefix + "limit"] = str(self.query_limit)
+
         previous_result_had_data = True
         prev_limit = new_limit = None
-
         count = 0
-        while True:
-            if self.query_limit is not None:
-                prev_limit = new_limit
-                if self.limit is None:
-                    new_limit = self.query_limit
-                elif self.limit > 0:
-                    if previous_result_had_data:
-                        # self.resultkey in data in last request.submit()
-                        new_limit = min(self.query_limit, self.limit - count)
-                    else:
-                        # only "(query-)continue" returned. See Bug 72209.
-                        # increase new_limit to advance faster until new
-                        # useful data are found again.
-                        new_limit = min(new_limit * 2, self.query_limit)
-                else:
-                    new_limit = None
 
-                if new_limit and \
-                        "rvprop" in self.request \
-                        and "content" in self.request["rvprop"]:
-                    # queries that retrieve page content have lower limits
-                    # Note: although API allows up to 500 pages for content
-                    #   queries, these sometimes result in server-side errors
-                    #   so use 250 as a safer limit
+        while (not self.data or not self.continuekey or
+                self.continue_update()):
+            # Set the limit for this query if a total is desired.
+            if self.query_limit is not None and self.limit > 0:
+                prev_limit = new_limit
+                if previous_result_had_data:
+                    # self.resultkey in data in last request.submit()
+                    new_limit = min(self.query_limit, self.limit - count)
+                else:
+                    # only "(query-)continue" returned. See Bug 72209.
+                    # increase new_limit to advance faster until new
+                    # useful data are found again.
+                    new_limit = min(new_limit * 2, self.query_limit)
+
+                # queries that retrieve page content have lower limits
+                # Note: although API allows up to 500 pages for content
+                #   queries, these sometimes result in server-side errors
+                #   so use 250 as a safer limit
+                if "content" in self.request.get("rvprop", []):
                     new_limit = min(new_limit, self.api_limit // 10, 250)
-                if new_limit is not None:
+
+                if new_limit != prev_limit:
                     self.request[self.prefix + "limit"] = str(new_limit)
-                if prev_limit != new_limit:
+
                     pywikibot.debug(
                         u"%s: query_limit: %s, api_limit: %s, "
-                        u"limit: %s, new_limit: %s, count: %s"
+                        u"new_limit: %s, count: %s; total: %d.\n%s: %s"
                         % (self.__class__.__name__,
                            self.query_limit, self.api_limit,
-                           self.limit, new_limit, count),
-                        _logger)
-                    pywikibot.debug(
-                        u"%s: %s: %s"
-                        % (self.__class__.__name__,
+                           new_limit, count, self.limit,
                            self.prefix + "limit",
                            self.request[self.prefix + "limit"]),
                         _logger)
-            if not hasattr(self, "data"):
-                self.data = self.request.submit()
+
+            self.data = self.request.submit()
             if not self.data or not isinstance(self.data, dict):
                 pywikibot.debug(
                     u"%s: stopped iteration because no dict retrieved from api."
                     % self.__class__.__name__,
                     _logger)
-                return
+                break
             if "query" not in self.data:
                 pywikibot.debug(
                     u"%s: stopped iteration because 'query' not found in api "
                     u"response." % self.__class__.__name__,
                     _logger)
                 pywikibot.debug(unicode(self.data), _logger)
-                return
-            if self.resultkey in self.data["query"]:
-                resultdata = self.data["query"][self.resultkey]
-                if isinstance(resultdata, dict):
-                    pywikibot.debug(u"%s received %s; limit=%s"
-                                    % (self.__class__.__name__,
-                                       list(resultdata.keys()),
-                                       self.limit),
-                                    _logger)
-                    if "results" in resultdata:
-                        resultdata = resultdata["results"]
-                    elif "pageids" in self.data["query"]:
-                        # this ensures that page data will be iterated
-                        # in the same order as received from server
-                        resultdata = [resultdata[k]
-                                      for k in self.data["query"]["pageids"]]
-                    else:
-                        resultdata = [resultdata[k]
-                                      for k in sorted(resultdata.keys())]
+                break
+            if self.resultkey not in self.data["query"]:
+                # self.resultkey not in data in last request.submit().
+                # check if "(query-)continue" was retrieved.
+                previous_result_had_data = False
+                continue
+
+            # self.resultkey in data in last request.submit()
+            resultdata = self.data["query"][self.resultkey]
+            previous_result_had_data = True
+            if isinstance(resultdata, dict):
+                pywikibot.debug(u"%s received %s; limit=%s"
+                                % (self.__class__.__name__,
+                                   list(resultdata.keys()),
+                                   self.limit),
+                                _logger)
+                if "results" in resultdata:
+                    resultdata = resultdata["results"]
+                elif "pageids" in self.data["query"]:
+                    # this ensures that page data will be iterated
+                    # in the same order as received from server
+                    resultdata = [resultdata[k]
+                                  for k in self.data["query"]["pageids"]]
                 else:
-                    pywikibot.debug(u"%s received %s; limit=%s"
-                                    % (self.__class__.__name__,
-                                       resultdata,
-                                       self.limit),
-                                    _logger)
-                if "normalized" in self.data["query"]:
-                    self.normalized = dict((item['to'], item['from'])
-                                           for item in
-                                           self.data["query"]["normalized"])
-                else:
-                    self.normalized = {}
-                for item in resultdata:
-                    yield self.result(item)
+                    resultdata = [resultdata[k]
+                                  for k in sorted(resultdata.keys())]
+            else:
+                pywikibot.debug(u"%s received %s; limit=%s"
+                                % (self.__class__.__name__,
+                                   resultdata,
+                                   self.limit),
+                                _logger)
+            if "normalized" in self.data["query"]:
+                self.normalized = dict((item['to'], item['from'])
+                                       for item in
+                                       self.data["query"]["normalized"])
+            else:
+                self.normalized = {}
+
+            for item in resultdata:
+                yield self.result(item)
+
+                if self.limit > 0:
                     if isinstance(item, dict) and set(self.continuekey) & set(item.keys()):
                         # if we need to count elements contained in items in
                         # self.data["query"]["pages"], we want to count
@@ -1505,31 +1528,14 @@ class QueryGenerator(object):
                     # otherwise we proceed as usual
                     else:
                         count += 1
-                    # note: self.limit could be -1
-                    if self.limit and self.limit > 0 and count >= self.limit:
-                        return
-                # self.resultkey in data in last request.submit()
-                previous_result_had_data = True
-            else:
-                # if (query-)continue is present, self.resultkey might not have
-                # been fetched yet
-                if self.continue_name not in self.data:
-                    # No results.
-                    return
-                # self.resultkey not in data in last request.submit()
-                # only "(query-)continue" was retrieved.
-                previous_result_had_data = False
-            if self.modules[0] == "random":
-                # "random" module does not return "(query-)continue"
-                # now we loop for a new random query
-                del self.data  # a new request is needed
-                continue
-            if self.continue_name not in self.data:
-                return
-            if self.continue_update():
-                return
+                    if count >= self.limit:
+                        break
 
-            del self.data  # a new request with (query-)continue is needed
+            if self.limit > 0 and count >= self.limit:
+                break
+
+        # Data isnt needed any longer, and shouldn't be available to the caller
+        self.data = None
 
     def result(self, data):
         """Process result data as needed for particular subclass."""
