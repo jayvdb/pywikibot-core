@@ -294,7 +294,7 @@ class TestDryPageGenerator(TestCase):
         self.assertPagelistTitles(self.gen, self.titles)
 
     def test_initial_limit(self):
-        self.assertEqual(self.gen.limit, None)  # limit is initally None
+        self.assertEqual(self.gen.limit, 0)
 
     def test_set_limit_as_number(self):
         for i in range(-2, 4):
@@ -376,6 +376,30 @@ class TestPropertyGenerator(TestCase):
             count += 1
         self.assertEqual(len(links), count)
 
+    @unittest.expectedFailure
+    def test_step(self):
+        mainpage = self.get_mainpage()
+        links = list(self.site.pagelinks(mainpage, total=10))
+        titles = [l.title(withSection=False)
+                  for l in links]
+        gen = api.PropertyGenerator(site=self.site,
+                                    prop="info",
+                                    titles='|'.join(titles))
+
+        # FIXME: This should force the generator to chunk the
+        # titles into two batches, but doesnt. See T76141
+        gen.set_query_increment(5)
+
+        count = 0
+        for pagedata in gen:
+            self.assertIsInstance(pagedata, dict)
+            self.assertIn('pageid', pagedata)
+            self.assertIn('revisions', pagedata)
+            self.assertIn('revid', pagedata['revisions'][0])
+            count += 1
+        self.assertEqual(len(links), count)
+        self.assertEqual(gen.request_count, 2)
+
     def test_two_continuations(self):
         mainpage = self.get_mainpage()
         links = list(self.site.pagelinks(mainpage, total=10))
@@ -408,7 +432,8 @@ class TestPropertyGenerator(TestCase):
 
         # An APIError is raised if set_maximum_items is not called.
         gen.set_maximum_items(-1)  # suppress use of "rvlimit" parameter
-        # Force the generator into continuation mode
+
+        # FIXME: This should force the generator to use 6 batches. See T76141
         gen.set_query_increment(5)
 
         count = 0
@@ -429,7 +454,8 @@ class TestPropertyGenerator(TestCase):
         gen = api.PropertyGenerator(site=self.site,
                                     prop="info|categoryinfo|langlinks|templates",
                                     titles='|'.join(titles))
-        # Force the generator into continuation mode
+
+        # FIXME: This should force the generator to use 6 batches. See T76141
         gen.set_query_increment(5)
 
         count = 0
@@ -450,7 +476,8 @@ class TestPropertyGenerator(TestCase):
         gen = api.PropertyGenerator(site=self.site,
                                     prop="info|categoryinfo|langlinks|templates",
                                     titles='|'.join(titles))
-        # Force the generator into continuation mode
+
+        # FIXME: This should force the generator to use 6 batches. See T76141
         gen.set_query_increment(50)
 
         count = 0
