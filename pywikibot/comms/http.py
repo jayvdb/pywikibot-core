@@ -78,7 +78,6 @@ _logger = "comm.http"
 
 # global variables
 
-numthreads = 1
 threads = []
 
 connection_pool = threadedhttp.ConnectionPool()
@@ -95,8 +94,8 @@ else:
 
 
 # Build up HttpProcessors
-pywikibot.log(u'Starting %(numthreads)i threads...' % locals())
-for i in range(numthreads):
+pywikibot.log(u'Starting %i threads...' % config.http_threads)
+for i in range(config.http_threads):
     proc = threadedhttp.HttpProcessor(http_queue, cookie_jar, connection_pool)
     proc.setDaemon(True)
     threads.append(proc)
@@ -292,7 +291,7 @@ def _enqueue(uri, method="GET", body=None, headers=None, **kwargs):
     must check request.exception before using the response data.
 
     Note: multiple async requests do not automatically run concurrently,
-    as they are limited by the number of http threads in L{numthreads},
+    as they are limited by the number of http threads in config.http_threads,
     which is set to 1 by default.
 
     @see: L{httplib2.Http.request} for parameters.

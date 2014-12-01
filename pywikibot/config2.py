@@ -628,6 +628,8 @@ persistent_http = False
 # Default socket timeout. Set to None to disable timeouts.
 socket_timeout = 120  # set a pretty long timeout just in case...
 
+# Number of HTTP processors.  Values above 1 are not suitable for production.
+http_threads = 1
 
 # ############# COSMETIC CHANGES SETTINGS ##############
 # The bot can make some additional changes to each page it edits, e.g. fix
