@@ -1824,10 +1824,18 @@ def update_page(page, pagedict, props=[]):
     if "langlinks" in pagedict:
         links = []
         for ll in pagedict["langlinks"]:
-            link = pywikibot.Link.langlinkUnsafe(ll['lang'],
-                                                 ll['*'],
-                                                 source=page.site)
-            links.append(link)
+            # Pywikibot may not know about the site, or the site
+            # may be unreachable after many retries.
+            # FIXME: this problem disappears when the Family.langs
+            # is dynamic based on subdomains.
+            try:
+                link = pywikibot.Link.langlinkUnsafe(ll['lang'],
+                                                     ll['*'],
+                                                     source=page.site)
+                links.append(link)
+            except (pywikibot.UnknownSite, TimeoutError) as e:
+                pywikibot.error(
+                    u'update_page loading %s langlink: %s' % (page, e))
 
         if hasattr(page, "_langlinks"):
             page._langlinks.extend(links)

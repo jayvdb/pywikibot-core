@@ -2501,6 +2501,7 @@ class APISite(BaseSite):
                     continue
                 page = cache[pagedata['title']]
                 api.update_page(page, pagedata, rvgen.props)
+            for page in cache.values():
                 yield page
 
     def validate_tokens(self, types):

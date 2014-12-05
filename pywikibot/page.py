@@ -1211,7 +1211,7 @@ class BasePage(pywikibot.UnicodeMixin, ComparableMixin):
         """
         if hasattr(self, '_langlinks'):
             return iter(self.langlinks(include_obsolete=include_obsolete))
-        # XXX We might want to fill _langlinks when the Site
+        # FIXME: We might want to fill _langlinks when the Site
         # method is called. If we do this, we'll have to think
         # about what will happen if the generator is not completely
         # iterated upon.
@@ -1265,6 +1265,10 @@ class BasePage(pywikibot.UnicodeMixin, ComparableMixin):
         """
         if hasattr(self, '_templates'):
             return iter(self._templates)
+        # FIXME: We might want to fill _templates when the Site
+        # method is called. If we do this, we'll have to think
+        # about what will happen if the generator is not completely
+        # iterated upon.
         return self.site.pagetemplates(self, step=step, total=total,
                                        content=content)
 
