@@ -1820,6 +1820,8 @@ def update_page(page, pagedict, props=[]):
             page._templates.extend(templates)
         else:
             page._templates = templates
+    elif 'templates' in props:
+        page._templates = []
 
     if "langlinks" in pagedict:
         links = []
@@ -1833,6 +1835,8 @@ def update_page(page, pagedict, props=[]):
             page._langlinks.extend(links)
         else:
             page._langlinks = links
+    elif "langlinks" in props:
+        page._langlinks = []
 
     if "coordinates" in pagedict:
         coords = []
