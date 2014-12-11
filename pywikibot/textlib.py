@@ -960,17 +960,37 @@ def extract_templates_and_params(text):
     parameters, and if this results multiple parameters with the same name
     only the last value provided will be returned.
 
-    This uses a third party library (mwparserfromhell) if it is installed
-    and enabled in the user-config.py. Otherwise it falls back on a
-    regex based function defined below.
+    This uses the third party library L{mwparserfromhell} if it is installed
+    and enabled by config.mwparserfromhell. Otherwise it falls back on a
+    regex based implementation.
 
     @param text: The wikitext from which templates are extracted
     @type text: unicode or string
     @return: list of template name and params
     @rtype: list of tuple
     """
-    if not (config.use_mwparserfromhell and mwparserfromhell):
+    if config.use_mwparserfromhell and mwparserfromhell:
+        return extract_templates_and_params_mwpfh(text)
+    else:
         return extract_templates_and_params_regex(text)
+
+
+def extract_templates_and_params_mwpfh(text):
+    """
+    Extract templates with params using mwparserfromhell.
+
+    This function should not be called directly.
+
+    Use extract_templates_and_params, which will select this
+    mwparserfromhell implementation if based on whether the
+    mwparserfromhell package is installed and enabled by
+    config.mwparserfromhell.
+
+    @param text: The wikitext from which templates are extracted
+    @type text: unicode or string
+    @return: list of template name and params
+    @rtype: list of tuple
+    """
     code = mwparserfromhell.parse(text)
     result = []
     for template in code.filter_templates(recursive=True):
