@@ -26,7 +26,7 @@ from tests.aspects import (
     WikidataTestCase,
     DefaultWikidataClientTestCase,
 )
-from tests.utils import allowed_failure, allowed_failure_if
+from tests.utils import allowed_failure
 
 if sys.version_info[0] > 2:
     basestring = (str, )
@@ -690,7 +690,6 @@ class TestImageUsage(DefaultSiteTestCase):
             self.assertIsInstance(using, pywikibot.Page)
             self.assertIn(imagepage, list(using.imagelinks()))
 
-    @allowed_failure_if(os.environ.get('TRAVIS', 'false') == 'true')
     def test_image_usage_in_redirects(self):
         """Test the site.imageusage() method on redirects only."""
         mysite = self.get_site()
