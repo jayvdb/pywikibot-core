@@ -386,16 +386,12 @@ class TestScriptMeta(MetaTestCaseClass):
                                'checkimages',     # bug 68613
                                'data_ingestion',  # bug 68611
                                'flickrripper',    # Requires a flickr api key
-                               'lonelypages',     # uses exit code 1
                                'script_wui',      # Error on any user except DrTrigonBot
-                               'upload',          # raises custom ValueError
-                               ] + failed_dep_script_list or (
-                    (config.family != 'wikipedia' and script_name == 'lonelypages') or
-                    (config.family == 'wikipedia' and script_name == 'disambredir') or
-                    (config.family == 'wikipedia' and config.mylang != 'en' and script_name == 'misspelling')):
+                               ] + failed_dep_script_list:
                 dct[test_name] = unittest.expectedFailure(dct[test_name])
             elif script_name in ['watchlist',     # T77965
-                                 ]:
+                                 'lonelypages',   # exit code 1 on some sites
+                                 ] + auto_run_script_list:
                 dct[test_name] = allowed_failure(dct[test_name])
             dct[test_name].__doc__ = \
                 'Test running ' + script_name + ' -simulate.'
