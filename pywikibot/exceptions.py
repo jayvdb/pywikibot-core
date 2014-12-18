@@ -6,7 +6,6 @@ Error: Base class, all exceptions should the subclass of this class.
   - NoUsername: Username is not in user-config.py, or it is invalid.
   - UserBlocked: Username or IP has been blocked
   - AutoblockUser: requested action on a virtual autoblock user not valid
-  - UserActionRefuse: requested user action, such as email user, refused
   - BadTitle: Server responded with BadTitle
   - InvalidTitle: Invalid page title
   - CaptchaError: Captcha is asked and config.solve_captcha == False
@@ -456,9 +455,18 @@ class AutoblockUser(Error):
     pass
 
 
-class UserActionRefuse(Error):
+class UserRightsError(Error):
 
-    """User action was refused."""
+    """Insufficient user rights to perform an action."""
+
+    pass
+
+
+class NotEmailableError(PageRelatedError):
+
+    """This user is not emailable."""
+
+    message = "%s is not emailable."""
 
     pass
 
@@ -496,9 +504,21 @@ class DeprecatedPageNotFoundError(Error):
     pass
 
 
+@pywikibot.tools.deprecated
+class EmailUserError(UserRightsError, NotEmailableError):
+
+    """Email related error."""
+
+    pass
+
+
 wrapper = pywikibot.tools.ModuleDeprecationWrapper(__name__)
 wrapper._add_deprecated_attr('UploadWarning', pywikibot.data.api.UploadWarning)
 wrapper._add_deprecated_attr('PageNotFound', DeprecatedPageNotFoundError,
                              warning_message='{0}.{1} is deprecated, and no '
                                              'longer used by pywikibot; use '
                                              'http.fetch() instead.')
+wrapper._add_deprecated_attr(
+    'UserActionRefuse', EmailUserError,
+    warning_message='UserActionRefuse is deprecated; '
+                    'use UserRightsError or NotEmailableError')
