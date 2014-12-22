@@ -56,6 +56,7 @@ class CommonsLinkBot(Bot):
         self.findTemplate = re.compile(r'\{\{[Ss]isterlinks')
         self.findTemplate2 = re.compile(r'\{\{[Cc]ommonscat')
         self.findTemplate3 = re.compile(r'\{\{[Cc]ommons')
+        self.commons = pywikibot.Site('commons', 'commons')
 
     def run(self):
         if not all((self.getOption('action'), self.generator)):
@@ -64,10 +65,9 @@ class CommonsLinkBot(Bot):
         for page in self.generator:
             try:
                 self.current_page = page
-                commons = page.site.image_repository()
                 commonspage = getattr(pywikibot,
                                       ('Page', 'Category')[catmode]
-                                      )(commons, page.title())
+                                      )(self.commons, page.title())
                 try:
                     commonspage.get(get_redirect=True)
                     pagetitle = commonspage.title(withNamespace=not catmode)

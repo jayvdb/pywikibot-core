@@ -251,6 +251,7 @@ class CommonscatBot(Bot):
         super(CommonscatBot, self).__init__(**kwargs)
         self.generator = generator
         self.site = pywikibot.Site()
+        self.commons = pywikibot.Site('commons', 'commons')
 
     def treat(self, page):
         """ Load the given page, do some changes, and save it. """
@@ -465,13 +466,12 @@ class CommonscatBot(Bot):
         """
         pywikibot.log("getCommonscat: " + name)
         try:
-            commonsSite = self.site.image_repository()
             # This can throw a pywikibot.BadTitle
-            commonsPage = pywikibot.Page(commonsSite, "Category:" + name)
+            commonsPage = pywikibot.Page(self.commons, "Category:" + name)
 
             if not commonsPage.exists():
                 pywikibot.output(u'Commons category does not exist. Examining deletion log...')
-                logpages = commonsSite.logevents(logtype='delete', page=commonsPage)
+                logpages = self.commons.logevents(logtype='delete', page=commonsPage)
                 for logitem in logpages:
                     logitem = next(logpages)
                     (logpage, loguser, logtimestamp, logcomment) = logitem
