@@ -545,6 +545,11 @@ class BaseSite(ComparableMixin):
         self._pagemutex = threading.Lock()
         self._locked_pages = []
 
+    @deprecated
+    def has_api(self):
+        """Return whether this site has an API."""
+        return False
+
     @property
     @deprecated("APISite.siteinfo['case'] or Namespace.case == 'case-sensitive'")
     def nocapitalize(self):
@@ -958,6 +963,7 @@ class BaseSite(ComparableMixin):
     # site-specific formatting preferences
 
     def category_on_one_line(self):
+        # TODO: is this even needed?  No family in the framework uses it.
         """Return True if this site wants all category links on one line."""
         return self.code in self.family.category_on_one_line
 
@@ -966,8 +972,7 @@ class BaseSite(ComparableMixin):
         return self.family.interwiki_putfirst.get(self.code, None)
 
     def interwiki_putfirst_doubled(self, list_of_links):
-        # TODO: is this even needed?  No family in the framework has this
-        # dictionary defined!
+        # TODO: is this even needed?  No family in the framework uses it.
         if self.lang in self.family.interwiki_putfirst_doubled:
             if (len(list_of_links) >=
                     self.family.interwiki_putfirst_doubled[self.lang][0]):
@@ -1000,15 +1005,19 @@ class BaseSite(ComparableMixin):
         """DEPRECATED."""
         return urlencode(query)
 
-    @deprecated("pywikibot.comms.http.request")
-    def getUrl(self, path, retry=True, sysop=False, data=None,
-               compress=True, no_hostname=False, cookie_only=False):
+    @deprecated('pywikibot.data.api.Request or pywikibot.comms.http.request')
+    @deprecated_args(compress=None, no_hostname=None, cookies_only=None,
+                     refer=None, back_response=None)
+    def getUrl(self, path, retry=None, sysop=None, data=None):
         """DEPRECATED.
 
         Retained for compatibility only. All arguments except path and data
         are ignored.
 
         """
+        if retry is not None or sysop is not None:
+            warn('APISite.getUrl parameters retry and sysop are not supported',
+                 UserWarning)
         from pywikibot.comms import http
         if data:
             if not isinstance(data, basestring):
@@ -1017,16 +1026,31 @@ class BaseSite(ComparableMixin):
         else:
             return http.request(self, path)
 
-    @deprecated()
-    def postForm(self, address, predata, sysop=False, cookies=None):
+    @deprecated
+    @deprecated_args(sysop=None, cookies=None)
+    def postForm(self, address, predata):
         """DEPRECATED."""
-        return self.getUrl(address, data=predata)
+        return self.postData(address, data=predata)
 
-    @deprecated()
-    def postData(self, address, data, contentType=None, sysop=False,
-                 compress=True, cookies=None):
-        """DEPRECATED."""
-        return self.getUrl(address, data=data)
+    @deprecated('pywikibot.data.api.Request or pywikibot.comms.http.request')
+    @deprecated_args(sysop=None, cookies=None, compress=None)
+    def postData(self, address, data,
+                 contentType='application/x-www-form-urlencoded'):
+        """DEPRECATED.
+
+        @return: tuple of response, data
+        @rtype: tuple of L{urllib2.urlopen} return value, str
+        """
+        from pywikibot.comms import http
+
+        r = http.fetch(address, method='POST', body=data,
+                       headers={'content-type': contentType}
+                       if contentType else None)
+
+        return r, r.content
+
+    def checkCharset(self, charset):
+        raise NotImplementedError
 
 
 def must_be(group=None, right=None):
@@ -1449,28 +1473,9 @@ class APISite(BaseSite):
 
     """API interface to MediaWiki site.
 
-    Do not use directly; use pywikibot.Site function.
+    Do not instantiate directly; use pywikibot.Site function.
 
     """
-
-#    Site methods from version 1.0 (as these are implemented in this file,
-#    or declared deprecated/obsolete, they will be removed from this list)
-#########
-#    cookies: return user's cookies as a string
-#
-#    urlEncode: Encode a query to be sent using an http POST request.
-#    postForm: Post form data to an address at this site.
-#    postData: Post encoded form data to an http address at this site.
-#
-#    checkCharset(charset): Warn if charset doesn't match family file.
-#
-#    linktrail: Return regex for trailing chars displayed as part of a link.
-#    disambcategory: Category in which disambiguation pages are listed.
-#
-#    Methods that yield Page objects derived from a wiki's Special: pages
-#    (note, some methods yield other information in a tuple along with the
-#    Pages; see method docs for details) --
-#
 
     # Constants for token management.
     # For all MediaWiki versions prior to 1.20.
@@ -1558,6 +1563,10 @@ class APISite(BaseSite):
                     if site['dbname'] == dbname:
                         return cls(site['code'], site['code'])
         raise ValueError("Cannot parse a site out of %s." % dbname)
+
+    def has_api(self):
+        """Return whether this site has an API."""
+        return True
 
     def _generator(self, gen_class, type_arg=None, namespaces=None,
                    step=None, total=None, **args):
@@ -1935,6 +1944,7 @@ class APISite(BaseSite):
 
         return dict((_key, self._msgcache[_key]) for _key in keys)
 
+    @deprecated_args(forceReload=None)
     def mediawiki_message(self, key):
         """Fetch the text for a MediaWiki message.
 
@@ -2029,6 +2039,7 @@ class APISite(BaseSite):
         return msgs['comma-separator'].join(args[:-2] + [concat.join(args[-2:])])
 
     @need_version("1.12")
+    @deprecated_args(string='text')
     def expand_text(self, text, title=None, includecomments=None):
         """Parse the given text for preprocessing and rendering.
 
@@ -2062,6 +2073,9 @@ class APISite(BaseSite):
             key = '*'
         return req.submit()['expandtemplates'][key]
 
+    getExpandedString = redirect_func(expand_text, old_name='getExpandedString',
+                                      class_name='APISite')
+
     def getcurrenttimestamp(self):
         """
         Return the server time as a MediaWiki timestamp string.
@@ -2093,6 +2107,9 @@ class APISite(BaseSite):
             return pywikibot.Timestamp.fromtimestampformat(
                 self.expand_text("{{CURRENTTIMESTAMP}}"))
 
+    server_time = redirect_func(getcurrenttime, old_name='server_time',
+                                class_name='APISite')
+
     @need_version("1.14")
     def getmagicwords(self, word):
         """Return list of localized "word" magic words for the site."""
@@ -2105,6 +2122,10 @@ class APISite(BaseSite):
             return self._magicwords[word]
         else:
             return [word]
+
+    @deprecated
+    def resolvemagicwords(self, wikitext):
+        return NotImplementedError
 
     @remove_last_args(('default', ))
     def redirect(self):
@@ -2784,6 +2805,9 @@ class APISite(BaseSite):
                              'token for {1} can be retrieved.'.format(
                              self.username(sysop), self.user()))
         return self.tokens['patrol']
+
+    def getParsedString(self, string, keeptags=[u'*']):
+        return NotImplementedError
 
     # following group of methods map more-or-less directly to API queries
 
@@ -3696,6 +3720,18 @@ class APISite(BaseSite):
             legen.request["lenamespace"] = namespace
         return legen
 
+    @deprecated('APISite.logevents()')
+    def logpages(self, number=50, mode='', title=None, user=None, repeat=False,
+                 namespace=[], start=None, end=None, tag=None, newer=False,
+                 dump=False, offset=None):
+        # TODO: implement using logevents
+        raise NotImplementedError
+
+    @deprecated_args(returndict=None, nobots=None, rcshow=None, rcprop=None,
+                     rctype='changetype', revision=None, repeat=None,
+                     rcstart='start', rcend='end', rcdir=None,
+                     includeredirects='showRedirects', namespace='namespaces',
+                     rcnamespace='namespaces', number='total', rclimit='total')
     def recentchanges(self, start=None, end=None, reverse=False,
                       namespaces=None, pagelist=None, changetype=None,
                       showMinor=None, showBot=None, showAnon=None,
@@ -3788,9 +3824,10 @@ class APISite(BaseSite):
 
         return rcgen
 
-    @deprecated_args(number="total")
+    @deprecated_args(number="total", key="searchstring",
+                     getredirects="get_redirects")
     def search(self, searchstring, namespaces=None, where="text",
-               getredirects=False, step=None, total=None, content=False):
+               get_redirects=False, step=None, total=None, content=False):
         """Iterate Pages that contain the searchstring.
 
         Note that this may include non-existing Pages if the wiki's database
@@ -3826,7 +3863,7 @@ class APISite(BaseSite):
                                 namespaces=namespaces, step=step,
                                 total=total, g_content=content)
         if MediaWikiVersion(self.version()) < MediaWikiVersion('1.23'):
-            srgen.request['gsrredirects'] = getredirects
+            srgen.request['gsrredirects'] = get_redirects
         return srgen
 
     def usercontribs(self, user=None, userprefix=None, start=None, end=None,
@@ -4566,6 +4603,7 @@ class APISite(BaseSite):
         "notpatrollable": "The revision %(revid)s can't be patrolled as it's too old."
     }
 
+    @deprecated_args(token=None)
     def patrol(self, rcid=None, revid=None, revision=None):
         """Return a generator of patrolled pages.
 
@@ -4759,9 +4797,9 @@ class APISite(BaseSite):
         return all(purged)
 
     @deprecated("Site().exturlusage")
-    def linksearch(self, siteurl, limit=None):
+    def linksearch(self, siteurl, limit=None, euprotocol=None):
         """Backwards-compatible interface to exturlusage()."""
-        return self.exturlusage(siteurl, total=limit)
+        return self.exturlusage(siteurl, total=limit, protocol=euprotocol)
 
     def _get_titles_with_hash(self, hash_found=None):
         """Helper for the deprecated method get(Files|Images)FromAnHash."""
@@ -4993,11 +5031,13 @@ class APISite(BaseSite):
                 filepage._imageinfo = result["imageinfo"]
             return
 
-    @deprecated_args(number="step",
+    @deprecated_args(number='total',
                      repeat=None,
                      namespace="namespaces",
+                     returndict=None,
+                     rcshow=None,
                      rc_show=None,
-                     get_redirect=None)  # 20120822
+                     get_redirect=None)
     def newpages(self, user=None, returndict=False,
                  start=None, end=None, reverse=False, showBot=False,
                  showRedirects=False, excludeuser=None,
@@ -5042,6 +5082,8 @@ class APISite(BaseSite):
                 yield (newpage, pageitem['timestamp'], pageitem['newlen'],
                        u'', pageitem['user'], pageitem['comment'])
 
+    @deprecated_args(lestart='start', leend='end', leuser='user', letitle=None,
+                     repeat=None, number='total')
     def newfiles(self, user=None, start=None, end=None, reverse=False,
                  step=None, total=None):
         """Yield information about newly uploaded files.
@@ -5064,7 +5106,7 @@ class APISite(BaseSite):
             yield (filepage, date, user, comment)
 
     @deprecated("Site().newfiles()")
-    @deprecated_args(number=None, repeat=None)
+    @deprecated_args(number='total', repeat=None)
     def newimages(self, *args, **kwargs):
         """
         Yield information about newly uploaded files.
@@ -5073,7 +5115,7 @@ class APISite(BaseSite):
         """
         return self.newfiles(*args, **kwargs)
 
-    @deprecated_args(number=None, repeat=None)
+    @deprecated_args(number='total', repeat=None)
     def longpages(self, step=None, total=None):
         """Yield Pages and lengths from Special:Longpages.
 
@@ -5105,7 +5147,7 @@ class APISite(BaseSite):
             yield (pywikibot.Page(self, pageitem['title']),
                    int(pageitem['value']))
 
-    @deprecated_args(number=None, repeat=None)
+    @deprecated_args(number='total', repeat=None)
     def deadendpages(self, step=None, total=None):
         """Yield Page objects retrieved from Special:Deadendpages.
 
@@ -5117,7 +5159,7 @@ class APISite(BaseSite):
                                 step=step, total=total)
         return degen
 
-    @deprecated_args(number=None, repeat=None)
+    @deprecated_args(number='total', repeat=None)
     def ancientpages(self, step=None, total=None):
         """Yield Pages, datestamps from Special:Ancientpages.
 
@@ -5131,7 +5173,7 @@ class APISite(BaseSite):
             yield (pywikibot.Page(self, pageitem['title']),
                    pywikibot.Timestamp.fromISOformat(pageitem['timestamp']))
 
-    @deprecated_args(number=None, repeat=None)
+    @deprecated_args(number='total', repeat=None)
     def lonelypages(self, step=None, total=None):
         """Yield Pages retrieved from Special:Lonelypages.
 
@@ -5143,7 +5185,7 @@ class APISite(BaseSite):
                                 step=step, total=total)
         return lpgen
 
-    @deprecated_args(number=None, repeat=None)
+    @deprecated_args(number='total', repeat=None)
     def unwatchedpages(self, step=None, total=None):
         """Yield Pages from Special:Unwatchedpages (requires Admin privileges).
 
@@ -5166,6 +5208,7 @@ class APISite(BaseSite):
                                 step=step, total=total)
         return wpgen
 
+    @deprecated_args(number='total', repeat=None)
     def wantedcategories(self, step=None, total=None):
         """Yield Pages from Special:Wantedcategories.
 
@@ -5178,9 +5221,8 @@ class APISite(BaseSite):
 
         return wcgen
 
-    @deprecated_args(number=None, repeat=None)
-    def uncategorizedcategories(self, number=None, repeat=True,
-                                step=None, total=None):
+    @deprecated_args(number='total', repeat=None)
+    def uncategorizedcategories(self, step=None, total=None):
         """Yield Categories from Special:Uncategorizedcategories.
 
         @param step: request batch size
@@ -5192,9 +5234,8 @@ class APISite(BaseSite):
                                 step=step, total=total)
         return ucgen
 
-    @deprecated_args(number=None, repeat=None)
-    def uncategorizedimages(self, number=None, repeat=True,
-                            step=None, total=None):
+    @deprecated_args(number='total', repeat=None)
+    def uncategorizedimages(self, step=None, total=None):
         """Yield FilePages from Special:Uncategorizedimages.
 
         @param step: request batch size
@@ -5209,9 +5250,8 @@ class APISite(BaseSite):
     # synonym
     uncategorizedfiles = uncategorizedimages
 
-    @deprecated_args(number=None, repeat=None)
-    def uncategorizedpages(self, number=None, repeat=True,
-                           step=None, total=None):
+    @deprecated_args(number='total', repeat=None)
+    def uncategorizedpages(self, step=None, total=None):
         """Yield Pages from Special:Uncategorizedpages.
 
         @param step: request batch size
@@ -5223,9 +5263,8 @@ class APISite(BaseSite):
                                 step=step, total=total)
         return upgen
 
-    @deprecated_args(number=None, repeat=None)
-    def uncategorizedtemplates(self, number=None, repeat=True, step=None,
-                               total=None):
+    @deprecated_args(number='total', repeat=None)
+    def uncategorizedtemplates(self, step=None, total=None):
         """Yield Pages from Special:Uncategorizedtemplates.
 
         @param step: request batch size
@@ -5237,7 +5276,7 @@ class APISite(BaseSite):
                                 step=step, total=total)
         return utgen
 
-    @deprecated_args(number=None, repeat=None)
+    @deprecated_args(number='total', repeat=None)
     def unusedcategories(self, step=None, total=None):
         """Yield Category objects from Special:Unusedcategories.
 
@@ -5250,6 +5289,7 @@ class APISite(BaseSite):
                                 step=step, total=total)
         return ucgen
 
+    @deprecated_args(extension=None, number='total', repeat=None)
     def unusedfiles(self, step=None, total=None):
         """Yield FilePage objects from Special:Unusedimages.
 
@@ -5263,15 +5303,15 @@ class APISite(BaseSite):
         return uigen
 
     @deprecated("Site().unusedfiles()")
-    @deprecated_args(number=None, repeat=None)
-    def unusedimages(self, *args, **kwargs):
+    @deprecated_args(extension=None, number='total', repeat=None)
+    def unusedimages(self, step=None, total=None):
         """Yield FilePage objects from Special:Unusedimages.
 
         DEPRECATED: Use L{APISite.unusedfiles} instead.
         """
-        return self.unusedfiles(*args, **kwargs)
+        return self.unusedfiles(step, total)
 
-    @deprecated_args(number=None, repeat=None)
+    @deprecated_args(number='total', repeat=None)
     def withoutinterwiki(self, step=None, total=None):
         """Yield Pages without language links from Special:Withoutinterwiki.
 
@@ -5351,6 +5391,15 @@ class APISite(BaseSite):
         else:
             return self.allpages(namespace=namespaces[0], protect_level=level,
                                  protect_type=type, total=total)
+
+    def cookies(self, sysop=False):
+        raise NotImplementedError
+
+    def updateCookies(self, datas, sysop=False):
+        raise NotImplementedError
+
+    def solveCaptcha(self, data):
+        raise NotImplementedError
 
 
 class DataSite(APISite):

@@ -38,7 +38,7 @@ import pywikibot
 
 from pywikibot import config
 
-from pywikibot.tools import UnicodeMixin
+from pywikibot.tools import UnicodeMixin, deprecated
 
 _logger = "comm.threadedhttp"
 
@@ -351,7 +351,7 @@ class HttpRequest(UnicodeMixin):
         self.uri = uri
         self.method = method
         self.body = body
-        self.headers = headers
+        self.request_headers = headers
         if isinstance(charset, codecs.CodecInfo):
             self.charset = charset.name
         elif charset:
@@ -399,10 +399,33 @@ class HttpRequest(UnicodeMixin):
             return self.data
 
     @property
+    @deprecated('request_headers or response_headers')
+    def headers(self):
+        """HTTP headers.
+
+        @raises AttributeError: Always raised
+        """
+        raise AttributeError('HttpRequest.headers has ambiguous meaning.')
+
+    @property
     def response_headers(self):
         """Return the response headers."""
         if not self.exception:
             return self.data[0]
+
+    @deprecated
+    def info(self):
+        """HTTP response headers. DEPRECATED.
+
+        Emulating urllib2.urlopen response attributes.
+
+        @rtype: dict
+        """
+        return self.response_headers
+
+    @deprecated
+    def getheader(self, name):
+        return self.response_headers[name]
 
     @property
     def raw(self):
@@ -418,6 +441,27 @@ class HttpRequest(UnicodeMixin):
         return self._parsed_uri
 
     @property
+    @deprecated
+    def url(self):
+        """Return the parsed requested uri.
+
+        Emulating urllib2.urlopen response attributes.
+
+        @rtype: str
+        """
+        return self.parsed_uri
+
+    @deprecated
+    def geturl(self):
+        """Return the parsed requested uri.
+
+        Emulating urllib2.urlopen response attributes.
+
+        @rtype: str
+        """
+        return self.parsed_uri
+
+    @property
     def hostname(self):
         """Return the host of the request."""
         return self.parsed_uri.netloc
@@ -429,6 +473,31 @@ class HttpRequest(UnicodeMixin):
         @rtype: int
         """
         return self.response_headers.status
+
+    @property
+    @deprecated
+    def code(self):
+        """HTTP response status. DEPRECATED.
+
+        Emulating urllib2.urlopen response attributes.
+
+        @rtype: int
+        """
+        return self.response_headers.status
+
+    def getcode(self):
+        """HTTP response status. DEPRECATED.
+
+        Emulating urllib2.urlopen response attributes.
+
+        @rtype: int
+        """
+        return self.response_headers.status
+
+    @property
+    @deprecated
+    def msg(self):
+        return 'OK' if self.status == 200 else 'NOT 200'
 
     @property
     def header_encoding(self):
