@@ -2302,6 +2302,8 @@ class Category(Page):
                       content=False):
         """Iterate all subcategories of the current category.
 
+        TODO: Reimplement start argument using cmstartsortkey.
+
         @param recurse: if not False or 0, also iterate subcategories of
             subcategories. If an int, limit recursion to this number of
             levels. (Example: recurse=1 will iterate direct subcats and

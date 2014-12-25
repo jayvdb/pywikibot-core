@@ -82,6 +82,17 @@ class TestDryPageGenerators(TestCase):
         gen = pagegenerators.PagesFromTitlesGenerator(self.titles, self.site)
         self.assertPagelistTitles(gen, self.titles)
 
+    def test_DuplicateFilterPageGenerator(self):
+        gen = pagegenerators.PagesFromTitlesGenerator(self.titles, self.site)
+        gen = pagegenerators.DuplicateFilterPageGenerator(gen)
+        self.assertPagelistTitles(gen, self.titles)
+
+        gen = pagegenerators.PagesFromTitlesGenerator(list(self.titles) +
+                                                      list(self.titles),
+                                                      self.site)
+        gen = pagegenerators.DuplicateFilterPageGenerator(gen)
+        self.assertPagelistTitles(gen, self.titles)
+
     def test_NamespaceFilterPageGenerator(self):
         self.assertFunction("NamespaceFilterPageGenerator")
         site = self.site

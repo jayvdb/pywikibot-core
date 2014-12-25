@@ -37,6 +37,7 @@ import pywikibot
 from pywikibot.tools import (
     deprecated,
     deprecated_args,
+    redirect_func,
     DequeGenerator,
     intersect_generators,
     filter_unique,
@@ -51,8 +52,10 @@ from pywikibot.site import Namespace
 if sys.version_info[0] > 2:
     basestring = (str, )
     ifilter = filter
+    imap = map
 else:
     ifilter = itertools.ifilter
+    imap = itertools.imap
 
 _logger = "pagegenerators"
 
@@ -925,9 +928,9 @@ def LogpagesPageGenerator(total=500, logtype='', user=None,
                                   site=site, namespace=namespace)
 
 
-@deprecated_args(number="total", namespace="namespaces", repeat=None)
-def NewpagesPageGenerator(get_redirect=False, site=None,
-                          namespaces=[0, ], step=None, total=None):
+@deprecated_args(number='total', namespace='namespaces', repeat=None,
+                 get_redirect=None)
+def NewpagesPageGenerator(site=None, namespaces=[0], step=None, total=None):
     """
     Iterate Page objects for all new titles in a single namespace.
 
@@ -943,12 +946,12 @@ def NewpagesPageGenerator(get_redirect=False, site=None,
     # defaults to namespace 0 because that's how Special:Newpages defaults
     if site is None:
         site = pywikibot.Site()
-    for item in site.recentchanges(showRedirects=get_redirect,
-                                   changetype="new", namespaces=namespaces,
+    for item in site.recentchanges(changetype='new', namespaces=namespaces,
                                    step=step, total=total):
         yield pywikibot.Page(pywikibot.Link(item["title"], site))
 
 
+@deprecated_args(nobots=None)
 def RecentChangesPageGenerator(start=None, end=None, reverse=False,
                                namespaces=None, pagelist=None,
                                changetype=None, showMinor=None,
@@ -1013,7 +1016,7 @@ def RecentChangesPageGenerator(start=None, end=None, reverse=False,
         lambda x: x['type'] != 'log' or 'title' in x,
         gen)
 
-    gen = itertools.imap(
+    gen = imap(
         lambda x: pywikibot.Page(pywikibot.Link(x["title"], site)),
         gen)
 
@@ -1022,6 +1025,7 @@ def RecentChangesPageGenerator(start=None, end=None, reverse=False,
     return gen
 
 
+@deprecated_args(referredImagePage='referredFilePage')
 def FileLinksGenerator(referredFilePage, step=None, total=None, content=False):
     """Yield Pages on which the file referredFilePage is displayed."""
     return referredFilePage.usingPages(step=step, total=total, content=content)
@@ -1513,9 +1517,6 @@ def FileGenerator(generator):
         yield pywikibot.FilePage(page)
 
 
-ImageGenerator = FileGenerator
-
-
 def PageWithTalkPageGenerator(generator, return_talk_only=False):
     """Yield pages and associated talk pages from another generator.
 
@@ -1660,7 +1661,7 @@ def PreloadingItemGenerator(generator, step=50):
                 yield i
 
 
-@deprecated_args(number="total")
+@deprecated_args(number='total', repeat=None)
 def NewimagesPageGenerator(step=None, total=None, site=None):
     """
     New file generator.
@@ -1701,9 +1702,6 @@ def WikibaseItemGenerator(gen):
             yield pywikibot.ItemPage.fromPage(page)
 
 
-WikidataItemGenerator = WikibaseItemGenerator
-
-
 def WikibaseItemFilterPageGenerator(generator, has_item=True,
                                     show_filtered=False):
     """
@@ -1741,9 +1739,8 @@ def WikibaseItemFilterPageGenerator(generator, has_item=True,
         yield page
 
 
-# TODO below
 @deprecated_args(extension=None, number="total", repeat=None)
-def UnusedFilesGenerator(total=100, site=None, extension=None):
+def UnusedFilesGenerator(total=100, site=None):
     """
     Unused files generator.
 
@@ -1821,6 +1818,7 @@ def UnCategorizedPageGenerator(total=100, site=None):
         yield page
 
 
+@deprecated_args(number='total', repeat=None)
 def UnCategorizedTemplateGenerator(total=100, site=None):
     """
     Uncategorized template generator.
@@ -1979,8 +1977,9 @@ def RandomRedirectPageGenerator(total=10, site=None):
         yield page
 
 
+@deprecated_args(euprotocol='protocol')
 def LinksearchPageGenerator(link, namespaces=None, step=None, total=None,
-                            site=None):
+                            site=None, protocol='http'):
     """Yield all pages that include a specified link.
 
     Obtains data from [[Special:Linksearch]].
@@ -1994,10 +1993,11 @@ def LinksearchPageGenerator(link, namespaces=None, step=None, total=None,
     """
     if site is None:
         site = pywikibot.Site()
-    return site.exturlusage(link, namespaces=namespaces, step=step,
-                                 total=total, content=False)
+    return site.exturlusage(link, namespaces=namespaces, protocol=protocol,
+                            step=step, total=total, content=False)
 
 
+@deprecated_args(number='total')
 def SearchPageGenerator(query, step=None, total=None, namespaces=None,
                         site=None):
     """
@@ -2091,7 +2091,8 @@ class YahooSearchPageGenerator:
     """
 
     # values larger than 100 fail
-    def __init__(self, query=None, count=100, site=None):
+    @deprecated_args(count='total')
+    def __init__(self, query=None, total=100, site=None):
         """
         Constructor.
 
@@ -2099,7 +2100,7 @@ class YahooSearchPageGenerator:
         @type site: L{pywikibot.site.BaseSite}
         """
         self.query = query or pywikibot.input(u'Please enter the search query:')
-        self.count = count
+        self.total = total
         if site is None:
             site = pywikibot.Site()
         self.site = site
@@ -2114,7 +2115,7 @@ class YahooSearchPageGenerator:
                             "To install, please run: pip install pYsearch")
             exit(1)
 
-        srch = WebSearch(config.yahoo_appid, query=query, results=self.count)
+        srch = WebSearch(config.yahoo_appid, query=query, results=self.total)
         dom = srch.get_results()
         results = srch.parse_results(dom)
         for res in results:
@@ -2351,6 +2352,16 @@ def WikibaseSearchItemPageGenerator(text, language=None, total=None, site=None):
     for item in data:
         yield pywikibot.ItemPage(repo, item['id'])
 
+
+# Deprecated old names available for compatibility with compat.
+ImageGenerator = redirect_func(FileGenerator, old_name='ImageGenerator')
+UnCategorizedTemplatesGenerator = redirect_func(
+    UnCategorizedTemplateGenerator, old_name='UnCategorizedTemplatesGenerator')
+RecentchangesPageGenerator = redirect_func(
+    RecentChangesPageGenerator, old_name='RecentchangesPageGenerator')
+# Deprecated old names from Pywikibot 2.0 beta1
+WikidataItemGenerator = redirect_func(
+    WikibaseItemGenerator, old_name='WikidataItemGenerator')
 
 if __name__ == "__main__":
     pywikibot.output(u'Pagegenerators cannot be run as script - are you '

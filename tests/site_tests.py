@@ -1045,7 +1045,7 @@ class SiteUserTestCase(DefaultSiteTestCase):
                 self.assertIsInstance(hit, pywikibot.Page)
                 self.assertIn(hit.namespace(), [8, 9, 10])
             for hit in mysite.search("wiki", namespaces=0, total=10,
-                                     getredirects=True):
+                                     get_redirects=True):
                 self.assertIsInstance(hit, pywikibot.Page)
                 self.assertEqual(hit.namespace(), 0)
         except pywikibot.data.api.APIError as e:
