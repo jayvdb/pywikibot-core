@@ -54,7 +54,6 @@ from pywikibot.exceptions import (
     LockedNoPage,
     NoPage,
     UnknownSite,
-    SiteDefinitionError,
     FamilyMaintenanceWarning,
     NoUsername,
     SpamfilterError,
@@ -703,10 +702,10 @@ class BaseSite(ComparableMixin):
             self._iw_sites = {}
             for iw in self.siteinfo['interwikimap']:
                 try:
-                    site = (pywikibot.Site(url=iw['url']), 'local' in iw)
-                except Error:
-                    site = (None, False)
-                self._iw_sites[iw['prefix']] = site
+                    site = pywikibot.Site(url=iw['url'])
+                except Exception as e:
+                    site = e
+                self._iw_sites[iw['prefix']] = (site, 'local' in iw)
 
     def interwiki(self, prefix):
         """
@@ -719,11 +718,13 @@ class BaseSite(ComparableMixin):
         self._cache_interwikimap()
         if prefix in self._iw_sites:
             site = self._iw_sites[prefix]
-            if site[0]:
+            if isinstance(site[0], BaseSite):
                 return site[0]
+            elif isinstance(site[0], Exception):
+                raise site[0]
             else:
-                raise SiteDefinitionError(
-                    u"No family/site found for prefix '{0}'".format(prefix))
+                raise TypeError('_iw_sites[%s] is wrong type: %s'
+                                % (prefix, type(site[0])))
         else:
             raise KeyError(u"'{0}' is not an interwiki prefix.".format(prefix))
 
