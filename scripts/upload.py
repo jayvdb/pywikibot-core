@@ -46,6 +46,9 @@ import tempfile
 import re
 import math
 import sys
+import collections
+
+from warnings import warn
 
 import pywikibot
 import pywikibot.data.api
@@ -55,6 +58,7 @@ from pywikibot.tools import (
 )
 
 if sys.version_info[0] > 2:
+    basestring = (str, )
     from urllib.parse import urlparse
     from urllib.request import URLopener
     basestring = (str,)
@@ -74,9 +78,10 @@ class UploadRobot:
         """
         Constructor.
 
-        @param url: path to url or local file (deprecated), or list of urls or
-            paths to local files.
-        @type url: string (deprecated) or list
+        @param url: an iterable of ('file url', FilePage or None) tuples,
+            or url or path to local file (deprecated), or list of urls or paths
+            to local files (deprecated).
+        @type url: iterable, string (deprecated)
         @param description: Description of file for its page. If multiple files
             are uploading the same description is used for every file.
         @type description: string
@@ -109,9 +114,17 @@ class UploadRobot:
 
         """
         self.url = url
+        self._self_url_contains_urls_warning = (
+            "self.url as an iterable containing urls to files is deprecated. "
+            "Use an iterable with tuples of form of ('file url', FilePage) instead.")
         if isinstance(self.url, basestring):
-            pywikibot.warning("url as string is deprecated. "
-                              "Use an iterable instead.")
+            warn("url as string is deprecated. "
+                 "Use an iterable with tuples of form of ('file url', FilePage) instead.",
+                 PendingDeprecationWarning)
+        elif isinstance(self.url, collections.Sequence):
+            if isinstance(self.url[0], basestring):
+                warn(self._self_url_contains_urls_warning, DeprecationWarning)
+        # else: can't check what's inside of self.url
         self.urlEncoding = urlEncoding
         self.description = description
         self.useFilename = useFilename
@@ -137,8 +150,8 @@ class UploadRobot:
         """Return name of temp file in which remote file is saved."""
         if not file_url:
             file_url = self.url
-            pywikibot.warning("file_url is not given. "
-                              "Set to self.url by default.")
+            warn("file_url is not given. Set to self.url by default.",
+                 PendingDeprecationWarning)
         pywikibot.output(u'Reading file %s' % file_url)
         resume = False
         rlen = 0
@@ -195,12 +208,28 @@ class UploadRobot:
         t.close()
         return tempname
 
+    # consider to rename to prosses_file_data()
     def process_filename(self, file_url=None):
-        """Return base filename portion of file_url."""
+        """
+        Return base filename portion of file_url[0] or file_url.
+
+        @param file_url: file data
+        @type file_url: tuple of str and either FilePage or None, or str
+            (deprecated)
+
+        """
         if not file_url:
             file_url = self.url
-            pywikibot.warning("file_url is not given. "
-                              "Set to self.url by default.")
+            warn("file_url is not given. Set to self.url by default.",
+                 PendingDeprecationWarning)
+
+        file_page = None
+        if isinstance(file_url, tuple):
+            file_page = file_url[1] or True
+            file_url = file_url[0]
+        else:
+            warn("file_url should be a ('file url', FilePage or None) tuple",
+                 DeprecationWarning)
 
         # Isolate the pure name
         filename = file_url
@@ -209,6 +238,8 @@ class UploadRobot:
             # extract the path portion of the URL
             filename = urlparse(filename).path
         filename = os.path.basename(filename)
+        if file_page and file_page is not True:
+            filename = file_page.title(withNamespace=False)
         if self.useFilename:
             filename = self.useFilename
         if not self.keepFilename:
@@ -275,15 +306,19 @@ class UploadRobot:
 
         # A proper description for the submission.
         # Empty descriptions are not accepted.
+        if file_page and file_page is not True:
+            description = file_page.text or self.description
+        else:
+            description = self.description
         pywikibot.output(u'The suggested description is:\n%s'
-                         % self.description)
+                         % description)
 
         # Description must be set and verified
-        if not self.description:
+        if not description:
             self.verifyDescription = True
 
-        while not self.description or self.verifyDescription:
-            if not self.description:
+        while not description or self.verifyDescription:
+            if not description:
                 pywikibot.output(
                     u'\03{lightred}It is not possible to upload a file '
                     'without a summary/description.\03{default}')
@@ -291,19 +326,24 @@ class UploadRobot:
             # if no description, default is 'yes'
             if pywikibot.input_yn(
                     u'Do you want to change this description?',
-                    default=not self.description):
+                    default=not description):
                 from pywikibot import editor as editarticle
                 editor = editarticle.TextEditor()
                 try:
-                    newDescription = editor.edit(self.description)
+                    newDescription = editor.edit(description)
                 except Exception as e:
                     pywikibot.error(e)
                     continue
                 # if user saved / didn't press Cancel
                 if newDescription:
-                    self.description = newDescription
+                    description = newDescription
             self.verifyDescription = False
 
+        if file_page:
+            file_page = pywikibot.FilePage(self.targetSite, filename)
+            file_page.text = description
+            return file_page
+        self.description = description
         return filename
 
     def abort_on_warn(self, warn_code):
@@ -326,20 +366,31 @@ class UploadRobot:
         self.upload_file(self.url, debug)
 
     def upload_file(self, file_url, debug=False):
-        """Upload the image at file_url to the target wiki.
+        """Upload the file at file_url[0] or file_url to the target wiki.
 
-        Return the filename that was used to upload the image.
+        Return the filename that was used to upload the file.
         If the upload fails, ask the user whether to try again or not.
-        If the user chooses not to retry, return null.
+        If the user chooses not to retry, return None.
+
+        @param file_url: file data
+        @type file_url: tuple of str and either FilePage or None, or str
+            (deprecated)
 
         """
-        filename = self.process_filename(file_url)
-        if not filename:
+        file_data = self.process_filename(file_url)
+        if not file_data:
             return None
+        if isinstance(file_data, pywikibot.FilePage):
+            file_url = file_url[0]
+            filename = file_data.title(withNamespace=False)
+            description = file_data.text
+        else:
+            filename = file_data
+            description = self.description
 
         site = self.targetSite
         imagepage = pywikibot.FilePage(site, filename)  # normalizes filename
-        imagepage.text = self.description
+        imagepage.text = description
 
         pywikibot.output(u'Uploading file to %s via API...' % site)
 
@@ -407,8 +458,11 @@ class UploadRobot:
             return
         if isinstance(self.url, basestring):
             return self.upload_file(self.url)
-        for file_url in self.url:
-            self.upload_file(file_url)
+        else:
+            for file_data in self.url:
+                if isinstance(file_data, basestring):
+                    warn(self._self_url_contains_urls_warning, DeprecationWarning)
+                self.upload_file(file_data)
 
 
 def main(*args):
@@ -494,6 +548,7 @@ def main(*args):
     else:
         url = [url]
     description = u' '.join(description)
+    url = [(file_url, None) for file_url in url]
     bot = UploadRobot(url, description=description, useFilename=useFilename,
                       keepFilename=keepFilename,
                       verifyDescription=verifyDescription,
