@@ -80,7 +80,7 @@ class TestFamily(TestCase):
         other = 'unknown'
         self.assertRaises(UnknownFamily, family.__eq__, other)
 
-    def test_obsolete(self):
+    def test_get_obsolete(self):
         """Test three types of obsolete codes."""
         family = Family.load('wikipedia')
         self.assertIsInstance(family.obsolete, dict)
@@ -90,6 +90,21 @@ class TestFamily(TestCase):
         self.assertEqual(family.obsolete['mh'], None)
         # offline site (see site tests test_removed_site)
         self.assertEqual(family.obsolete['ru-sib'], None)
+
+    def test_set_obsolete(self):
+        """Test obsolete can be set."""
+        family = Family.load('test')
+        old_obsolete = family.obsolete.copy()
+        family.obsolete = family.obsolete
+        self.assertEqual(old_obsolete, family.obsolete)
+        # Confirm they are different objects
+        self.assertIsNot(old_obsolete, family.obsolete)
+
+    def test_obsolete_readonly(self):
+        """Test obsolete result not updatable."""
+        family = Family.load('wikipedia')
+        self.assertRaises(RuntimeError, family.obsolete.update, {})
+        self.assertRaises(RuntimeError, family.obsolete.__setitem__, 'a', 'b')
 
 
 class TestFamilyUrlRegex(TestCase):
