@@ -1649,6 +1649,10 @@ class QueryGenerator(object):
         namespaces = [ns.id for ns in
                       pywikibot.site.Namespace.resolve(namespaces,
                                                        self.site.namespaces)]
+
+        if not namespaces:
+            return
+
         if 'multi' not in param and len(namespaces) != 1:
             raise TypeError(u'{0} module does not support multiple namespaces'
                             .format(self.limited_module))
