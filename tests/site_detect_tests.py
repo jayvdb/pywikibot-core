@@ -12,7 +12,8 @@ __version__ = '$Id$'
 from requests.exceptions import Timeout
 
 from pywikibot.exceptions import ServerError
-from pywikibot.site_detect import MWSite
+from pywikibot.site import APISite, NonMWAPISite
+from pywikibot.site_detect import MWSite, load_site
 from pywikibot.tools import PY2
 
 from tests.aspects import unittest, TestCase
@@ -107,6 +108,7 @@ class InterWikiMapDetection(TestWikiSiteDetection):
                 self.all += [url]
                 try:
                     site = MWSite(url)
+                    site.verify()
                 except Exception as error:
                     print('failed to load ' + url)
                     self.errors[url] = error
@@ -250,6 +252,25 @@ class SiteDetectionTestCase(TestWikiSiteDetection):
         # called http://musicbrainz.org/doc/api.php
         self.assertNoSite('http://musicbrainz.org/doc/$1')
         self.assertAllError()
+
+
+class TestLoadSite(TestCase):
+
+    """Test site_load function."""
+
+    site = True
+
+    def test_valid_site(self):
+        """Test with a valid site."""
+        site = load_site('https://wiki.gentoo.org/wiki/$1')
+        self.assertIsInstance(site, APISite)
+        site.version()
+
+    def test_invalid_site(self):
+        """Test with an invalid site."""
+        site = load_site('http://www.wikinvest.com/$1')
+        self.assertIsInstance(site, NonMWAPISite)
+        self.assertRaises(NotImplementedError, getattr, site, 'version')
 
 
 if __name__ == '__main__':

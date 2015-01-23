@@ -15,10 +15,14 @@ import re
 
 from distutils.version import LooseVersion as V
 
+from requests.exceptions import Timeout
+
 import pywikibot
 
 from pywikibot.comms.http import fetch
 from pywikibot.exceptions import ServerError
+from pywikibot.family import AutoFamily
+from pywikibot.site import NonMWAPISite
 from pywikibot.tools import PY2, PYTHON_VERSION
 
 if not PY2:
@@ -40,13 +44,15 @@ class MWSite(object):
     REwgContentLanguage = re.compile(r'wgContentLanguage ?= ?"([^"]*)"')
     REwgVersion = re.compile(r'wgVersion ?= ?"([^"]*)"')
 
-    def __init__(self, fromurl):
+    def __init__(self, fromurl, quick=False):
         """Constructor."""
         if fromurl.endswith("$1"):
             fromurl = fromurl[:-2]
-        r = fetch(fromurl)
-        if r.status == 503:
-            raise ServerError('Service Unavailable')
+        r = fetch(fromurl, default_error_handling=False)
+        if isinstance(r.data, Exception):
+            raise r.data
+        if 500 <= r.status < 600:
+            raise ServerError('Service Unavailable: HTTP {0}'.format(r.status))
 
         if fromurl != r.data.url:
             print('{0} redirected to {1}'.format(fromurl, r.data.url))
@@ -57,7 +63,7 @@ class MWSite(object):
         self.server = None
         self.articlepath = None
 
-        data = r.content
+        data = r.decode(r.encoding, errors='replace')
 
         wp = WikiHTMLPageParser(fromurl)
         wp.feed(data)
@@ -66,7 +72,7 @@ class MWSite(object):
         self.server = wp.server
         self.scriptpath = wp.scriptpath
 
-        if wp.server:
+        if wp.server and (not quick or not self.version):
             try:
                 self._parse_post_117()
             except Exception as e:
@@ -130,6 +136,18 @@ class MWSite(object):
         self.server = urljoin(self.fromurl, info['server'])
         for item in ['scriptpath', 'articlepath', 'lang']:
             setattr(self, item, info[item])
+
+    def verify(self):
+        """
+        Fetch the api url and confirm 'MediaWiki API' is present.
+
+        @raises ValueError: 'MediaWiki API' was not found
+        @rtype: None
+        """
+        request = fetch(self.api)
+        data = request.decode(request.encoding, errors='replace')
+        if 'MediaWiki API' not in data:
+            raise ValueError('API not verified: {0}'.format(self.api))
 
     def __cmp__(self, other):
         """Compare with other."""
@@ -242,3 +260,36 @@ class WikiHTMLPageParser(HTMLParser):
                 pass
             else:
                 self.set_api_url(attrs['src'][:pos], resource_loader=True)
+
+
+def load_site(url):
+    """
+    Search the API path of a MW site and return the site object.
+
+    This method eliminates the use of family files to use pywikibot.
+    API path is determined via the HTML content or guessing the API path
+    and Site object is created upon determination of the API path without
+    creating a family file for the site.
+
+    @raises ServerError: a server error occurred while loading the site
+    @raises Timeout: a timeout occurred while loading the site
+    @return: a APISite from an AutoFamily
+    @rtype: BaseSite
+    """
+    try:
+        site = MWSite(url)
+        site.verify()
+    except (ServerError, Timeout):
+        raise
+    except Exception as e:
+        pywikibot.warning(
+            'Error fetching {0}: {1}'.format(
+                url, e))
+        return NonMWAPISite(url)
+
+    apipath = site.api
+    hostname = urlparse(apipath).netloc
+
+    fam = AutoFamily(hostname, apipath)
+    site = pywikibot.Site(fam.name, fam)
+    return site
