@@ -15,18 +15,22 @@ import re
 
 from distutils.version import LooseVersion as V
 
+from requests.exceptions import Timeout
+
 import pywikibot
 
 from pywikibot.comms.http import fetch
-from pywikibot.exceptions import ServerError
-from pywikibot.tools import PY2, PYTHON_VERSION
+from pywikibot.exceptions import Error, ServerError
+from pywikibot.family import AutoFamily
+from pywikibot.site import NonMWAPISite
+from pywikibot.tools import PY2, PYTHON_VERSION, MediaWikiVersion
 
 if not PY2:
     from html.parser import HTMLParser
-    from urllib.parse import urljoin, urlparse
+    from urllib.parse import urljoin, urlparse, urlunparse
 else:
     from HTMLParser import HTMLParser
-    from urlparse import urljoin, urlparse
+    from urlparse import urljoin, urlparse, urlunparse
 
 
 class HTMLRegexDetectSite(object):
@@ -226,3 +230,98 @@ class WikiHTMLPageParser(HTMLParser):
             else:
                 self.set_api_url(attrs['src'][:pos])
                 self.set_version('1.17.0')
+
+
+def load_site(url):
+    """
+    Search the API path of a MW site and return the site object.
+
+    This method eliminates the use of family files to use pywikibot.
+    API path is determined via the HTML content or guessing the API path
+    and Site object is created upon determination of the API path without
+    creating a family file for the site.
+
+    @raises ServerError: an error occurred while loading the site
+    @return: a APISite from an AutoFamily
+    @rtype: BaseSite
+    """
+    if url.endswith("$1"):
+        url = url[:-2]
+
+    up = urlparse(url)
+    if up.scheme not in ('http', 'https', ''):
+        raise Error('Scheme {0} not supported'.format(up.scheme))
+
+    if up.scheme == '':
+        # TODO: Use protocol from site calling it
+        #       using a suitable parameter
+        url = 'http:' + url
+        up = urlparse(url)
+
+    request = fetch(url, default_error_handling=False)
+    if isinstance(request.data, Exception):
+        if isinstance(request.data, Timeout):
+            raise request.data
+
+        pywikibot.warning(
+            'Error fetching {0}: {1}'.format(
+                url, request.data))
+        return NonMWAPISite(url)
+
+    if request.status == 503:
+        raise ServerError('Service Unavailable')
+
+    if 500 <= request.status < 600:
+        pywikibot.warning(
+            'HTTP error fetching {0}: {0}'.format(
+                url, request.status))
+        return NonMWAPISite(url)
+
+    url = request.data.url
+
+    if request.header_encoding is None:
+        request._header_encoding = 'latin-1'
+
+    data = request.decode(request.header_encoding, errors='replace')
+
+    wp = WikiHTMLPageParser(url)
+    wp.feed(data)
+    if wp.generator is not None:
+        if 'MediaWiki' in wp.generator:
+            version = wp.generator[10:]
+            if MediaWikiVersion(version) < MediaWikiVersion('1.17.0'):
+                if not re.search(HTMLRegexDetectSite.REwgEnableApi, data):
+                    pywikibot.warning('Api does not seem to be enabled'
+                                      ' on %s' % url)
+                server = re.search(HTMLRegexDetectSite.REwgServer, data).group(1)
+                scriptpath = re.search(HTMLRegexDetectSite.REwgScriptPath, data).group(1)
+                apipath = server + scriptpath + '/api.php'
+            else:
+                apipath = wp.server + wp.scriptpath + "/api.php"
+        else:
+            return NonMWAPISite(url)
+    else:
+        t = up[:3] + ('', '', '')
+        apipath = urlunparse(t)
+        while urlparse(apipath).path:
+            apipath = apipath[:apipath.rfind('/')] + '/api.php'
+            try:
+                request = fetch(apipath)
+                if request.header_encoding is None:
+                    request._header_encoding = 'latin-1'
+                data = request.decode(request.header_encoding,
+                                      errors='replace')
+            except Exception:
+                pass
+            else:
+                if '<title>MediaWiki API</title>' in data:
+                    break
+            apipath = apipath[:-8]
+
+    if not apipath.endswith('/api.php'):
+        pywikibot.warning('{0} does not end with /api.php'.format(apipath))
+        return NonMWAPISite(url)
+
+    fam = AutoFamily(up.netloc, apipath)
+    site = pywikibot.Site(fam.name, fam)
+    return site

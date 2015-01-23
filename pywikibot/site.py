@@ -1671,6 +1671,9 @@ class NonMWAPISite(BaseSite):
         """Constructor."""
         self.netloc = urlparse(url).netloc
 
+    def __repr__(self):
+        return '<non-MediaWiki site %s>' % self.netloc
+
     def __getattribute__(self, attr):
         """Return attribute if present else raise NotImplementedError."""
         whitelist = ['__getattribute__', 'netloc']
