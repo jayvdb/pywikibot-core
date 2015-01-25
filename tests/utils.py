@@ -149,6 +149,7 @@ class DrySite(pywikibot.site.APISite):
         self._userinfo = pywikibot.tools.EMPTY_DEFAULT
         self._siteinfo = DummySiteinfo({})
         self._siteinfo._cache['lang'] = (code, True)
+        self._siteinfo._cache['articlepath'] = ('/wiki/$1', True)
         self._namespaces = SelfCallDict(Namespace.builtin_namespaces())
 
     @property

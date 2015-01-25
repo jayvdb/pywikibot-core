@@ -771,7 +771,7 @@ class PageTree(object):
                 yield page
 
 
-class Subject(object):
+class Subject(interwiki_graph.Subject):
 
     u"""
     Class to follow the progress of a single 'subject'.
@@ -841,8 +841,8 @@ class Subject(object):
             if originPage:
                 originPage = StoredPage(originPage)
 
-        # Remember the "origin page"
-        self.originPage = originPage
+        super(Subject, self).__init__(originPage)
+
         self.repoPage = None
         # todo is a list of all pages that still need to be analyzed.
         # Mark the origin page as todo.
@@ -853,14 +853,6 @@ class Subject(object):
         # done is a list of all pages that have been analyzed and that
         # are known to belong to this subject.
         self.done = PageTree()
-        # foundIn is a dictionary where pages are keys and lists of
-        # pages are values. It stores where we found each page.
-        # As we haven't yet found a page that links to the origin page, we
-        # start with an empty list for it.
-        if originPage:
-            self.foundIn = {self.originPage: []}
-        else:
-            self.foundIn = {}
         # This is a list of all pages that are currently scheduled for
         # download.
         self.pending = PageTree()
