@@ -85,8 +85,7 @@ threads = []
 connection_pool = threadedhttp.ConnectionPool()
 http_queue = Queue.Queue()
 
-cookie_jar = threadedhttp.LockableCookieJar(
-    config.datafilepath("pywikibot.lwp"))
+cookie_jar = threadedhttp.LockableCookieJar('default')
 try:
     cookie_jar.load()
 except (IOError, cookielib.LoadError):

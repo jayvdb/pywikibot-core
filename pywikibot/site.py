@@ -1636,6 +1636,11 @@ class APISite(BaseSite):
         #       (below) is successful.  Instead, log the problem,
         #       to be increased to 'warning' level once majority
         #       of issues are resolved.
+
+        # Switch cookie storage to this user's cookie storage.
+        pywikibot.cookie_jar.switch_storage(u"%s_%s_%s" % (
+            self.family.name, self.code, self._username[sysop]))
+
         if self._loginstatus == LoginStatus.IN_PROGRESS:
             pywikibot.log(
                 u'%r.login(%r) called when a previous login was in progress.'

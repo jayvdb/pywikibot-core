@@ -26,6 +26,10 @@ else:
 # who want to continue using both
 
 from pywikibot import config2 as config
+
+from pywikibot.comms import dataset as _dataset
+dataset = _dataset.DataSet(config.datafilepath("pywikibot.db"))
+
 from pywikibot.bot import (
     output, warning, error, critical, debug, stdout, exception,
     input, input_choice, input_yn, inputChoice, handle_args, showHelp, ui, log,

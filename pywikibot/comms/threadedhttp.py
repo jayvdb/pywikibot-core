@@ -25,6 +25,7 @@ import codecs
 import re
 import sys
 import threading
+import time
 
 if sys.version_info[0] > 2:
     from http import cookiejar as cookielib
@@ -131,6 +132,61 @@ class LockableCookieJar(cookielib.LWPCookieJar):
     def __init__(self, *args, **kwargs):
         cookielib.LWPCookieJar.__init__(self, *args, **kwargs)
         self.lock = threading.Lock()
+
+    def save(self, filename=None, ignore_discard=False, ignore_expires=False):
+        """Use DataSet storage to store cookie data."""
+        # Use filename as key name of data sotrage.
+        name = self.filename if filename is None else filename
+        if 'cookie' not in pywikibot.dataset:
+            pywikibot.dataset['cookie'] = {}
+        if name not in pywikibot.dataset['cookie']:
+            pywikibot.dataset['cookie'][name] = {}
+        _now = time.time()
+        for cookie in self:
+            if cookie is None or cookie.expires is None or cookie.expires < _now:
+                continue
+            if cookie.path is None or cookie.path == "":
+                cookie.path = "/"
+            key = (cookie.name, cookie.domain, cookie.path)
+            pywikibot.dataset['cookie'][name][key] = (
+                cookie.value, cookie.secure,
+                cookie.expires
+            )
+
+    def load(self, filename=None, ignore_discard=False, ignore_expires=False):
+        """Load cookie data from DataSet storage."""
+        # Use filename as key name of data sotrage.
+        name = self.filename if filename is None else filename
+        if 'cookie' in pywikibot.dataset:
+            if name in pywikibot.dataset['cookie']:
+                for cookie in pywikibot.dataset['cookie'][name]:
+                    cookie_name, cookie_domain, cookie_path = cookie
+                    cookie_value, cookie_secure, cookie_expires = \
+                        pywikibot.dataset['cookie'][name][cookie]
+                    initial_dot = cookie_domain.startswith(".")
+                    c = cookielib.Cookie(
+                        0, cookie_name, cookie_value,
+                        None, False,
+                        cookie_domain, initial_dot, initial_dot,
+                        cookie_path, cookie_path != "/",
+                        cookie_secure,
+                        cookie_expires,
+                        False,
+                        None,
+                        None,
+                        {}
+                    )
+                    if not c.is_expired(time.time()):
+                        self.set_cookie(c)
+                        continue
+                    # delete expired cookie
+                    del pywikibot.dataset['cookie'][name][cookie]
+
+    def switch_storage(self, name=None):
+        """Switch cookie storage and reload cookie data."""
+        if name is not None:
+            self.filename = name
+            self.load()
 
 
 class Http(httplib2.Http):
