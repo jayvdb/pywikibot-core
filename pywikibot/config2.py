@@ -81,7 +81,7 @@ disambiguation_comment = collections.defaultdict(dict)
 # User agent format.
 # For the meaning and more help in customization see:
 # https://www.mediawiki.org/wiki/Manual:Pywikibot/User-agent
-user_agent_format = '{script_product} ({script_comments}) {pwb} ({revision}) {httplib2} {python}'
+user_agent_format = '{script_product} ({script_comments}) {pwb} ({revision}) {backend} {python}'
 
 # The default interface for communicating with the site
 # currently the only defined interface is 'APISite', so don't change this!

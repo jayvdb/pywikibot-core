@@ -13,9 +13,7 @@ import os
 import itertools
 
 test_deps = []
-
-dependencies = ['httplib2>=0.9.0']
-
+dependencies = ['requests >= 2, <3']
 extra_deps = {
     # Core library dependencies
     'daemonize': ['daemonize'],
@@ -51,7 +49,6 @@ script_deps['flickrripper.py'].append('flickrapi' if sys.version_info[0] > 2
                                       else 'flickrapi>=1.4.5')
 
 dependency_links = [
-    'https://git.wikimedia.org/zip/?r=pywikibot/externals/httplib2.git&format=gz#egg=httplib2-0.8-pywikibot1',
     'git+https://github.com/AlereDevices/lunatic-python.git#egg=lunatic-python',
 ]
 
