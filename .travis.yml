@@ -3,18 +3,33 @@
 language: python
 
 python:
-  - '2.7'
+  - '2.7_with_system_site_packages'
   - '3.3'
   - '2.6'
 
 before_install:
-  - if [[ "$PYSETUP_TEST_EXTRAS" == "1" ]]; then sudo apt-get update -qq; fi
-  - if [[ "$PYSETUP_TEST_EXTRAS" == "1" ]]; then sudo apt-get install -y liblua5.1-dev; fi
+  - export TRAVIS_PYTHON_VERSION_MAJOR="${TRAVIS_PYTHON_VERSION:0:1}"
+  - if [[ "$TRAVIS_PYTHON_VERSION_MAJOR" == '3' ]]; then
+      export export APT_PYTHON_PREFIX=python3 ;
+    else
+      export export APT_PYTHON_PREFIX=python ;
+    fi
+  - sudo apt-get update -qq
+  - sudo apt-get install -y liblua5.1-dev
+  - if [[ "$TRAVIS_PYTHON_VERSION" == '2.7_with_system_site_packages' ]]; then
+      sudo pip install --upgrade httplib2 six ;
+      if [[ "$USE_APT" == '1' ]]; then
+        sudo apt-get install -y ${APT_PYTHON_PREFIX}-pygments ;
+        sudo apt-get install -y python-irclib python-pycountry python-babel ;
+      fi ;
+    fi ;
+  - if [[ "$TRAVIS_PYTHON_VERSION_MAJOR" == '3' ]]; then
+      pip install six ;
+    fi
 
 install:
   - if [[ "$SITE_ONLY" == '1' ]]; then export USE_NOSE=1; fi
   - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2==0.6.0; fi
-  - pip install six
   - export GITHUB_USER=`echo $TRAVIS_REPO_SLUG | cut -d '/' -f 1`
   - mkdir ~/.pywikibot
   - mkdir ~/.python-eggs
@@ -47,9 +62,7 @@ install:
       echo "('$PYWIKIBOT2_USERNAME', '$USER_PASSWORD')" > ~/.pywikibot/passwordfile ;
     fi
 
-  - cd externals/httplib2
-  - python setup.py install
-  - cd ../..
+  - rm -rf externals/httplib2
 
   - python -c "import setuptools; print(setuptools.__version__)"
 
@@ -74,9 +87,9 @@ env:
     - secure: kofInMlisiTBt9o/Ustc/vySlkKfxGzGCX2LwA1D2waym8sDTS0o5gMJ5LsrT/BUKwZbe1vLozPHqZrrkQvsdTml+DpZuotzdILs0m0f3BUoexEC6OON5IDljuxFyETrD1Ug44ih5Mc4lVFOdTcBzg501ZmswGwQrBvg/OyEFfE=
   matrix:
     - LANGUAGE=en FAMILY=wikipedia
-    - LANGUAGE=ar FAMILY=wikipedia PYSETUP_TEST_EXTRAS=1
+    - LANGUAGE=ar FAMILY=wikipedia PYSETUP_TEST_EXTRAS=1 USE_APT=1
     - LANGUAGE=test FAMILY=wikidata SITE_ONLY=1
-    - LANGUAGE=fr FAMILY=wiktionary SITE_ONLY=1
+    - LANGUAGE=fr FAMILY=wiktionary SITE_ONLY=1 USE_APT=1
 
 notifications:
   email:
