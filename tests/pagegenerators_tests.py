@@ -535,10 +535,14 @@ class TestPreloadingGenerator(DefaultSiteTestCase):
         for page in PreloadingGenerator(links, groupsize=20):
             self.assertIsInstance(page, pywikibot.Page)
             self.assertIsInstance(page.exists(), bool)
-            self.assertEqual(len(page._revisions), 1)
-            self.assertIsNotNone(page._revisions[page._revid].text)
-            self.assertFalse(hasattr(page, '_pageprops'))
+            self.assertIsNotNone(page._revision_cache[page._revid].text)
+
+            if page.exists():
+                self.assertTrue(hasattr(page, "_text"))
+                self.assertFalse(hasattr(page, '_pageprops'))
+
             count += 1
+
         self.assertEqual(len(links), count)
 
     def test_low_step(self):
@@ -550,10 +554,16 @@ class TestPreloadingGenerator(DefaultSiteTestCase):
         for page in PreloadingGenerator(links, groupsize=10):
             self.assertIsInstance(page, pywikibot.Page)
             self.assertIsInstance(page.exists(), bool)
-            self.assertEqual(len(page._revisions), 1)
-            self.assertIsNotNone(page._revisions[page._revid].text)
+
+            self.assertIsNotNone(page._revision_cache[page._revid].text)
             self.assertFalse(hasattr(page, '_pageprops'))
+
+            if page.exists():
+                self.assertTrue(hasattr(page, "_text"))
+                self.assertFalse(hasattr(page, '_pageprops'))
+
             count += 1
+
         self.assertEqual(len(links), count)
 
     def test_order(self):
@@ -565,8 +575,7 @@ class TestPreloadingGenerator(DefaultSiteTestCase):
         for page in PreloadingGenerator(links, groupsize=10):
             self.assertIsInstance(page, pywikibot.Page)
             self.assertIsInstance(page.exists(), bool)
-            self.assertEqual(len(page._revisions), 1)
-            self.assertIsNotNone(page._revisions[page._revid].text)
+            self.assertIsNotNone(page._revision_cache[page._revid].text)
             self.assertFalse(hasattr(page, '_pageprops'))
             self.assertEqual(page, links[count])
             count += 1

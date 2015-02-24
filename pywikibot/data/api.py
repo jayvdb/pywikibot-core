@@ -3168,25 +3168,13 @@ def update_page(page, pagedict, props=[]):
         for item in pagedict['protection']:
             page._protection[item['type']] = item['level'], item['expiry']
     if 'revisions' in pagedict:
-        # TODO: T102735: Use the page content model for <1.21
-        for rev in pagedict['revisions']:
-            revision = pywikibot.page.Revision(
-                revid=rev['revid'],
-                timestamp=pywikibot.Timestamp.fromISOformat(rev['timestamp']),
-                user=rev.get('user', u''),
-                anon='anon' in rev,
-                comment=rev.get('comment', u''),
-                minor='minor' in rev,
-                text=rev.get('*', None),
-                rollbacktoken=rev.get('rollbacktoken', None),
-                parentid=rev.get('parentid'),
-                contentmodel=rev.get('contentmodel', None),
-                sha1=rev.get('sha1', None)
-            )
-            page._revisions[revision.revid] = revision
+        page._revision_cache.cache_revisions(pagedict['revisions'])
 
     if 'lastrevid' in pagedict:
         page.latest_revision_id = pagedict['lastrevid']
+        if page.latest_revision_id in page._revision_cache:
+            # use Revision._text to prevent loading the value
+            page._text = page._revision_cache[page.latest_revision_id]._text
         del page.text
 
     if 'imageinfo' in pagedict:

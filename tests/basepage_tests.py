@@ -50,18 +50,16 @@ class BasePageLoadRevisionsCachingTestBase(BasePageTestBase):
 
         self.assertFalse(hasattr(page, '_revid'))
         self.assertFalse(hasattr(page, '_text'))
-        self.assertTrue(hasattr(page, '_revisions'))
-        self.assertFalse(page._revisions)
+        self.assertTrue(hasattr(page, '_revision_cache'))
 
         self.site.loadrevisions(page, total=1)
 
         self.assertTrue(hasattr(page, '_revid'))
-        self.assertTrue(hasattr(page, '_revisions'))
-        self.assertEqual(len(page._revisions), 1)
-        self.assertIn(page._revid, page._revisions)
+        self.assertTrue(hasattr(page, '_revision_cache'))
+        self.assertIn(page._revid, page._revision_cache)
 
         self.assertFalse(hasattr(page, '_text'))
-        self.assertIsNone(page._revisions[page._revid].text)
+        self.assertIsNone(page._revision_cache[page._revid].text)
         self.assertFalse(hasattr(page, '_text'))
         self.assertIsNone(page._latest_cached_revision())
 

@@ -21,11 +21,13 @@ from __future__ import absolute_import, unicode_literals
 __version__ = '$Id$'
 #
 
+import datetime
 import hashlib
 import logging
 import os.path
 import re
 import sys
+import weakref
 
 try:
     import unicodedata2 as unicodedata
@@ -74,6 +76,7 @@ from pywikibot.tools import (
     add_full_name, manage_wrapping,
     ModuleDeprecationWrapper as _ModuleDeprecationWrapper,
     first_upper, redirect_func, remove_last_args, _NotImplementedWarning,
+    MediaWikiVersion,
     OrderedDict, Counter,
 )
 from pywikibot.tools.ip import ip_regexp
@@ -201,7 +204,6 @@ class BasePage(UnicodeMixin, ComparableMixin):
 
         if isinstance(source, pywikibot.site.BaseSite):
             self._link = Link(title, source=source, defaultNamespace=ns)
-            self._revisions = {}
         elif isinstance(source, Page):
             # copy all of source's attributes to this object
             # without overwriting non-None values
@@ -214,11 +216,18 @@ class BasePage(UnicodeMixin, ComparableMixin):
                                   defaultNamespace=ns)
         elif isinstance(source, Link):
             self._link = source
-            self._revisions = {}
         else:
             raise pywikibot.Error(
                 "Invalid argument type '%s' in Page constructor: %s"
                 % (type(source), source))
+        self._rev_cache = None
+
+    @property
+    def _revision_cache(self):
+        """Lazy load revision cache, in case the title is not already known."""
+        if not self._rev_cache:
+            self._rev_cache = _RevisionCache.get_cache(self)
+        return self._rev_cache
 
     @property
     def site(self):
@@ -491,9 +500,9 @@ class BasePage(UnicodeMixin, ComparableMixin):
 
     def _latest_cached_revision(self):
         """Get the latest revision if cached and has text, otherwise None."""
-        if (hasattr(self, '_revid') and self._revid in self._revisions and
-                self._revisions[self._revid].text is not None):
-            return self._revisions[self._revid]
+        if (hasattr(self, '_revid') and self._revid in self._revision_cache and
+                self._revision_cache[self._revid].text is not None):
+            return self._revision_cache[self._revid]
         else:
             return None
 
@@ -510,14 +519,13 @@ class BasePage(UnicodeMixin, ComparableMixin):
             raise self._getexception
 
         # If not already stored, fetch revision
-        if self._latest_cached_revision() is None:
-            try:
-                self.site.loadrevisions(self, getText=True, sysop=sysop)
-            except (pywikibot.NoPage, pywikibot.SectionError) as e:
-                self._getexception = e
-                raise
+        if not hasattr(self, '_revid'):
+            if not self.exists():
+                raise pywikibot.NoPage(self)
+            self._revid = list(self._revision_cache.get_revisions(total=1, content=True))[0].revid
+        self._text = self._revision_cache[self._revid].text
 
-        # self._isredir is set by loadrevisions
+        # self._isredir is set by exists()
         if self._isredir:
             self._getexception = pywikibot.IsRedirectPage(self)
             raise self._getexception
@@ -531,14 +539,8 @@ class BasePage(UnicodeMixin, ComparableMixin):
         @param oldid: The revid of the revision desired.
         @rtype: unicode
         """
-        if force or oldid not in self._revisions \
-                or self._revisions[oldid].text is None:
-            self.site.loadrevisions(self,
-                                    getText=True,
-                                    revids=oldid,
-                                    sysop=sysop)
         # TODO: what about redirects, errors?
-        return self._revisions[oldid].text
+        return self._revision_cache[oldid].text
 
     def permalink(self, oldid=None, percent_encoded=True):
         """Return the permalink URL of an old revision of this page.
@@ -808,7 +810,7 @@ class BasePage(UnicodeMixin, ComparableMixin):
 
         @rtype: L{Revision}
         """
-        return next(self.revisions(reverse=True, total=1))
+        return next(self._revision_cache.get_revisions(reverse=True, total=1))
 
     def isRedirectPage(self):
         """Return True if this is a redirect, False if not or not existing."""
@@ -1368,7 +1370,6 @@ class BasePage(UnicodeMixin, ComparableMixin):
 
     def clear_cache(self):
         """Clear the cached attributes of the page."""
-        self._revisions = {}
         for attr in self._cache_attrs:
             try:
                 delattr(self, attr)
@@ -1673,12 +1674,12 @@ class BasePage(UnicodeMixin, ComparableMixin):
     def revisions(self, reverse=False, total=None, content=False,
                   rollback=False, starttime=None, endtime=None):
         """Generator which loads the version history as Revision instances."""
-        # TODO: Only request uncached revisions
-        self.site.loadrevisions(self, getText=content, rvdir=reverse,
-                                starttime=starttime, endtime=endtime,
-                                total=total, rollback=rollback)
-        return (self._revisions[rev] for rev in
-                sorted(self._revisions, reverse=not reverse)[:total])
+        if not self.exists():
+            raise pywikibot.NoPage(self)
+        return self._revision_cache.get_revisions(
+            reverse=reverse, total=total, content=content, rollback=rollback,
+            starttime=starttime, endtime=endtime,
+        )
 
     # BREAKING CHANGE: in old framework, default value for getVersionHistory
     #                  returned no more than 500 revisions; now, it iterates
@@ -5048,7 +5049,7 @@ class Revision(DotReadableDict):
 
     def __init__(self, revid, timestamp, user, anon=False, comment=u"",
                  text=None, minor=False, rollbacktoken=None, parentid=None,
-                 contentmodel=None, sha1=None):
+                 contentmodel=None, sha1=None, page=None):
         """
         Constructor.
 
@@ -5079,16 +5080,59 @@ class Revision(DotReadableDict):
         @type sha1: unicode
         """
         self.revid = revid
-        self.text = text
+        self._text = text
         self.timestamp = timestamp
         self.user = user
         self.anon = anon
-        self.comment = comment
+        self._comment = comment
         self.minor = minor
-        self.rollbacktoken = rollbacktoken
+        self._token = rollbacktoken
         self._parent_id = parentid
         self._content_model = contentmodel
         self._sha1 = sha1
+        self._page = page
+
+    @classmethod
+    def from_API(cls, rev, page):
+        # TODO: T102735: Use the page content model for <1.21
+        revision = Revision(
+            revid=rev['revid'],
+            timestamp=pywikibot.Timestamp.fromISOformat(rev['timestamp']),
+            user=rev.get('user'),
+            anon='anon' in rev,
+            minor='minor' in rev,
+            parentid=rev['parentid'],
+            contentmodel=rev.get('contentmodel', None),
+            sha1=rev.get('sha1', None),
+            page=page,
+        )
+        revision._set_values(rev)
+        return revision
+
+    def _set_values(self, rev):
+        if 'comment' in rev:
+            self._comment = rev['comment']
+        if '*' in rev:
+            self._text = rev['*']
+        if 'rollbacktoken' in rev:
+            self._token = rev['rollbacktoken']
+
+    def _get_revision(self, **params):
+        if not self._page:
+            raise TypeError('The revision instance ({0}) was not initalized to '
+                            'allow getting the remaining values afterwards.')
+        req = pywikibot.data.api.Request(
+            site=self._page.site, action='query', prop='revisions',
+            revids=self.revid, **params)
+        revision = next(iter(req.submit()['query']['pages'].values()))['revisions'][0]
+        assert(revision['revid'] == self.revid)
+        return revision
+
+    def _get_all(self):
+        """Get all values for this revision."""
+        revision = self._get_revision(rvprop='ids|comment|content')
+        self._comment = revision['comment']
+        self._text = revision['*']
 
     @property
     def parent_id(self):
@@ -5147,6 +5191,29 @@ class Revision(DotReadableDict):
 
         return self._sha1
 
+    @property
+    def text(self):
+        if not self._text:
+            self._get_all()
+        return self._text
+
+    @property
+    def comment(self):
+        if not self._comment:
+            self._get_all()
+        return self._comment
+
+    @property
+    def rollbacktoken(self):
+        if not self._token:
+            if self._page.site.version() >= MediaWikiVersion('1.24wmf19'):
+                # let site cache it
+                return self._page.site.tokens['rollback']
+            else:
+                revision = self._get_revision(rvtoken='rollback')
+                self._token = revision['rollbacktoken']
+        return self._token
+
     def hist_entry(self):
         """Return a namedtuple with a Page history record."""
         return Revision.HistEntry(self.revid, self.timestamp, self.user,
@@ -5156,6 +5223,745 @@ class Revision(DotReadableDict):
         """Return a namedtuple with a Page full history record."""
         return Revision.FullHistEntry(self.revid, self.timestamp, self.user,
                                       self.text, self.rollbacktoken)
+
+
+class _RevisionCache(UnicodeMixin):
+
+    """
+    A cache holding chunks of revisions.
+
+    As not all revisions are necessaril requested in one go, it caches chunks of
+    revisions. The chunks don't overlap and each chunk gets older compared to
+    the previous chunk. Each revision in a chunk gets also older than the
+    revision before it (in the list). There are also always revisions between
+    two chunks. If there are none, both chunks get merged.
+
+    Because the revision ID is not strictly decreasing with each older revision,
+    it's using the timestamp to determine the order of chunks in the cache.
+    """
+
+    # caching the caches, reference them weakly so when there is no page using
+    # it that it can be garbage collected
+    _caches = defaultdict(weakref.WeakValueDictionary)
+
+    def __init__(self, page):
+        self._cache = []
+        self._page = page
+        # when the last time the newest revision was requested
+        self._latest_revision_requested = None
+
+    @classmethod
+    def get_cache(cls, page):
+        """Get the revision cache belonging to this page."""
+        title = page.title(withSection=False)
+        site_cache = cls._caches[page.site]
+        # use get, in case the cache could get discarded after an 'in' check
+        cache = site_cache.get(title)
+        if cache is None:
+            cache = _RevisionCache(page)
+            site_cache[title] = cache
+        return cache
+
+    @staticmethod
+    def _is_bigger(value, comp):
+        return value and value > comp
+
+    @staticmethod
+    def _is_smaller(value, comp):
+        return value and value < comp
+
+    def __unicode__(self):
+        return u'RevisionCache({0},[{1}])'.format(
+            self._page.title(),
+            '],['.join(
+            ','.join(str(rev.revid) for rev in chunk)
+            for chunk in self._cache))
+
+    def _check_integrity(self):
+        """
+        Check the consistency of the cache.
+
+        The following error codes exist:
+
+        0. Previous' parent_id does not match current's revid. If first of
+           chunk they must be unequal and otherwise they must be equal
+        1. Previous' parent_id was 0 (== first revision). Suppresses code 0.
+        2. Previous' timestamp is before the current's timestamp
+        3. Chunk's length is 0 (index in chunk is None)
+
+        @return: The errors with the position (chunk, index in chunk and error
+            code).
+        @rtype: list of tuple
+        """
+        errors = []
+        last = None
+        for i, block in enumerate(self._cache):
+            if len(block) == 0:
+                errors += [(i, None, 3)]
+            for j, cached in enumerate(block):
+                if last is not None:
+                    if last.parent_id == 0:
+                        errors += [(i, j, 1)]
+                    elif (j > 0) == (last.parent_id != cached.revid):
+                        errors += [(i, j, 0)]
+                    if last.timestamp < cached.timestamp:
+                        errors += [(i, j, 2)]
+                last = cached
+        return errors
+
+    def _assert_integrity(self):
+        """Combine check_integrity with assert, but display errors."""
+        integrity = self._check_integrity()
+        if integrity:
+            pywikibot.error(integrity)
+            assert(False)
+
+    # TODO: ↓ move to tools
+    @staticmethod
+    def _keyed_func(left, a, x, key, reverse=None):
+        from bisect import bisect_right as br
+        from bisect import bisect_left as bl
+        a = [key(e) for e in a]
+        if reverse is None:
+            reverse = a[0] > a[-1]
+        # when reversed, then left needs bisect_right
+        if left != reverse:
+            func = bl
+        else:
+            func = br
+        if reverse:
+            a = a[::-1]
+        idx = func(a, x)
+        if reverse:
+            return len(a) - idx
+        else:
+            return idx
+
+    @staticmethod
+    def bisect_right(a, x, key=lambda e: e, reverse=False):
+        return _RevisionCache._keyed_func(False, a, x, key=key, reverse=reverse)
+
+    @staticmethod
+    def bisect_left(a, x, key=lambda e: e, reverse=False):
+        return _RevisionCache._keyed_func(True, a, x, key=key, reverse=reverse)
+    # TODO: ↑ move
+
+    @staticmethod
+    def _key_time(rev):
+        return rev.timestamp
+
+    @classmethod
+    def _get_cached(cls, cached_block, endid, endtime, total, check):
+        if not cached_block:
+            return [], False
+        short_block = cached_block[:total]
+        until = len(short_block)
+        for index in range(until):
+            if cached_block[index].revid == endid:
+                until = index + 1
+                break
+        if endtime:
+            until = min(until, cls.bisect_right(short_block, endtime, key=cls._key_time, reverse=None))
+        # if len(short_block) < until:
+        #    print('{0} ← {1}'.format(until, len(short_block)))
+        short_block = cached_block[:until]
+        stopped = ((total is not None and total <= len(short_block)) or
+                   cached_block[-1].parent_id == 0 or
+                   short_block[-1].revid == endid)
+        if until < len(short_block):
+            # because multiple revisions could have the same timestamp, instead
+            # the revision after that must be checked if it's after it
+            stopped |= check(endtime, cached_block[until].timestamp)
+        return short_block, stopped
+
+    @staticmethod
+    def _revid_index(chunk, revision_id):
+        for idx, revision in enumerate(chunk):
+            if revision.revid == revision_id:
+                return idx
+        return -1
+
+    def _index(self, revision_id):
+        """
+        Return the position of a revision ID.
+
+        If the revision is cached it returns the chunk and position in chunk.
+        Otherwise it returns the False, False.
+        """
+        for chunk_index, chunk in enumerate(self._cache):
+            idx = self._revid_index(chunk, revision_id)
+            if idx >= 0:
+                return chunk_index, idx
+        return False, False
+
+    def _revision_chunk_generator(self, content=False, rollback=False,
+                                  is_cached=False, **kwargs):
+        """
+        A generator returning batches of revisions.
+
+        This generator is useful, because all the data it yields at each point
+        is already fetched. Unlike a generator which yields each revision, this
+        allows to also cache revisions which were requested but not needed.
+        """
+        if 'revids' not in kwargs:
+            kwargs['titles'] = self._page.title()
+        if content:
+            if is_cached:
+                kwargs['rvprop'] = 'ids|comment|content'
+            else:
+                kwargs['rvprop'] = 'ids|flags|timestamp|user|comment|content'
+        if rollback:
+            kwargs['rvtoken'] = 'rollback'
+            if 'rvprop' not in kwargs and is_cached:
+                kwargs['rvprop'] = 'ids'
+        gen = pywikibot.data.api.PropertyGenerator(
+            prop='revisions', site=self._page.site, **kwargs)
+        if 'revids' in kwargs:
+            gen.set_maximum_items(-1)
+        for page_data in gen:
+            if not self._page.site.sametitle(
+                    page_data['title'], self._page.title(withSection=False)):
+                raise pywikibot.Error(
+                    u'Query on "{0}" returned data on "{1}"'.format(
+                    self._page.title(), page_data['title']))
+            yield page_data['revisions']
+
+    def _revision_generator(self, content=False, rollback=False,
+                            is_cached=False, **kwargs):
+        """A generator returning each revision separately."""
+        for revision_set in self._revision_chunk_generator(content, rollback,
+                                                           is_cached, **kwargs):
+            for revision in revision_set:
+                yield revision
+
+    def get_separate_revisions(self, revids, content=False, rollback=False):
+        """Get the revisions in the same order as revids."""
+        def update(revs):
+            # is a generator so force iteration
+            list(self._fill_cached(revs, content, rollback))
+        return self._cache_rev_dicts(
+            revids, update,
+            lambda requested: self._revision_generator(content, rollback,
+                                                       revids=requested))
+
+    def cache_revisions(self, revisions):
+        """
+        Cache uncached the revisions and update cached ones.
+
+        @param revisions: The revision dictionaries returned from the API.
+        @type revisions: iterable
+        @return: The Revision objects converted from the dictionary.
+        @rtype: list
+        """
+        def update(revs):
+            for rev in revs:
+                rev._set_values(rev_map[rev.revid])
+        rev_map = dict((rev['revid'], rev) for rev in revisions)
+        cached = self._cache_rev_dicts(
+            rev_map, update,
+            lambda requested: [rev for rev in revisions if rev['revid'] in requested])
+        return cached
+
+    def _cache_rev_dicts(self, revids, update_func, gen_func):
+        """
+        Yield Revision objects for the given ids and cache uncached.
+
+        @param revids: Revision IDs of the page.
+        @type revisions: iterable
+        @param update_func: A function called with a generator containing
+            the Revision objects which are already cached. The function can then
+            fill in additional data.
+        @type update_func: callable with 1 parameter
+        @param gen_func: A function called with the revision IDs (a subset of
+            revids) which were not cached.
+        @type gen_func: callable with 1 parameter
+        @return: The Revision objects in the same order as the revision IDs. IDs
+            appearing multiple times will only appear once and that in the first
+            place. If there was no defined order in the original revision IDs
+            the resulting order is undefined.
+        @rtype: list
+        """
+        yielded = set()
+        cached = []  # buffer to yield them in order with others
+        requested = {}
+        # determine which revisions are already in the cache and which needed
+        # to be processed
+        i = []
+        for revid in revids:
+            if revid in yielded:
+                continue
+            i += [revid]
+            yielded.add(revid)
+            chunk, idx = self._index(revid)
+            if chunk is False:
+                cached += [None]
+                requested[revid] = len(cached) - 1
+            else:
+                revision = self._cache[chunk][idx]
+                assert(revision.revid == revid)
+                cached += [revision]
+        update_func(rev for rev in cached if rev is not None)
+        revisions = [Revision.from_API(rev, self._page) for rev in gen_func(requested)]
+        assert(set(rev.revid for rev in revisions) == set(requested))
+        for revision in revisions:
+            idx = requested[revision.revid]
+            assert(cached[idx] is None)
+            cached[idx] = revision
+
+        chunks = self._rev_chains(revisions)
+        # if len(chunks) > 1:
+        #     print('determined {0} chunk(s) with length(s): {1}'.format(
+        #           len(chunks), ', '.join(str(len(chunk)) for chunk in chunks)))
+        for chunk in chunks:
+            # find a chunk which preceeds it directly
+            for prev_index, cached_chunk in enumerate(self._cache):
+                if cached_chunk[-1].parent_id == chunk[0].revid:
+                    preceeds = True
+                    break
+            else:
+                preceeds = False
+            if preceeds:
+                self._cache[prev_index].extend(chunk)
+            else:
+                prev_index = self.bisect_left(
+                    self._cache, chunk[0].timestamp,
+                    key=lambda block: block[-1].timestamp, reverse=True)
+            # find a chunk which follows directly
+            for next_index, cached_chunk in enumerate(self._cache):
+                if chunk[-1].parent_id == cached_chunk[0].revid:
+                    follows = True
+                    break
+            else:
+                follows = False
+            if follows:
+                if preceeds:
+                    assert(next_index == prev_index + 1)
+                    self._cache[prev_index].extend(self._cache.pop(next_index))
+                else:
+                    self._cache[prev_index] = chunk + self._cache[next_index]
+            elif not preceeds:
+                self._cache.insert(prev_index, chunk)
+            self._assert_integrity()
+        return cached
+
+    @staticmethod
+    def _rev_dict(revisions):
+        """Convert a list of revisions into a dict keyed by id."""
+        return dict((rev.revid, rev) for rev in revisions)
+
+    @classmethod
+    def _rev_chains(cls, revisions):
+        """Return a list of chains from a list of revisions."""
+        revisions = cls._rev_dict(revisions)
+        chunks = {}
+        # because the id might jump, it's not possible to sort and split
+        # whenever parent_id != revid. e.g. 10 > 8 > 9 > 7
+        while revisions:
+            # pop one from the revisions
+            rev = next(iter(revisions.values()))
+            del revisions[rev.revid]
+            chunk = [rev]
+            # pop the parent revisions
+            while rev.parent_id in revisions:
+                rev = revisions.pop(rev.parent_id)
+                chunk += [rev]
+            # check whether the later part of the chunk has been already checked
+            if rev.parent_id in chunks:
+                assert(chunks[rev.parent_id])
+                chunk += chunks[rev.parent_id]
+                chunks[rev.parent_id] = False
+            assert(chunk[0].revid not in chunks)
+            chunks[chunk[0].revid] = chunk
+        assert(all(c is False or len(c) > 0 for c in chunks.values()))
+        assert(all(c[-1].parent_id not in chunks for c in chunks.values()
+                   if c is not False))
+        return [c for c in chunks.values() if c is not False]
+
+    def __getitem__(self, revid):
+        """Return the revision with the given id. Might do requests."""
+        return self.get_separate_revisions([revid])[0]
+
+    def __contains__(self, revid):
+        """Return whether the revid is already cached."""
+        return self._index(revid)[0] is not False
+
+    def _fill_cached(self, cached, content, rollback):
+        """Set content or rollback token for cached revisions without it."""
+        cached = list(cached)
+        # cached must have each revision ID at most once
+        assert(len(set(rev.revid for rev in cached)) == len(cached))
+        if self._page.site.version() >= MediaWikiVersion('1.24wmf19'):
+            # in newer versions, the token is got via query+tokens
+            rollback = False
+        need_content = [rev.revid for rev in cached if not rev._text] if content else []
+        need_rollback = [rev.revid for rev in cached if not rev._token] if rollback else []
+        if need_content == need_rollback:
+            # query both together
+            content_gen = self._revision_chunk_generator(True, True, True,
+                                                         revids=need_content)
+            rollback_gen = None
+        else:
+            if need_content:
+                content_gen = self._revision_chunk_generator(True, False, True,
+                                                             revids=need_content)
+            if need_rollback:
+                rollback_gen = self._revision_chunk_generator(False, True, True,
+                                                              revids=need_rollback)
+
+        id_map = self._rev_dict(cached)
+        # if need_content or need_rollback:
+        #     print('Need: {0} // {1}'.format(need_content, need_rollback))
+        for revision in cached:
+            if content and not revision._text:
+                for queried_rev in next(content_gen):
+                    id_map[queried_rev['revid']]._set_values(queried_rev)
+            # if both are got with the same query, then _token will be set via
+            # the line above, and this line will conclude the token is set
+            if rollback and not revision._token:
+                for queried_rev in next(rollback_gen):
+                    id_map[queried_rev['revid']]._set_values(queried_rev)
+            assert(not content or revision._text)
+            assert(not rollback or revision._token)
+            yield revision
+
+    def get_revisions(self, content=False, startid=None, endid=None,
+                      starttime=None, endtime=None, reverse=False, total=None,
+                      rollback=False, assume_newest=False):
+        """
+        Get and caches revisions.
+
+        If neither startid or starttime is given, it will request all revisions
+        until the first cached revision is returned (unless endid, endtime or
+        total are stopping it first).
+
+        It'll make assumptions about startid and endid. Because it's not
+        possible to determine whether the endid or next cached id comes next
+        it'll choose the number closer to the current value. In most cases this
+        will select also fewer number of revisions. If this is not the case it
+        might query more revisions than necessary, although it'd start issuing
+        cached revisions as soon as one batch ended in one chunk.
+
+        A similar case happens when startid which is not already cached. In such
+        a case it's querying revisions until the next closest revision id
+        already cached. It is possible that another chunk could be before the
+        selected chunk. In that case it might request more revisions than
+        actually necessary (similar to endid). Another case would be when the
+        next selected chunk is actually on the other side (depending on
+        reverse).When that happened the request doesn't return any revisions and
+        it'll select the next chunk. This continues until it finds the first
+        revision is returned.
+
+        Because of that the start and end id must be revisions of the page.
+        Otherwise it's not possible to determine where the revision starts. For
+        example if a page has only even revision numbers and an odd revision
+        start id is given, it can't determine whether that revision is part of
+        the page (might be a new uncached revision). And if not all revisions
+        are known it's not possible to determine where it fits the best (a id
+        of 7 was given, 10 was selected because it was the closest cached but
+        there was actually a 8).
+
+        Because the revision IDs must not be stricly increasing over time, the
+        endid doesn't need to be greater (or smaller in reverse) than the
+        startid.
+
+        @param content: Define also the content and comment for each revision.
+            If the revision is cached it'll request the data and update the
+            cached revisions.
+        @type content: bool
+        @param startid: The first revision ID to be returned. It has to be a
+            revision of the page. If None (default) it'll start with the newest,
+            unless a starttime is given.
+        @type startid: int or None
+        @param endid: The last revision ID to be returned. It has to be a
+            revision of that page. If None (default) it won't stop because of
+            the revision id.
+        @type endid: int or None
+        @param starttime: No revisions returned are created after that date. If
+            None (default) it won't exclude those revisions. A string is
+            interpreted as a timestamp.
+        @type starttime: datetime or str or None
+        @param endtime: No revisions returned are created before that date. If
+            None (default) it won't exclude those revisions. A string is
+            interpreted as a timestamp.
+        @type endtime: datetime or None
+        @param reverse: Return the revisions in reverse order, from oldest to
+            newest. This will inverse the startid/starttime/endid/endtime
+            arguments.
+        @type reverse: bool
+        @param total: The total number of revisions returned. It will return as
+            many revisions as possible if None (default).
+        @type total: int or None
+        @param rollback: Query the rollback token for each revision. This will
+            be ignored on sites with version 1.24wmf19 or newer.
+        @type rollback: bool
+        @param assume_newest: Assume that the first value in the cache is the
+            newest revision. If it's a datetime, then the newest revision must
+            have been retrieved after that datetime.
+        @type assume_newest: bool or None or datetime
+        """
+        if startid is not None and starttime is not None:
+            raise ValueError('The parameters startid and starttime may not be '
+                             'set at the same time.')
+        if endid is not None and endtime is not None:
+            raise ValueError('The parameters endid and endtime may not be set '
+                             'at the same time.')
+        if isinstance(starttime, basestring):
+            starttime = pywikibot.Timestamp.fromtimestampformat(starttime)
+        if isinstance(endtime, basestring):
+            endtime = pywikibot.Timestamp.fromtimestampformat(endtime)
+        # required comparisons: X <= endid, and Y < endid/endtime; check_after
+        # only supports <, but as == works in both directions, the <= can be
+        # split in check_after() and ==, check_after also checks that the end*
+        # value is not False (via not); check_after basically checks, if there
+        # the end is after (further along a theoretical queue) the current
+        if reverse:
+            check_after = _RevisionCache._is_smaller
+        else:
+            check_after = _RevisionCache._is_bigger
+        if (isinstance(assume_newest, datetime.datetime) and
+                assume_newest < self._latest_revision_requested):
+            assume_newest = True
+        if starttime is not None:
+            if check_after(endtime, starttime):
+                raise ValueError('starttime must be before the endtime')
+            chunk_index = self.bisect_right(self._cache, starttime,
+                                            key=lambda chunk: chunk[-1].timestamp, reverse=True)
+            if (chunk_index < len(self._cache) and
+                    self._cache[chunk_index][0].timestamp > starttime):
+                if reverse:
+                    idx = self.bisect_right(self._cache[chunk_index], starttime,
+                                            key=self._key_time, reverse=True)
+                else:
+                    idx = self.bisect_left(self._cache[chunk_index], starttime,
+                                           key=self._key_time, reverse=True)
+                starttime = None  # found cache, continue using id
+            else:
+                idx = False
+        elif startid is not None:
+            # TODO: Determine when startid is after endid
+            #    raise ValueError('startid must be before the endid.')
+            chunk_index, idx = self._index(startid)
+            if chunk_index is False:
+                for chunk_index, chunk in enumerate(self._cache):
+                    if chunk[0].revid < startid:
+                        break
+                else:
+                    chunk_index = len(self._cache)
+                idx = -1
+            # the chunk_index is the position in the cache before which the list
+            # is going to be added
+            if chunk_index >= len(self._cache):
+                pass  # print('startid after cache')  # add to the end
+            elif idx < 0:
+                pass  # print('startid between chunks {0}'.format(chunk_index))
+            else:
+                # starts inside of the cache
+                # print('startid entry #{0}C{1} id {2}'.format(chunk_index, idx, self._cache[chunk_index][idx].revid))
+                assert(self._cache[chunk_index][idx].revid == startid)
+        elif reverse and self._cache and self._cache[-1][-1].parent_id == 0:
+            # if startid is None, the startid is defined in reverse mode, when
+            # the last entry is really the last entry (meaning parent_id == 0)
+            startid = self._cache[-1][-1].revid
+            chunk_index = len(self._cache) - 1
+            idx = len(self._cache[-1]) - 1
+        else:
+            if reverse:
+                chunk_index = len(self._cache)
+            else:
+                chunk_index = 0
+            if assume_newest and self._cache:
+                if reverse:
+                    if not endid:
+                        endid = self._cache[0][0].revid
+                    idx = False
+                else:
+                    idx = 0
+            else:
+                idx = False
+        first_request = True
+        while total is None or total > 0:
+            if idx is not False and idx >= 0:
+                # It starts by returning cached items
+                if reverse:
+                    cached_block = self._cache[chunk_index][idx::-1]
+                else:
+                    cached_block = self._cache[chunk_index][idx:]
+                # print('Idx: {0} ID: {1}'.format(idx, ','.join(str(_.revid) for _ in cached_block)))
+                cached_block, stopped = self._get_cached(cached_block, endid, endtime, total, check_after)
+                for cached in self._fill_cached(cached_block, content, rollback):
+                    # print('yield C {0}'.format(cached.revid))
+                    yield cached
+                if stopped:
+                    return
+                if not reverse:
+                    # add after current, when not in reverse mode
+                    chunk_index += 1
+                if total is not None:
+                    total -= len(cached_block)
+            else:
+                # Does not continue cache, so doesn't start from the last cached
+                if chunk_index is False:
+                    chunk_index = 0
+            # There were cached entries returned before the first request
+            # then the next request is going from the last cached entry
+            if reverse and 0 <= chunk_index < len(self._cache):
+                # unfortunately we can't use the new item
+                last_cached_id = self._cache[chunk_index][0].revid
+            elif not reverse and 0 < chunk_index <= len(self._cache):
+                last_cached_id = self._cache[chunk_index - 1][-1].parent_id
+            else:
+                last_cached_id = False
+            gen = pywikibot.data.api.PropertyGenerator(
+                prop='revisions', rvdir='newer' if reverse else 'older',
+                site=self._page.site, titles=self._page.title())
+            if content:
+                gen.request['rvprop'] = ('ids|flags|timestamp|'
+                                         'user|comment|content')
+            if rollback and self._page.site.version() < MediaWikiVersion('1.24wmf19'):
+                gen.request['rvtoken'] = 'rollback'
+            # get newest revid
+            if reverse and chunk_index > 1:
+                next_cached = self._cache[chunk_index - 1][-1]
+            elif not reverse and len(self._cache) > chunk_index:
+                next_cached = self._cache[chunk_index][0]
+            else:
+                next_cached = None
+            if next_cached:
+                if check_after(endtime, next_cached.timestamp):
+                    next_cached_id = False
+                    gen.request['rvendtime'] = endtime
+                elif check_after(endid, next_cached.revid):
+                    next_cached_id = False
+                    gen.request['rvendid'] = endid
+                else:
+                    next_cached_id = next_cached.revid
+                    gen.request['rvendid'] = next_cached_id
+            else:
+                next_cached_id = False
+                gen.request['rvendid'] = False if not endid else endid
+                gen.request['rvendtime'] = False if not endtime else endtime
+            if reverse:
+                requesting_latest = not endid and not endtime
+            else:
+                requesting_latest = not startid and not starttime
+            if last_cached_id:
+                gen.request['rvstartid'] = last_cached_id
+            if starttime:
+                gen.request['rvstarttime'] = starttime
+                starttime = None  # this is not going to be used anymore
+            if total:
+                if last_cached_id in self:
+                    # that includes the first cached entry, so query one more
+                    gen.set_maximum_items(total + 1)
+                else:
+                    gen.set_maximum_items(total)
+            # print('R {0} to {1} Total: {2}, L/NCID: {3}, {4}'.format(
+            #       '-----' if 'rvstartid' not in gen.request else gen.request['rvstartid'][0],
+            #       '-----' if 'rvendid' not in gen.request else gen.request['rvendid'][0],
+            #       total, last_cached_id, next_cached_id))
+            for pagedata in gen:
+                if not self._page.site.sametitle(
+                        pagedata['title'],
+                        self._page.title(withSection=False)):
+                    raise pywikibot.Error(
+                        u"get_revisions: Query on %s returned data on '%s'"
+                        % (self._page, pagedata['title']))
+                if requesting_latest and not reverse:
+                    self._latest_revision_requested = datetime.datetime.utcnow()
+                    requesting_latest = False
+                if 'revisions' not in pagedata:
+                    # the chosen ID for the first cached revision was before
+                    # the start id.
+                    assert(first_request)  # no revisions should have been added
+                    if reverse:
+                        chunk_index -= 1
+                    else:
+                        chunk_index += 1
+                    first_request = False
+                    continue
+                first_request = False
+                chunk = self.cache_revisions(pagedata['revisions'])
+                chains = self._rev_chains(chunk)
+                # print('Chunk: {0} in Chains: {1}'.format([_.revid for _ in chunk], [[_.revid for _ in c] for c in chains]))
+                if last_cached_id is not False:
+                    # If the request didn't returned the last cached ID then
+                    # this is probably because the API doesn't return the revs
+                    # in a sane manner. See also T91883
+                    for chain in chains:
+                        start = self._revid_index(chain, last_cached_id)
+                        if start >= 0:
+                            # don't yield start in reverse
+                            if reverse:
+                                start -= 1
+                            break
+                    else:
+                        pywikibot.log('Start revision not in result.')
+                        start = False
+                else:
+                    if reverse:
+                        chain = min(chains, key=lambda chain: chain[-1].timestamp)
+                    else:
+                        chain = max(chains, key=lambda chain: chain[0].timestamp)
+                    if reverse and startid is None and chain[0].parent_id != 0:
+                        # When last_cached_id is False, it should contain the
+                        # first revision in reverse mode
+                        pywikibot.log('Response did not contain first revision.')
+                        start = False
+                    else:
+                        start = 0
+                if start is False:
+                    # The API hasn't started with a valid revision. There is no
+                    # sane way in recovering it with the least impact. Instead
+                    # just cache all revisions and hope that the API won't screw
+                    # up there. Berserk mode basically.
+                    print('START FAILURE')
+                    self.cache_revisions(list(self._revision_generator()))
+                    assert(len(self._cache) == 1)
+                    chain = self._cache[0]
+                    chunk_index = 0
+                    if last_cached_id is not False:
+                        start = self._revid_index(chain, last_cached_id)
+                        assert(start >= 0)
+                    else:
+                        start = len(chain) - 1 if reverse else 0
+                if start >= 0:
+                    if reverse:
+                        chain = chain[start::-1]
+                    else:
+                        chain = chain[start:]
+                    end = self._revid_index(chain, next_cached_id)
+                    if end >= 0:
+                        chain = chain[:end + 1]
+                    chain, stopped = self._get_cached(chain, endid, endtime, total, check_after)
+                    # print('Chain (truncated): {0}'.format([_.revid for _ in chain]))
+                    for rev in chain:
+                        # print('yield R {0}'.format(rev.revid))
+                        yield rev
+                    if total is not None:
+                        total -= len(chain)
+                    if stopped:
+                        break
+                    chunk_index, idx = self._index(chain[-1].revid)
+                    # print(idx)
+                    assert(chunk_index is not False)
+                    assert(idx is not False)
+                    if reverse and idx > 0:
+                        # not at the start of the chunk, so could yield cached
+                        idx -= 1
+                        break
+                    elif not reverse and idx < len(self._cache[chunk_index]) - 1:
+                        # not at the end of the chunk, so could yield cached
+                        idx += 1
+                        break
+            else:
+                # last id was not found in the cache, so continue requesting
+                idx = False
+                if reverse:
+                    chunk_index -= 1
+                else:
+                    chunk_index += 1
+            if requesting_latest and reverse:
+                self._latest_revision_requested = datetime.datetime.utcnow()
 
 
 class FileInfo(DotReadableDict):
