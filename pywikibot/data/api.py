@@ -224,8 +224,12 @@ class ParamInfo(Container):
         # the same data available in the paraminfo for query.
         query_modules_param = self.parameter('paraminfo', 'querymodules')
 
-        assert('limit' in query_modules_param)
-        self._limit = query_modules_param['limit']
+        # MW pre 1.14 does not include limit attributes, which is used to
+        # determine batch size.
+        if 'limit' in query_modules_param:
+            self._limit = query_modules_param['limit']
+        else:
+            self._limit = 50
 
         if query_modules_param and 'type' in query_modules_param:
             # 1.19+ 'type' is the list of modules; on 1.18, it is 'string'
@@ -284,6 +288,46 @@ class ParamInfo(Container):
             'parameters': self._paraminfo['query']['parameters']
         }
 
+    def _emulate_main(self):
+        # the main module was introduced in 1.15
+        params = {
+            'expiry': config.API_config_expiry,
+            'use_get': True,  # Request need ParamInfo to determine use_get
+            'site': self.site,
+            'action': 'help',
+        }
+
+        request = CachedRequest(**params)
+        result = request.submit()
+
+        assert('help' in result)
+        assert(isinstance(result['help'], dict))
+        assert(result['help'].keys() == ['mime', 'help'])
+        assert(result['help']['mime'] == 'text/plain')
+        assert(isinstance(result['help']['help'], basestring))
+
+        help_text = result['help']['help']
+
+        start_pos = help_text.find('What action you would like to perform')
+        start_pos = help_text.find('One value: ', start_pos) + len('One value: ')
+        end_pos = help_text.find('\n', start_pos)
+
+        action_modules = help_text[start_pos:end_pos].split(', ')
+
+        self._paraminfo['main'] = {
+            'name': 'main',
+            'classname': 'ApiMain',
+            'prefix': '',
+            'readrights': '',
+            'helpurls': [],
+            'parameters': [
+                {
+                    "name": "action",
+                    'type': action_modules,
+                },
+            ],
+        }
+
     def fetch(self, modules, _init=False):
         """
         Fetch paraminfo for multiple modules.
@@ -311,6 +355,9 @@ class ParamInfo(Container):
         # subsets, which are unlikely to change. i.e. first request core
         # modules which have been a stable part of the API for a long time.
         # Also detecting extension based modules may help.
+        # Also, when self.modules_only_mode is disabled, both modules and
+        # querymodules may each filled up to self._limit, doubling the
+        # number of modules that may be processed in a single batch.
         for module_batch in itergroup(sorted(modules), self._limit):
             if self.modules_only_mode and 'pageset' in module_batch:
                 pywikibot.debug('paraminfo fetch: removed pageset', _logger)
@@ -350,7 +397,11 @@ class ParamInfo(Container):
 
             self._paraminfo.update(normalized_result)
 
-        if self.modules_only_mode and 'pageset' in modules:
+        if 'main' not in self._paraminfo:
+            self._emulate_main()
+            if 'pageset' in modules:
+                self._emulate_pageset()
+        elif self.modules_only_mode and 'pageset' in modules:
             self._emulate_pageset()
 
     def _normalize_modules(self, modules):
