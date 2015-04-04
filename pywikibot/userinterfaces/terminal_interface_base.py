@@ -114,8 +114,7 @@ class UI:
 
         To each line which contains a color tag a ' ***' is added at the end.
         """
-        lines = text.split('\n')
-        for i, line in enumerate(lines):
+        for i, line in enumerate(text.splitlines()):
             if i > 0:
                 line = "\n" + line
             line, count = colorTagR.subn('', line)

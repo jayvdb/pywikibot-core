@@ -289,7 +289,7 @@ class TestTerminalOutput(UITestCase):
         except TestException:
             pywikibot.exception('exception', tb=True)
         self.assertEqual(newstdout.getvalue(), '')
-        stderrlines = newstderr.getvalue().split('\n')
+        stderrlines = newstderr.getvalue().splitlines()
         self.assertEqual(stderrlines[0], 'ERROR: TestException: Testing Exception')
         self.assertEqual(stderrlines[1], 'Traceback (most recent call last):')
         self.assertEqual(stderrlines[3], "    raise TestException('Testing Exception')")
@@ -610,7 +610,7 @@ class TestWindowsTerminalUnicodeArguments(WindowsTerminalTestCase):
             u"Alpha Bετα Гамма دلتا\n")
         lines = []
         while len(lines) < 4 or lines[0] != 'Alpha':
-            lines = self.getstdouterr().split('\n')
+            lines = self.getstdouterr().splitlines()
             time.sleep(1)
 
         # empty line is the new command line
