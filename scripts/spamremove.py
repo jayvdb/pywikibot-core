@@ -79,10 +79,9 @@ def main(*args):
         # Highlight the title in purple.
         pywikibot.output(u"\n\n>>> \03{lightpurple}%s\03{default} <<<"
                          % p.title())
-        lines = text.split('\n')
         newpage = []
         lastok = ""
-        for line in lines:
+        for line in text.splitlines():
             if spamSite in line:
                 if lastok:
                     pywikibot.output(lastok)

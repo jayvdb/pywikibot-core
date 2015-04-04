@@ -234,7 +234,7 @@ class TestScriptMeta(MetaTestCaseClass):
 
                 result = execute_pwb(cmd, data_in, timeout=timeout, error=error)
 
-                stderr = result['stderr'].split('\n')
+                stderr = result['stderr'].splitlines()
                 stderr_sleep = [l for l in stderr
                                 if l.startswith('Sleeping for ')]
                 stderr_other = [l for l in stderr
@@ -254,8 +254,8 @@ class TestScriptMeta(MetaTestCaseClass):
                         self.assertIn(result['exit_code'], [0, 1, 2, -9])
                     else:
                         if stderr_other == ['']:
-                            stderr_other = None
-                        self.assertIsNone(stderr_other)
+                            stderr_other = []
+                        self.assertEqual(stderr_other, [])
                         self.assertIn('Global arguments available for all',
                                       result['stdout'])
 

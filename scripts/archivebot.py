@@ -349,7 +349,7 @@ class DiscussionPage(pywikibot.Page):
         self.threads = []
         self.archives = {}
         self.archived_threads = 0
-        lines = self.get().split('\n')
+        lines = self.get().splitlines()
         found = False  # Reading header
         cur_thread = None
         for line in lines:
