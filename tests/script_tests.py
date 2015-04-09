@@ -100,6 +100,7 @@ auto_run_script_list = [
     'catall',
     'category_redirect',
     'cfd',
+    'checkimages',
     'clean_sandbox',
     'disambredir',
     'imagerecat',
