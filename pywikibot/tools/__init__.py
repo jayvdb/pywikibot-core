@@ -546,7 +546,14 @@ def intersect_generators(genlist):
     thrlist = ThreadList()
 
     for source in genlist:
-        threaded_gen = ThreadedGenerator(name=repr(source), target=source)
+        # In py2, the repr() fails if the source contains unicode
+        # and the thread name will be automatically generated.
+        name = None
+        try:
+            name=repr(source)
+        except:
+            pass
+        threaded_gen = ThreadedGenerator(name=name, target=source)
         thrlist.append(threaded_gen)
 
     while True:
