@@ -92,10 +92,12 @@ if os.name != 'nt':
     # when trying to build the C modules.
     dependencies += extra_deps['mwparserfromhell']
 
-if os.name == 'nt':
+# setup can't detect or install pywin32, which pywinauto depends on.
+# appveyor builds do not install pywin32
+if os.name == 'nt' and 'PYSETUP_TEST_NO_WIN32' not in os.environ:
     # FIXME: tests/ui_tests.py suggests pywinauto 0.4.2
     # which isnt provided on pypi.
-    test_deps += ['pywin32>=218', 'pywinauto>=0.4.0']
+    test_deps += ['pywinauto>=0.4.0']
 
 extra_deps.update(script_deps)
 
