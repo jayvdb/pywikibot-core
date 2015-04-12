@@ -93,7 +93,7 @@ if os.name != 'nt':
 if os.name == 'nt':
     # FIXME: tests/ui_tests.py suggests pywinauto 0.4.2
     # which isnt provided on pypi.
-    test_deps += ['pywin32']
+    test_deps += []
 
 extra_deps.update(script_deps)
 
