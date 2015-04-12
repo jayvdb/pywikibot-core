@@ -11,6 +11,8 @@ import datetime
 import os
 import sys
 
+from distutils.version import LooseVersion
+
 import pywikibot
 from pywikibot import pagegenerators, date
 
