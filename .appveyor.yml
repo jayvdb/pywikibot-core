@@ -1,0 +1,39 @@
+environment:
+
+  global:
+    # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
+    # /E:ON and /V:ON options are not enabled in the batch script intepreter
+    # See: http://stackoverflow.com/a/13751649/163740
+    WITH_COMPILER: "cmd /E:ON /V:ON /C run_with_compiler.cmd"
+
+  matrix:
+    - PYTHON: "C:\\Python27"
+      PYTHON_VERSION: "2.7.8"
+      PYTHON_ARCH: "32"
+
+    - PYTHON: "C:\\Python33"
+      PYTHON_VERSION: "3.3.5"
+      PYTHON_ARCH: "32"
+
+init:
+  - "ECHO %PYTHON% %PYTHON_VERSION% %PYTHON_ARCH%"
+
+install:
+  - ps: (new-object net.webclient).DownloadFile('https://raw.githubusercontent.com/pypa/python-packaging-user-guide/master/source/code/install.ps1', 'install.ps1')
+  - "powershell install.ps1"
+  - ps: (new-object net.webclient).DownloadFile('https://raw.githubusercontent.com/pypa/python-packaging-user-guide/master/source/code/run_with_compiler.cmd', 'run_with_compiler.cmd')
+
+build: off
+
+test_script:
+  - echo "mylang = 'wikipedia'" > user-config.py
+  - echo "family = 'en'" >> user-config.py
+
+  - echo "max_retries = 2" >> user-config.py
+  - echo "maximum_GET_length = 5000" >> user-config.py
+
+  - set PYSETUP_TEST_NO_WIN32=1
+  - "%WITH_COMPILER% %PYTHON%/python setup.py test"
+
+artifacts:
+  - path: dist\*
