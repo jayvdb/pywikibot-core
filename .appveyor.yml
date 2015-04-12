@@ -4,7 +4,7 @@ environment:
     # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
     # /E:ON and /V:ON options are not enabled in the batch script intepreter
     # See: http://stackoverflow.com/a/13751649/163740
-    WITH_COMPILER: "cmd /E:ON /V:ON /C .\\run_with_compiler.cmd"
+    WITH_COMPILER: "cmd /E:ON /V:ON /C run_with_compiler.cmd"
 
   matrix:
     - PYTHON: "C:\\Python27"
@@ -20,8 +20,8 @@ init:
 
 install:
   - ps: (new-object net.webclient).DownloadFile('https://raw.githubusercontent.com/pypa/python-packaging-user-guide/master/source/code/install.ps1', 'install.ps1')
-  - ps: (new-object net.webclient).DownloadFile('https://raw.githubusercontent.com/pypa/python-packaging-user-guide/master/source/code/run_with_compiler.cmd', 'run_with_compiler.cmd')
   - "powershell install.ps1"
+  - ps: (new-object net.webclient).DownloadFile('https://raw.githubusercontent.com/pypa/python-packaging-user-guide/master/source/code/run_with_compiler.cmd', 'run_with_compiler.cmd')
 
 build: off
 
