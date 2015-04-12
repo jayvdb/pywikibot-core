@@ -32,6 +32,7 @@ test_script:
 
   - echo "console_encoding = 'cp850'" >> user-config.py
 
+
   - set PYSETUP_TEST_NO_WIN32=1
   - "%WITH_COMPILER% %PYTHON%/python setup.py test"
 
