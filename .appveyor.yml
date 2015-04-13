@@ -32,6 +32,7 @@ test_script:
 
   - dir "%appdata%\\Pywikibot\\user-config.py"
   - set PYSETUP_TEST_NO_WIN32=1
+  - "%PYTHON%\\python pwb.py pywikibot/config2.py modified"
   - "%WITH_COMPILER% %PYTHON%\\python setup.py test"
 
 artifacts:
