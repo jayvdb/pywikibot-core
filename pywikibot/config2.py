@@ -921,11 +921,11 @@ for _key, _val in list(_uc.items()):
               "Misspelled?" % locals())
 
 # Copy the user config settings into globals
-_modified = [_key for _key in _gl
-             if _uc[_key] != globals()[_key] or
-             _key in ('usernames', 'sysopnames', 'disambiguation_comment')]
+__modified__ = [_key for _key in _gl
+                if _uc[_key] != globals()[_key] or
+                _key in ('usernames', 'sysopnames', 'disambiguation_comment')]
 
-for _key in _modified:
+for _key in __modified__:
     globals()[_key] = _uc[_key]
 
     if _key in _deprecated_variables:
@@ -998,7 +998,7 @@ if __name__ == "__main__":
         if _name[0] != '_':
             if not type(globals()[_name]) in [types.FunctionType,
                                               types.ModuleType]:
-                if _all or _name in _modified:
+                if _all or _name in __modified__:
                     _value = globals()[_name]
                     if _name in _private_values and _value:
                         if isinstance(_value, dict):

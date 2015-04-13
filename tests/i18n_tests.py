@@ -9,11 +9,13 @@ from __future__ import unicode_literals
 
 __version__ = '$Id$'
 
+import locale
 import sys
 
 import pywikibot
 
 from pywikibot import i18n, bot
+from pywikibot.family import Family
 
 from tests.aspects import unittest, TestCase, DefaultSiteTestCase, PwbTestCase
 
@@ -88,6 +90,10 @@ class TestTranslate(TestCase):
 class UserInterfaceLangTestCase(TestCase):
 
     """Base class for tests using config.userinterface_lang."""
+
+    @classmethod
+    def setUpClass(cls):
+        super(UserInterfaceLangTestCase, cls).setUpClass()
 
     def setUp(self):
         super(UserInterfaceLangTestCase, self).setUp()
@@ -335,26 +341,62 @@ class InputTestCase(TWNTestCaseBase, UserInterfaceLangTestCase, PwbTestCase):
     """Test i18n.input."""
 
     family = 'wikipedia'
-    code = 'arz'
+    code = '*'
+
+    alt_code = None
 
     message_package = 'scripts.i18n'
+    message = 'pywikibot-enter-category-name'
 
     @classmethod
     def setUpClass(cls):
-        if cls.code in i18n.twget_keys('pywikibot-enter-category-name'):
+        if 'userinterface_lang' in pywikibot.config.__modified__:
             raise unittest.SkipTest(
-                '%s has a translation for %s'
-                % (cls.code, 'pywikibot-enter-category-name'))
+                'user-config defines userinterface_lang')
+
+        family_codes = set(Family.load(cls.family).langs.keys())
+        i18n_codes = set(i18n.twget_keys(cls.message))
+
+        untranslated = family_codes - i18n_codes
+
+        for site_code in sorted(untranslated):
+            alt_codes = i18n._altlang(site_code)
+            if alt_codes:
+                locale_prefix = str(site_code + '_')
+                locales = [code for code in locale.locale_alias.keys()
+                           if code.startswith(locale_prefix) and
+                           len(code) == len(locale_prefix) + 2]
+
+                if locales:
+                    alt_codes = [code for code in alt_codes
+                                 if code in i18n_codes]
+                    if alt_codes:
+                        cls.alt_code = alt_codes[0]
+                        cls.code = site_code
+                        cls.sites = {
+                            cls.family: {
+                                'family': cls.family, 'code': cls.code}}
+                        break
+
+        if cls.code == '*':
+            raise unittest.SkipTest(
+                '%s is broken: %s has no suitable codes for testing.'
+                % (cls.__class.__name, cls.message))
 
         super(InputTestCase, cls).setUpClass()
 
     def test_pagegen_i18n_input(self):
-        """Test i18n.input via ."""
-        result = self._execute(args=['listpages', '-cat'],
-                               data_in='non-existant-category\n',
-                               timeout=5)
+        """Test i18n.input fallback via pwb and LC_ALL."""
+        print('using code %s with fallback %s' % (self.code, self.alt_code))
+        assert(self.code == pywikibot.config.userinterface_lang)
 
-        self.assertIn('Please enter the category name:', result['stderr'])
+        result = self._execute(args=['listpages', '-cat'],
+                               data_in='non-existant-category\r\n',
+                               timeout=20)
+
+        # get translated message
+        expect = i18n.twtranslate(self.alt_code, self.message, fallback=False)
+        self.assertIn(expect, result['stderr'])
 
 
 class MissingPackageTestCase(TWNSetMessagePackageBase,
