@@ -848,7 +848,7 @@ if os.environ.get('PYWIKIBOT2_NO_USER_CONFIG', '0') == '1':
     print("WARNING: Skipping loading of user-config.py.")
     _fns = []
 else:
-    _fns = [os.path.join(_base_dir, "user-config.py")]
+    __user_config__ = _fns = [os.path.join(_base_dir, "user-config.py")]
 for _filename in _fns:
     _thislevel += 1
     if os.path.exists(_filename):
@@ -954,6 +954,8 @@ if (not ignore_file_security_warnings and
 # When called as main program, list all configuration variables
 #
 if __name__ == "__main__":
+    print('Base directory: %s' % pywikibot.config2.base_dir)
+    print('user-config.py: %s' % __user_config__)
     import types
     _all = 1
     for _arg in sys.argv[1:]:
