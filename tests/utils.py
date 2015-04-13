@@ -274,8 +274,22 @@ def execute(command, data_in=None, timeout=0, error=None):
     env[str('PYTHONIOENCODING')] = str(config.console_encoding)
 
     # LC_ALL is used by i18n.input as an alternative for userinterface_lang
+    # A complete locale string needs to be created, so the country code
+    # is guessed, however it is discarded when loading config.
     if pywikibot.config.userinterface_lang:
-        env[str('LC_ALL')] = str(pywikibot.config.userinterface_lang)
+        # Python 2.6 and 3.3 do not include any alias for 'an',
+        # which is used by test_pagegen_i18n_input.
+        if sys.version_info < (2, 7) or sys.version_info[0:2] == (3, 3):
+            locale.locale_alias['an_es'] = 'an_es.UTF-8'
+
+        locale_code = str(pywikibot.config.userinterface_lang + '_')
+        lang_locales = [code for code in locale.locale_alias.keys()
+                        if code.startswith(locale_code) and
+                        len(code) == len(locale_code) + 2]
+        assert(lang_locales)
+        locale_code += lang_locales[0][3:5].upper()
+        locale_code += '.' + pywikibot.config.console_encoding
+        env[str('LC_ALL')] = str(locale_code)
 
     # Set EDITOR to an executable that ignores all arguments and does nothing.
     env[str('EDITOR')] = str('call' if sys.platform == 'win32' else 'true')
