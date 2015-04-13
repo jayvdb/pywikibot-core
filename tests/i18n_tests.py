@@ -335,7 +335,7 @@ class InputTestCase(TWNTestCaseBase, UserInterfaceLangTestCase, PwbTestCase):
     """Test i18n.input."""
 
     family = 'wikipedia'
-    code = 'arz'
+    code = 'an'
 
     message_package = 'scripts.i18n'
 
@@ -343,18 +343,19 @@ class InputTestCase(TWNTestCaseBase, UserInterfaceLangTestCase, PwbTestCase):
     def setUpClass(cls):
         if cls.code in i18n.twget_keys('pywikibot-enter-category-name'):
             raise unittest.SkipTest(
-                '%s has a translation for %s'
+                '%s has a translation for %s. Update the test case.'
                 % (cls.code, 'pywikibot-enter-category-name'))
 
         super(InputTestCase, cls).setUpClass()
 
     def test_pagegen_i18n_input(self):
-        """Test i18n.input via ."""
+        """Test i18n.input fallback via pwb and LC_ALL."""
         result = self._execute(args=['listpages', '-cat'],
                                data_in='non-existant-category\n',
                                timeout=5)
 
-        self.assertIn('Please enter the category name:', result['stderr'])
+        # 'an' fallsback to 'es'
+        self.assertIn('Introduce el nombre de la categoría:', result['stderr'])
 
 
 class MissingPackageTestCase(TWNSetMessagePackageBase,
