@@ -8,9 +8,11 @@
 from __future__ import print_function, unicode_literals
 __version__ = '$Id$'
 #
+import locale
 import os
 import subprocess
 import sys
+import tempfile
 import time
 
 from warnings import warn
@@ -31,6 +33,19 @@ NoSiteTestCase = aspects.TestCase
 SiteTestCase = aspects.TestCase
 CachedTestCase = aspects.TestCase
 PywikibotTestCase = aspects.TestCase
+
+WIN32_LOCALE_UPDATE = """
+<gs:GlobalizationServices xmlns:gs="urn:longhornGlobalizationUnattend">
+    <gs:UserList>
+        <gs:User UserID="Current" CopySettingsToDefaultUserAcct="true"
+                                  CopySettingsToSystemAcct="true"/>
+    </gs:UserList>
+
+    <gs:UserLocale>
+        <gs:Locale Name="%s" SetAsCurrent="true" ResetAllSettings="false"/>
+    </gs:UserLocale>
+</gs:GlobalizationServices>
+"""
 
 
 class DrySiteNote(RuntimeWarning):
@@ -251,6 +266,20 @@ class DryDataSite(DrySite, pywikibot.site.DataSite):
             })
 
 
+def win32_set_locale(code):
+    """Set user locale on win32."""
+    (fd, filename) = tempfile.mkstemp(text=True, suffix='.xml')
+    code = code.split('.')[0]
+    s = WIN32_LOCALE_UPDATE % code.replace('_', '-')
+    os.write(fd, s)
+    os.close(fd)
+    cmd = 'control.exe intl.cpl,,/f:"' + filename + '"'
+    subprocess.call(cmd, shell=True)
+    new_code = locale.getdefaultlocale()[0]
+    assert(code == new_code)
+    os.remove(filename)
+
+
 def execute(command, data_in=None, timeout=0, error=None):
     """
     Execute a command and capture outputs.
@@ -258,6 +287,7 @@ def execute(command, data_in=None, timeout=0, error=None):
     @param command: executable to run and arguments to use
     @type command: list of unicode
     """
+    current_locale = None
     # Any environment variables added on Windows must be of type
     # str() on Python 2.
     env = os.environ.copy()
@@ -273,8 +303,23 @@ def execute(command, data_in=None, timeout=0, error=None):
     env[str('PYTHONIOENCODING')] = str(config.console_encoding)
 
     # LC_ALL is used by i18n.input as an alternative for userinterface_lang
+    # A complete locale string needs to be created, so the country code
+    # is guessed, however it is discarded when loading config.
     if pywikibot.config.userinterface_lang:
-        env[str('LC_ALL')] = str(pywikibot.config.userinterface_lang)
+        current_locale = locale.getdefaultlocale()[0].split('.')[0]
+        if pywikibot.config.userinterface_lang + '_' not in current_locale:
+            locale_code = str(pywikibot.config.userinterface_lang + '_')
+            lang_locales = [code for code in locale.locale_alias.keys()
+                            if code.startswith(locale_code) and
+                            len(code) == len(locale_code) + 2]
+            assert(lang_locales)
+            locale_code += lang_locales[0][3:5].upper()
+            locale_code += '.' + pywikibot.config.console_encoding
+            env[str('LC_ALL')] = str(locale_code)
+            if sys.platform == 'win32':
+                win32_set_locale(locale_code)
+        else:
+            current_locale = None
 
     # Set EDITOR to an executable that ignores all arguments and does nothing.
     env[str('EDITOR')] = str('call' if sys.platform == 'win32' else 'true')
@@ -301,8 +346,7 @@ def execute(command, data_in=None, timeout=0, error=None):
             child_unicode_env = [(k, v) for k, v in env.items()
                                  if isinstance(k, unicode) or
                                  isinstance(v, unicode)]
-            if child_unicode_env:
-                raise TypeError('unicode in child : %r' % child_unicode_env)
+            raise TypeError('unicode in child : %r' % child_unicode_env)
         raise
 
     if data_in is not None:
@@ -331,6 +375,10 @@ def execute(command, data_in=None, timeout=0, error=None):
         stderr_lines += p.stderr.read()
 
     data_out = p.communicate()
+
+    if sys.platform == 'win32' and current_locale:
+        win32_set_locale(current_locale)
+
     return {'exit_code': p.returncode,
             'stdout': data_out[0].decode(config.console_encoding),
             'stderr': (stderr_lines + data_out[1]).decode(config.console_encoding)}
