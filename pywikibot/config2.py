@@ -954,7 +954,7 @@ if (not ignore_file_security_warnings and
 # When called as main program, list all configuration variables
 #
 if __name__ == "__main__":
-    print('Base directory: %s' % pywikibot.config2.base_dir)
+    print('Base directory: %s' % base_dir)
     print('user-config.py: %s' % __user_config__)
     import types
     _all = 1
