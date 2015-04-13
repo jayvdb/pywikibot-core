@@ -276,7 +276,7 @@ def execute(command, data_in=None, timeout=0, error=None):
     if data_in is not None:
         options['stdin'] = subprocess.PIPE
 
-    #print(env)
+    print(env)
     p = subprocess.Popen(command, env=env, **options)
 
     stdin_encoding = stream_encoding(p.stdin)
