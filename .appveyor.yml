@@ -31,6 +31,7 @@ build: off
 test_script:
   - mkdir "%PYWIKIBOT2_DIR%"
   - dir "%PYWIKIBOT2_DIR%"
+  - echo "%PYWIKIBOT2_DIR%\\user-config.py" "%CONFIG_FILE%"
   - echo mylang = 'en' > "%CONFIG_FILE%"
   - echo family = 'wikipedia' >> "%CONFIG_FILE%"
   - echo max_retries = 2 >> "%CONFIG_FILE%"
