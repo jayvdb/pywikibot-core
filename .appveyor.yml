@@ -33,6 +33,7 @@ test_script:
   - echo "mylang = 'wikipedia'; family = 'en'; max_retries = 2; maximum_GET_length = 5000;" > "%appdata%\\Pywikibot\\user-config.py"
 
   - dir "%appdata%\\Pywikibot\\user-config.py"
+  - "copy %appdata%\\Pywikibot\\user-config.py con:"
   - set PYSETUP_TEST_NO_WIN32=1
   - "%PYTHON%\\python pwb.py pywikibot/config2.py modified"
   - "%WITH_COMPILER% %PYTHON%\\python setup.py test"
