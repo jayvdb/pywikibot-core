@@ -30,7 +30,7 @@ build: off
 test_script:
   - dir
   - mkdir "%appdata%\\Pywikibot"
-  - echo "mylang = 'wikipedia'; family = 'en'; max_retries = 2; maximum_GET_length = 5000;" > "%appdata%\\Pywikibot\\user-config.py"
+  - echo mylang = 'wikipedia'; family = 'en'; max_retries = 2; maximum_GET_length = 5000; > "%appdata%\\Pywikibot\\user-config.py"
 
   - dir "%appdata%\\Pywikibot\\user-config.py"
   - "copy %appdata%\\Pywikibot\\user-config.py con:"
