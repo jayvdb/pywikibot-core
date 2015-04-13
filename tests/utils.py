@@ -8,6 +8,7 @@
 from __future__ import print_function, unicode_literals
 __version__ = '$Id$'
 #
+import locale
 import os
 import subprocess
 import sys
@@ -262,8 +263,17 @@ def execute(command, data_in=None, timeout=0, error=None):
     # sys.path may have been modified by the test runner to load dependencies.
     env['PYTHONPATH'] = ":".join(sys.path)
     # LC_ALL is used by i18n.input as an alternative for userinterface_lang
+    # A complete locale string needs to be created, so the country code
+    # is guessed, however it is discarded when loading config.
     if pywikibot.config.userinterface_lang:
-        env['LC_ALL'] = str(pywikibot.config.userinterface_lang)
+        locale_code = str(pywikibot.config.userinterface_lang + '_')
+        lang_locales = [code for code in locale.locale_alias.keys()
+                        if code.startswith(locale_code) and
+                        len(code) == len(locale_code) + 2]
+        assert(lang_locales)
+        locale_code += lang_locales[0][3:5].upper()
+        locale_code += '.' + pywikibot.config.console_encoding
+        env['LC_ALL'] = str(locale_code)
     # Set EDITOR to an executable that ignores all arguments and does nothing.
     if sys.platform == 'win32':
         env['EDITOR'] = str('call')
