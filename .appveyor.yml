@@ -26,7 +26,7 @@ install:
   - ps: (new-object net.webclient).DownloadFile('https://raw.githubusercontent.com/pypa/python-packaging-user-guide/master/source/code/run_with_compiler.cmd', 'run_with_compiler.cmd')
   - cd externals/httplib2
   - "%WITH_COMPILER% %PYTHON%\\python setup.py install"
-  - cd ..
+  - cd ..\\..
 
 build: off
 
