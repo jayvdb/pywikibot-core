@@ -38,6 +38,7 @@ test_script:
   - echo max_retries = 2 >> "%PYWIKIBOT2_DIR%\\user-config.py"
   - echo maximum_GET_length = 5000 >> "%PYWIKIBOT2_DIR%\\user-config.py"
   - echo console_encoding = 'utf8' >> "%PYWIKIBOT2_DIR%\\user-config.py"
+  - echo transliteration_target = None >> "%PYWIKIBOT2_DIR%\\user-config.py"
 
   - set PYSETUP_TEST_NO_WIN32=1
   - "%WITH_COMPILER% %PYTHON%\\python setup.py test"
