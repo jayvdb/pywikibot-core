@@ -260,7 +260,7 @@ def execute(command, data_in=None, timeout=0, error=None):
     # str() on Python 2.
     env = os.environ.copy()
     # sys.path may have been modified by the test runner to load dependencies.
-    env['PYTHONPATH'] = ":".join(sys.path)
+    env['PYTHONPATH'] = str(":".join(sys.path))
     # LC_ALL is used by i18n.input as an alternative for userinterface_lang
     if pywikibot.config.userinterface_lang:
         env['LC_ALL'] = str(pywikibot.config.userinterface_lang)
