@@ -637,6 +637,5 @@ def input(twtitle, parameters=None, password=False, fallback_prompt=None):
     else:
         code = config.userinterface_lang or \
             locale.getdefaultlocale()[0].split('_')[0]
-
         prompt = twtranslate(code, twtitle, parameters)
     return pywikibot.input(prompt, password)
