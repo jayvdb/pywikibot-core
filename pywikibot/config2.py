@@ -29,6 +29,7 @@ import os
 import stat
 import sys
 
+from locale import getdefaultlocale
 from warnings import warn
 
 # This frozen set should contain all imported modules/variables, so it must
@@ -910,6 +911,9 @@ if console_encoding is None:
         console_encoding = 'cp850'
     else:
         console_encoding = 'iso-8859-1'
+
+if userinterface_lang is None:
+    userinterface_lang = getdefaultlocale()[0].split('_')[0]
 
 # Fix up transliteration_target
 if transliteration_target == 'not set':
