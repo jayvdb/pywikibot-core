@@ -1,0 +1,70 @@
+language:
+- objective-c
+
+env:
+  matrix:
+  - VERSION=2.7.9 LANGUAGE=ar FAMILY=wikipedia PYSETUP_TEST_EXTRAS=1
+  - VERSION=3.3.5 LANGUAGE=ar FAMILY=wikipedia PYSETUP_TEST_EXTRAS=1
+  - VERSION=3.4.2 LANGUAGE=fr FAMILY=wiktionary
+  - VERSION=2.7.9 LANGUAGE=test FAMILY=wikidata
+
+install:
+# increase number of open files allowed for tests
+# https://github.com/matplotlib/matplotlib/issues/3315
+- ulimit -n 4096
+
+- source terryfy/travis_tools.sh
+- source terryfy/library_installers.sh
+- clean_builds
+- clean_submodule pywikibot-core
+
+- get_python_environment macpython $VERSION venv
+- check_var $BUILD_PREFIX
+- check_var $SYS_CC
+- check_var $SYS_CXX
+- check_var $PYTHON_EXE
+- cd pywikibot-core
+- git submodule init
+- git submodule update
+- echo '[directories]' >> setup.cfg
+- echo "basedirlist = $BUILD_PREFIX, /usr" >> setup.cfg
+
+- if [[ "$SITE_ONLY" == '1' ]]; then export USE_NOSE=1; fi
+- if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2==0.8.0; fi
+- pip install six
+- export GITHUB_USER=`echo $TRAVIS_REPO_SLUG | cut -d '/' -f 1`
+- mkdir ~/.pywikibot
+- mkdir ~/.python-eggs
+- chmod 700 ~/.python-eggs
+
+- touch ~/.pywikibot/user-config.py
+- echo "import os" >> ~/.pywikibot/user-config.py
+- echo "mylang = '$LANGUAGE'" >> ~/.pywikibot/user-config.py
+- echo "family = '$FAMILY'" >> ~/.pywikibot/user-config.py
+
+- echo "password_file = os.path.expanduser('~/.pywikibot/passwordfile')" >> ~/.pywikibot/user-config.py
+- touch ~/.pywikibot/passwordfile
+
+- echo "max_retries = 2" >> ~/.pywikibot/user-config.py
+- echo "maximum_GET_length = 5000" >> ~/.pywikibot/user-config.py
+- echo "console_encoding = 'utf8'" >> ~/.pywikibot/user-config.py
+
+- if [[ "$GITHUB_USER" == "wikimedia" ]]; then
+    PYWIKIBOT2_USERNAME="Pywikibot-test" ;
+  else
+    export PYWIKIBOT2_TEST_WRITE_FAIL=1 ;
+  fi
+
+- if [[ -n "$USER_PASSWORD" && -n "$PYWIKIBOT2_USERNAME" ]]; then
+    echo "usernames['$FAMILY']['$LANGUAGE'] = '$PYWIKIBOT2_USERNAME'" >> ~/.pywikibot/user-config.py ;
+    echo "usernames['wikipedia']['en'] = '$PYWIKIBOT2_USERNAME'" >> ~/.pywikibot/user-config.py ;
+    echo "usernames['wikipedia']['test'] = '$PYWIKIBOT2_USERNAME'" >> ~/.pywikibot/user-config.py ;
+    echo "usernames['wikidata']['test'] = '$PYWIKIBOT2_USERNAME'" >> ~/.pywikibot/user-config.py ;
+    echo "usernames['commons']['commons'] = '$PYWIKIBOT2_USERNAME'" >> ~/.pywikibot/user-config.py ;
+    echo "('$PYWIKIBOT2_USERNAME', '$USER_PASSWORD')" > ~/.pywikibot/passwordfile ;
+  fi
+- CC=${SYS_CC} CXX=${SYS_CXX} python setup.py install
+
+script:
+# Fix numpy ast errors in tests by upgrading numpy
+- $PYTHON_EXE setup.py test
