@@ -335,7 +335,7 @@ class InputTestCase(TWNTestCaseBase, UserInterfaceLangTestCase, PwbTestCase):
     """Test i18n.input."""
 
     family = 'wikipedia'
-    code = 'arz'
+    code = 'gu'
 
     message_package = 'scripts.i18n'
 
@@ -343,7 +343,7 @@ class InputTestCase(TWNTestCaseBase, UserInterfaceLangTestCase, PwbTestCase):
     def setUpClass(cls):
         if cls.code in i18n.twget_keys('pywikibot-enter-category-name'):
             raise unittest.SkipTest(
-                '%s has a translation for %s'
+                '%s has a translation for %s. Update code in test case.'
                 % (cls.code, 'pywikibot-enter-category-name'))
 
         super(InputTestCase, cls).setUpClass()
