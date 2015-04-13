@@ -187,6 +187,7 @@ import re
 import locale
 import codecs
 from random import choice
+import os
 import sys
 import pywikibot
 from pywikibot import i18n
@@ -195,6 +196,8 @@ from pywikibot import config
 if sys.version_info[0] > 2:
     unicode = str
 
+#print('environ', os.environ)
+print(locale._build_localename(None))
 locale.setlocale(locale.LC_ALL, '')
 
 # Script uses the method i18n.translate() to find the right

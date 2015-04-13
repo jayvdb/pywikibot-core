@@ -263,7 +263,8 @@ def execute(command, data_in=None, timeout=0, error=None):
     env['PYTHONPATH'] = ":".join(sys.path)
     # LC_ALL is used by i18n.input as an alternative for userinterface_lang
     if pywikibot.config.userinterface_lang:
-        env['LC_ALL'] = pywikibot.config.userinterface_lang
+        env[str('LC_ALL')] = pywikibot.config.userinterface_lang
+        print('LC_ALL', pywikibot.config.userinterface_lang)
     # Set EDITOR to an executable that ignores all arguments and does nothing.
     if sys.platform == 'win32':
         env['EDITOR'] = 'call'
@@ -308,9 +309,11 @@ def execute(command, data_in=None, timeout=0, error=None):
         stderr_lines += p.stderr.read()
 
     data_out = p.communicate()
-    return {'exit_code': p.returncode,
+    rv = {'exit_code': p.returncode,
             'stdout': data_out[0].decode(stdout_encoding),
             'stderr': (stderr_lines + data_out[1]).decode(stderr_encoding)}
+    print(rv)
+    return rv
 
 
 def execute_pwb(args, data_in=None, timeout=0, error=None):
