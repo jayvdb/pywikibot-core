@@ -27,14 +27,10 @@ build: off
 
 test_script:
   - dir
-  - mkdir %appdata%\\Pywikibot
-  - echo "mylang = 'wikipedia'" > %appdata%\\Pywikibot\\user-config.py
-  - echo "family = 'en'" >> %appdata%\\Pywikibot\\user-config.py
+  - mkdir "%appdata%\\Pywikibot"
+  - echo "mylang = 'wikipedia'; family = 'en'; max_retries = 2; maximum_GET_length = 5000;" > "%appdata%\\Pywikibot\\user-config.py"
 
-  - echo "max_retries = 2" >> %appdata%\\Pywikibot\\user-config.py
-  - echo "maximum_GET_length = 5000" >> %appdata%\\Pywikibot\\user-config.py
-
-  - "print %appdata%\\Pywikibot\\user-config.py"
+  - dir "%appdata%\\Pywikibot\\user-config.py"
   - set PYSETUP_TEST_NO_WIN32=1
   - "%WITH_COMPILER% %PYTHON%\\python setup.py test"
 
