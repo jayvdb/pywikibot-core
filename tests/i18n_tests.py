@@ -332,10 +332,17 @@ class ScriptMessagesTestCase(TWNTestCaseBase):
 
 class InputTestCase(TWNTestCaseBase, UserInterfaceLangTestCase, PwbTestCase):
 
-    """Test i18n.input."""
+    """
+    Test i18n.input.
+
+    The code must be a language pack installed on the host system,
+    and for pwb to set LC_ALL the code must be present in locale.locale_alias.
+
+    To test the fallback, the code must not have a translation available.
+    """
 
     family = 'wikipedia'
-    code = 'arz'
+    code = 'hi'
 
     message_package = 'scripts.i18n'
 
@@ -343,17 +350,18 @@ class InputTestCase(TWNTestCaseBase, UserInterfaceLangTestCase, PwbTestCase):
     def setUpClass(cls):
         if cls.code in i18n.twget_keys('pywikibot-enter-category-name'):
             raise unittest.SkipTest(
-                '%s has a translation for %s'
+                '%s has a translation for %s. Update the test case.'
                 % (cls.code, 'pywikibot-enter-category-name'))
 
         super(InputTestCase, cls).setUpClass()
 
     def test_pagegen_i18n_input(self):
-        """Test i18n.input via ."""
+        """Test i18n.input fallback via pwb and LC_ALL."""
         result = self._execute(args=['listpages', '-cat'],
                                data_in='non-existant-category\n',
                                timeout=5)
 
+        # 'hi' has no fallback, so English is used
         self.assertIn('Please enter the category name:', result['stderr'])
 
 
