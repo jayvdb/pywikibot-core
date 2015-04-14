@@ -418,7 +418,7 @@ def default_encoding(encoding):
     """Return an encoding even if it's originally None."""
     if encoding is None:
         if sys.platform == 'win32':
-            return 'cp850'
+            return 'utf8'
         else:
             return 'iso-8859-1'
     else:
