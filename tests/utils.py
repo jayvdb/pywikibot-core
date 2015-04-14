@@ -16,7 +16,7 @@ import time
 from warnings import warn
 
 import pywikibot
-from pywikibot.tools import SelfCallDict, stream_encoding
+from pywikibot.tools import SelfCallDict
 from pywikibot.site import Namespace
 from pywikibot.data.api import CachedRequest
 from pywikibot.data.api import Request as _original_Request
@@ -247,6 +247,17 @@ class DryDataSite(DrySite, pywikibot.site.DataSite):
                                canonical_name='Property',
                                defaultcontentmodel='wikibase-property')
             })
+
+
+def stream_encoding(stream):
+    """Get encoding of the stream and use a default if not existent/None."""
+    try:
+        encoding = stream.encoding
+    except AttributeError:
+        encoding = None
+    if not encoding:
+        encoding = pywikibot.config.console_encoding
+    return encoding
 
 
 def execute(command, data_in=None, timeout=0, error=None):
