@@ -26,6 +26,9 @@ testbasepath = os.path.join(_tests_dir, 'pwb')
 print_locals_test_package = 'tests.pwb.print_locals'
 print_locals_test_script = os.path.join(testbasepath, 'print_locals.py')
 
+print_env_test_package = 'tests.pwb.print_env'
+print_env_test_script = os.path.join(testbasepath, 'print_env.py')
+
 
 class TestPwb(PwbTestCase):
 
@@ -42,17 +45,30 @@ class TestPwb(PwbTestCase):
     site = False
     net = False
 
-    def testScriptEnvironment(self):
+    def test_locals(self):
         """
-        Test environment of pywikibot.
+        Test internal environment of pywikibot.
 
         Make sure the environment is not contaminated, and is the same as
         the environment we get when directly running a script.
         """
-        direct = execute([sys.executable, '-m', 'tests.pwb.print_locals'])
+        direct = execute([sys.executable, '-m', print_locals_test_package])
         vpwb = execute_pwb([print_locals_test_script])
         self.maxDiff = None
         self.assertEqual(direct['stdout'], vpwb['stdout'])
+
+    def test_env(self):
+        """
+        Test external environment of pywikibot.
+
+        Make sure the environment is not contaminated, and is the same as
+        the environment we get when directly running a script.
+        """
+        direct = execute([sys.executable, '-m', print_env_test_package])
+        vpwb = execute_pwb([print_env_test_script])
+        self.maxDiff = None
+        self.assertEqual(direct['stdout'], vpwb['stdout'])
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=10)
