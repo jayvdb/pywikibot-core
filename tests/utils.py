@@ -273,7 +273,7 @@ def execute(command, data_in=None, timeout=0, error=None):
     env = os.environ.copy()
 
     # sys.path may have been modified by the test runner to load dependencies.
-    env[str('PYTHONPATH')] = str(":".join(sys.path))
+    env[str('PYTHONPATH')] = ":".join(sys.path)
 
     # LC_ALL is used by i18n.input as an alternative for userinterface_lang
     # A complete locale string needs to be created, so the country code
