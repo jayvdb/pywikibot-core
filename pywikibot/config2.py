@@ -907,7 +907,11 @@ for _key in _modified:
              _ConfigurationDeprecationWarning)
 
 # Fix up default console_encoding
-console_encoding = default_encoding(console_encoding)
+if console_encoding is None:
+    if sys.platform == 'win32':
+        console_encoding = 'cp850'
+    else:
+        console_encoding = 'iso-8859-1'
 
 # Fix up transliteration_target
 if transliteration_target == 'not set':
