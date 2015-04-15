@@ -297,7 +297,8 @@ def execute(command, data_in=None, timeout=0, error=None):
             unicode_env = [(k, v) for k, v in os.environ.items()
                            if isinstance(k, unicode) or
                            isinstance(v, unicode)]
-            raise TypeError('unicode in os.environ: %r' % unicode_env)
+            if unicode_env:
+                raise TypeError('unicode in os.environ: %r' % unicode_env)
             child_unicode_env = [(k, v) for k, v in env.items()
                                  if isinstance(k, unicode) or
                                  isinstance(v, unicode)]
