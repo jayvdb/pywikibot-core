@@ -2,10 +2,13 @@
 """
 Module to define and load pywikibot configuration.
 
-Provides two family class methods which can be used in
+Provides two functions to register family classes which can be used in
 the user-config:
  - register_family_file
  - register_families_folder
+
+Other functions made available to user-config:
+ - user_home_path
 
 Sets module global base_dir and provides utility methods to
 build paths relative to base_dir:
@@ -178,6 +181,15 @@ private_files_permission = stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR
 # by setting this to true.
 ignore_file_security_warnings = False
 
+_no_user_config = os.environ.get('PYWIKIBOT2_NO_USER_CONFIG')
+if _no_user_config == '0':
+    _no_user_config = None
+
+
+def user_home_path(path):
+    """Return a file path to a file in the user home."""
+    return os.path.join(os.path.expanduser('~'), path)
+
 
 def get_base_dir(test_directory=None):
     r"""Return the directory in which user-specific information is stored.
@@ -266,8 +278,9 @@ def get_base_dir(test_directory=None):
     # check if user-config.py is in base_dir
     if not exists(base_dir):
         exc_text = "No user-config.py found in directory '%s'.\n" % base_dir
-        if os.environ.get('PYWIKIBOT2_NO_USER_CONFIG', '0') == '1':
-            print(exc_text)
+        if _no_user_config:
+            if _no_user_config != '2':
+                print(exc_text)
         else:
             exc_text += "  Please check that user-config.py is stored in the correct location.\n"
             exc_text += "  Directory where user-config.py is searched is determined as follows:\n\n"
@@ -587,12 +600,12 @@ report_dead_links_on_talk = False
 # Example for a pywikibot running on wmflabs:
 # db_hostname = 'enwiki.labsdb'
 # db_name_format = '{0}_p'
-# db_connect_file = '~/replica.my.cnf'
+# db_connect_file = user_home_path('replica.my.cnf')
 db_hostname = 'localhost'
 db_username = ''
 db_password = ''
 db_name_format = '{0}'
-db_connect_file = os.path.expanduser('~/.my.cnf')
+db_connect_file = user_home_path('.my.cnf')
 
 # ############# SEARCH ENGINE SETTINGS ##############
 
@@ -844,8 +857,9 @@ for _key, _val in _glv.items():
 
 # Get the user files
 _thislevel = 0
-if os.environ.get('PYWIKIBOT2_NO_USER_CONFIG', '0') == '1':
-    print("WARNING: Skipping loading of user-config.py.")
+if _no_user_config:
+    if _no_user_config != '2':
+        print("WARNING: Skipping loading of user-config.py.")
     _fns = []
 else:
     _fns = [os.path.join(_base_dir, "user-config.py")]
@@ -934,7 +948,7 @@ if sys.platform == 'win32' and editor:
 
 
 # Fix up default site
-if family == 'wikipedia' and mylang == 'language':
+if family == 'wikipedia' and mylang == 'language' and _no_user_config != '2':
     print("WARNING: family and mylang are not set.\n"
           "Defaulting to family='test' and mylang='test'.")
     family = mylang = 'test'
