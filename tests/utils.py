@@ -266,21 +266,21 @@ def execute(command, data_in=None, timeout=0, error=None):
     env = os.environ.copy()
 
     # Prevent output by test package; e.g. 'max_retries reduced from x to y'
-    env[str('PYWIKIBOT_TEST_QUIET')] = str('1')
+    env['PYWIKIBOT_TEST_QUIET'] = str('1')
 
     # sys.path may have been modified by the test runner to load dependencies.
     pythonpath = os.pathsep.join(sys.path)
     if sys.platform == 'win32' and sys.version_info[0] < 3:
         pythonpath = str(pythonpath)
-    env[str('PYTHONPATH')] = pythonpath
-    env[str('PYTHONIOENCODING')] = str(config.console_encoding)
+    env['PYTHONPATH'] = pythonpath
+    env['PYTHONIOENCODING'] = str(config.console_encoding)
 
     # LC_ALL is used by i18n.input as an alternative for userinterface_lang
     if pywikibot.config.userinterface_lang:
-        env[str('LC_ALL')] = str(pywikibot.config.userinterface_lang)
+        env['LC_ALL'] = str(pywikibot.config.userinterface_lang)
 
     # Set EDITOR to an executable that ignores all arguments and does nothing.
-    env[str('EDITOR')] = str('call' if sys.platform == 'win32' else 'true')
+    env['EDITOR'] = str('call' if sys.platform == 'win32' else 'true')
 
     options = {
         'stdout': subprocess.PIPE,
