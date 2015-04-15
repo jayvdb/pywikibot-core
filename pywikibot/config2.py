@@ -31,7 +31,8 @@ import sys
 
 from warnings import warn
 
-from pywikibot.tools import default_encoding
+if sys.version_info[0] > 2:
+    unicode = str
 
 # This frozen set should contain all imported modules/variables, so it must
 # occur directly after the imports. At that point globals() only contains the
@@ -58,6 +59,7 @@ class _ConfigurationDeprecationWarning(UserWarning):
 _private_values = ['authenticate', 'proxy', 'db_password']
 _deprecated_variables = ['use_SSL_onlogin', 'use_SSL_always',
                          'available_ssl_project']
+_quiet = 'PYWIKIBOT_TEST_QUIET' in os.environ
 
 # ############# ACCOUNT SETTINGS ##############
 
@@ -264,7 +266,7 @@ def get_base_dir(test_directory=None):
     if not os.path.isdir(base_dir):
         raise RuntimeError("Directory '%s' does not exist." % base_dir)
     # check if user-config.py is in base_dir
-    if not exists(base_dir):
+    if not exists(base_dir) and not _quiet:
         exc_text = "No user-config.py found in directory '%s'.\n" % base_dir
         if os.environ.get('PYWIKIBOT2_NO_USER_CONFIG', '0') == '1':
             print(exc_text)
@@ -321,7 +323,7 @@ ignore_bot_templates = False
 # This default code should work fine, so you don't have to think about it.
 # TODO: consider getting rid of this config variable.
 try:
-    console_encoding = sys.stdout.encoding
+    console_encoding = unicode(sys.stdout.encoding) if sys.stdout.encoding else None
 except:
     # When using pywikibot inside a daemonized twisted application,
     # we get "StdioOnnaStick instance has no attribute 'encoding'"
@@ -845,7 +847,8 @@ for _key, _val in _glv.items():
 # Get the user files
 _thislevel = 0
 if os.environ.get('PYWIKIBOT2_NO_USER_CONFIG', '0') == '1':
-    print("WARNING: Skipping loading of user-config.py.")
+    if not _quiet:
+        print("WARNING: Skipping loading of user-config.py.")
     _fns = []
 else:
     _fns = [os.path.join(_base_dir, "user-config.py")]
@@ -907,7 +910,11 @@ for _key in _modified:
              _ConfigurationDeprecationWarning)
 
 # Fix up default console_encoding
-console_encoding = default_encoding(console_encoding)
+if console_encoding is None:
+    if sys.platform == 'win32':
+        console_encoding = 'cp850'
+    else:
+        console_encoding = 'iso-8859-1'
 
 # Fix up transliteration_target
 if transliteration_target == 'not set':
@@ -935,8 +942,9 @@ if sys.platform == 'win32' and editor:
 
 # Fix up default site
 if family == 'wikipedia' and mylang == 'language':
-    print("WARNING: family and mylang are not set.\n"
-          "Defaulting to family='test' and mylang='test'.")
+    if not _quiet:
+        print("WARNING: family and mylang are not set.\n"
+              "Defaulting to family='test' and mylang='test'.")
     family = mylang = 'test'
 
 # SECURITY WARNINGS

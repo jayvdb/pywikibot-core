@@ -20,6 +20,8 @@ from pywikibot import config
 from pywikibot.bot import VERBOSE, INFO, STDOUT, INPUT, WARNING
 from pywikibot.tools import deprecated
 
+assert(config.console_encoding)
+assert(config.console_encoding != 'None')
 transliterator = transliteration.transliterator(config.console_encoding)
 
 colors = [
