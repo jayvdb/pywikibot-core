@@ -22,6 +22,7 @@ __version__ = '$Id$'
 # [2] https://bitbucket.org/ned/coveragepy/src/fd5363090034/coverage/execfile.py
 # [3] https://bitbucket.org/ned/coveragepy/src/2c5fb3a8b81c/setup.py?at=default#cl-31
 
+import codecs
 import os
 import re
 import sys
@@ -79,7 +80,8 @@ def run_python_file(filename, argv, argvu, package=None):
     sys.path[0] = os.path.dirname(filename)
 
     try:
-        source = open(filename).read()
+        with codecs.open(filename, 'r', 'utf8') as f:
+            source = f.read()
         exec(compile(source, filename, "exec", dont_inherit=True),
              main_mod.__dict__)
     finally:

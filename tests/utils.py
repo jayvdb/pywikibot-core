@@ -298,7 +298,16 @@ def execute(command, data_in=None, timeout=0, error=None):
     if data_in is not None:
         options['stdin'] = subprocess.PIPE
 
-    p = subprocess.Popen(command, env=env, **options)
+    try:
+        p = subprocess.Popen(command, env=env, **options)
+    except TypeError:
+        print('whoops', sys.platform)
+        if sys.platform == 'win32' and sys.version_info[0] < 3:
+            for k, v in os.environ.items():
+                if isinstance(k, unicode) or isinstance(v, unicode):
+                    raise TypeError('unicode in environment: %s: %s'
+                                    % (k, v))
+        raise
 
     if data_in is not None:
         p.stdin.write(data_in.encode(config.console_encoding))
