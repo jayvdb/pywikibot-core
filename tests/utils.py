@@ -296,7 +296,7 @@ def execute(command, data_in=None, timeout=0, error=None):
         if sys.platform == 'win32' and sys.version_info[0] < 3:
             for k, v in os.environ.items():
                 if isinstance(k, unicode) or isinstance(v, unicode):
-                    raise TypeError('unicode in environment: %s: %s'
+                    raise TypeError('unicode in environment: %r: %r'
                                     % (k, v))
         raise
 
