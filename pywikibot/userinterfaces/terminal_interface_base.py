@@ -227,7 +227,7 @@ class UI:
         return text
 
     def input_choice(self, question, options, default=None, return_shortcut=True,
-                     automatic_quit=True):
+                     automatic_quit=True, force=False):
         """
         Ask the user and returns a value from the options.
 
@@ -248,6 +248,8 @@ class UI:
             doesn't add the option but throw the exception when the option was
             selected.
         @type automatic_quit: bool or int
+        @param force: Automatically use the default
+        @type force: bool
         @return: If return_shortcut the shortcut of options or the value of
             default (if it's not None). Otherwise the index of the answer in
             options. If default is not a shortcut, it'll return -1.
@@ -295,7 +297,8 @@ class UI:
         question = u'{0} ({1})'.format(question, ', '.join(formatted_options))
         answer = None
         while answer is None:
-            answer = self.input(question)
+            if not force:
+                answer = self.input(question)
             if default and not answer:  # nothing entered
                 answer = default_index
             else:

@@ -550,7 +550,7 @@ def input(question, password=False):
 
 
 def input_choice(question, answers, default=None, return_shortcut=True,
-                 automatic_quit=True):
+                 automatic_quit=True, force=False):
     """
     Ask the user the question and return one of the valid answers.
 
@@ -569,6 +569,8 @@ def input_choice(question, answers, default=None, return_shortcut=True,
     @param automatic_quit: Adds the option 'Quit' ('q') and throw a
             L{QuitKeyboardInterrupt} if selected.
     @type automatic_quit: bool
+    @param force: Automatically use the default
+    @type force: bool
     @return: The selected answer shortcut or index. Is -1 if the default is
         selected, it does not return the shortcut and the default is not a
         valid shortcut.
@@ -579,10 +581,10 @@ def input_choice(question, answers, default=None, return_shortcut=True,
         init_handlers()
 
     return ui.input_choice(question, answers, default, return_shortcut,
-                           automatic_quit)
+                           automatic_quit, force)
 
 
-def input_yn(question, default=None, automatic_quit=True):
+def input_yn(question, default=None, automatic_quit=True, force=False):
     """
     Ask the user a yes/no question and returns the answer as a bool.
 
@@ -594,6 +596,8 @@ def input_yn(question, default=None, automatic_quit=True):
     @param automatic_quit: Adds the option 'Quit' ('q') and throw a
             L{QuitKeyboardInterrupt} if selected.
     @type automatic_quit: bool
+    @param force: Automatically use the default
+    @type force: bool
     @return: Return True if the user selected yes and False if the user
         selected no. If the default is not None it'll return True if default
         is True or 'y' and False if default is False or 'n'.
@@ -607,7 +611,7 @@ def input_yn(question, default=None, automatic_quit=True):
     assert default in ['y', 'Y', 'n', 'N', None]
 
     return input_choice(question, [('Yes', 'y'), ('No', 'n')], default,
-                        automatic_quit=automatic_quit) == 'y'
+                        automatic_quit=automatic_quit, force=force) == 'y'
 
 
 @deprecated('input_choice')
