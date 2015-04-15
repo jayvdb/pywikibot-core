@@ -79,7 +79,8 @@ def run_python_file(filename, argv, argvu, package=None):
     sys.path[0] = os.path.dirname(filename)
 
     try:
-        source = open(filename).read()
+        with open(filename, 'rb') as f:
+            source = f.read()
         exec(compile(source, filename, "exec", dont_inherit=True),
              main_mod.__dict__)
     finally:
@@ -110,6 +111,8 @@ if version >= (3, ) and version < (3, 3):
 absolute_path = os.path.dirname(sys.argv[0])
 if not os.path.isabs(absolute_path):
     absolute_path = os.path.abspath(os.path.join(os.curdir, absolute_path))
+if absolute_path[0] != '/':
+    absolute_path = absolute_path[0].upper() + absolute_path[1:]
 rewrite_path = absolute_path
 
 sys.path = [sys.path[0], rewrite_path,
@@ -157,7 +160,10 @@ try:
     # If successful, user-config.py already exists in one of the candidate
     # directories. See config2.py for details on search order.
     # Use env var to communicate to config2.py pwb.py location (bug 72918).
-    os.environ['PYWIKIBOT2_DIR_PWB'] = os.path.split(__file__)[0]
+    _pwb_dir = os.path.split(__file__)[0]
+    if sys.platform == 'win32' and sys.version_info[0] < 3:
+        _pwb_dir = str(_pwb_dir)
+    os.environ[str('PYWIKIBOT2_DIR_PWB')] = _pwb_dir
     import pywikibot  # noqa
 except RuntimeError as err:
     # user-config.py to be created
@@ -196,9 +202,16 @@ if __name__ == "__main__":
         # a much more detailed implementation is in coverage's find_module.
         # https://bitbucket.org/ned/coveragepy/src/default/coverage/execfile.py
         cwd = os.path.abspath(os.getcwd())
+        if cwd[0] != '/':
+            cwd = cwd[0].upper() + cwd[1:]
         if absolute_path == cwd:
-            absolute_filename = os.path.abspath(filename)
-            if absolute_filename.startswith(rewrite_path):
+            absolute_filename = os.path.abspath(filename)[:len(rewrite_path)]
+            if absolute_filename[0] != '/':
+                absolute_filename = (absolute_filename[0].upper() +
+                                     absolute_filename[1:])
+            if rewrite_path[0] != '/':
+                rewrite_path = rewrite_path[0].upper() + rewrite_path[1:]
+            if absolute_filename == rewrite_path:
                 relative_filename = os.path.relpath(filename)
                 # remove the filename, and use '.' instead of path separator.
                 file_package = os.path.dirname(
