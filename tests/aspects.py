@@ -1156,7 +1156,7 @@ class PwbTestCase(TestCase):
         super(PwbTestCase, self).setUp()
         self.orig_pywikibot_dir = None
         if 'PYWIKIBOT2_DIR' in os.environ:
-            self.orig_pywikibot_dir = os.environ['PYWIKIBOT2_DIR']
+            self.orig_pywikibot_dir = str(os.environ['PYWIKIBOT2_DIR'])
         base_dir = pywikibot.config.base_dir
         if sys.platform == 'win32' and sys.version_info[0] < 3:
             base_dir = str(base_dir)

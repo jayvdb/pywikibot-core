@@ -294,10 +294,14 @@ def execute(command, data_in=None, timeout=0, error=None):
     except TypeError:
         # Generate a more informative error
         if sys.platform == 'win32' and sys.version_info[0] < 3:
-            for k, v in os.environ.items():
-                if isinstance(k, unicode) or isinstance(v, unicode):
-                    raise TypeError('unicode in environment: %r: %r'
-                                    % (k, v))
+            unicode_env = [(k, v) for k, v in os.environ.items()
+                           if isinstance(k, unicode) or
+                           isinstance(v, unicode)]
+            raise TypeError('unicode in os.environ: %r' % unicode_env)
+            child_unicode_env = [(k, v) for k, v in env.items()
+                                 if isinstance(k, unicode) or
+                                 isinstance(v, unicode)]
+            raise TypeError('unicode in child : %r' % child_unicode_env)
         raise
 
     if data_in is not None:
