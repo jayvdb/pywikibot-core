@@ -199,8 +199,9 @@ if __name__ == "__main__":
         cwd = os.path.abspath(os.getcwd())
         cwd = cwd[0].upper() + cwd[1:]
         if absolute_path == cwd:
-            rewrite_path = rewrite_path[0].upper() + rewrite_path[1:]
             absolute_filename = os.path.abspath(filename)
+            absolute_filename = absolute_filename[0].upper() + absolute_filename[1:]
+            rewrite_path = rewrite_path[0].upper() + rewrite_path[1:]
             if absolute_filename.startswith(rewrite_path):
                 relative_filename = os.path.relpath(filename)
                 # remove the filename, and use '.' instead of path separator.
