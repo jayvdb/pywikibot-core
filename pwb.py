@@ -79,8 +79,7 @@ def run_python_file(filename, argv, argvu, package=None):
     sys.path[0] = os.path.dirname(filename)
 
     try:
-        with open(filename) as f:
-            source = f.read()
+        source = open(filename).read()
         exec(compile(source, filename, "exec", dont_inherit=True),
              main_mod.__dict__)
     finally:
@@ -158,7 +157,7 @@ try:
     # If successful, user-config.py already exists in one of the candidate
     # directories. See config2.py for details on search order.
     # Use env var to communicate to config2.py pwb.py location (bug 72918).
-    os.environ['PYWIKIBOT2_DIR_PWB'] = os.path.split(__file__)[0]
+    os.environ[str('PYWIKIBOT2_DIR_PWB')] = str(os.path.split(__file__)[0])
     import pywikibot  # noqa
 except RuntimeError as err:
     # user-config.py to be created
