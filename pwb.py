@@ -110,6 +110,7 @@ if version >= (3, ) and version < (3, 3):
 absolute_path = os.path.dirname(sys.argv[0])
 if not os.path.isabs(absolute_path):
     absolute_path = os.path.abspath(os.path.join(os.curdir, absolute_path))
+absolute_path = absolute_path[0].upper() + absolute_path[1:]
 rewrite_path = absolute_path
 
 sys.path = [sys.path[0], rewrite_path,
@@ -196,6 +197,7 @@ if __name__ == "__main__":
         # a much more detailed implementation is in coverage's find_module.
         # https://bitbucket.org/ned/coveragepy/src/default/coverage/execfile.py
         cwd = os.path.abspath(os.getcwd())
+        cwd = cwd[0].upper() + cwd[1:]
         if absolute_path == cwd:
             absolute_filename = os.path.abspath(filename)
             if absolute_filename.startswith(rewrite_path):
