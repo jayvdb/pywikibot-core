@@ -93,10 +93,10 @@ if os.name != 'nt':
 
 # setup can't detect or install pywin32, which pywinauto depends on.
 # appveyor builds do not install pywin32
-if os.name == 'nt' and 'PYSETUP_TEST_NO_WIN32' not in os.environ:
+if os.name == 'nt':
     # FIXME: tests/ui_tests.py suggests pywinauto 0.4.2
     # which isnt provided on pypi.
-    test_deps += ['pywinauto>=0.4.0']
+    test_deps += ['pywinauto']
 
 extra_deps.update(script_deps)
 
