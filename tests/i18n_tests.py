@@ -353,9 +353,6 @@ class InputTestCase(TWNTestCaseBase, UserInterfaceLangTestCase, PwbTestCase):
         if 'userinterface_lang' in pywikibot.config.__modified__:
             raise unittest.SkipTest(
                 'user-config defines userinterface_lang')
-        if sys.platform == 'win32':
-            raise unittest.SkipTest(
-                'Windows doesnt load locale using LC_ALL')
 
         family_codes = set(Family.load(cls.family).langs.keys())
         i18n_codes = set(i18n.twget_keys(cls.message))
@@ -394,8 +391,8 @@ class InputTestCase(TWNTestCaseBase, UserInterfaceLangTestCase, PwbTestCase):
         assert(self.code == pywikibot.config.userinterface_lang)
 
         result = self._execute(args=['listpages', '-cat'],
-                               data_in='non-existant-category\n',
-                               timeout=5)
+                               data_in='non-existant-category\r\n',
+                               timeout=20)
 
         # get translated message
         expect = i18n.twtranslate(self.alt_code, self.message, fallback=False)

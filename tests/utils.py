@@ -12,6 +12,7 @@ import locale
 import os
 import subprocess
 import sys
+import tempfile
 import time
 
 from warnings import warn
@@ -32,6 +33,19 @@ NoSiteTestCase = aspects.TestCase
 SiteTestCase = aspects.TestCase
 CachedTestCase = aspects.TestCase
 PywikibotTestCase = aspects.TestCase
+
+WIN32_LOCALE_UPDATE = """
+<gs:GlobalizationServices xmlns:gs="urn:longhornGlobalizationUnattend">
+    <gs:UserList>
+        <gs:User UserID="Current" CopySettingsToDefaultUserAcct="true"
+                                  CopySettingsToSystemAcct="true"/>
+    </gs:UserList>
+
+    <gs:UserLocale>
+        <gs:Locale Name="%s" SetAsCurrent="true" ResetAllSettings="false"/>
+    </gs:UserLocale>
+</gs:GlobalizationServices>
+"""
 
 
 class DrySiteNote(RuntimeWarning):
@@ -252,6 +266,17 @@ class DryDataSite(DrySite, pywikibot.site.DataSite):
             })
 
 
+def win32_set_locale(code):
+    (fd, filename) = tempfile.mkstemp(text=True, suffix='.xml')
+    code = code.split('.')[0]
+    s = WIN32_LOCALE_UPDATE % code.replace('_', '-')
+    os.write(fd, s)
+    os.close(fd)
+    cmd = 'control.exe intl.cpl,,/f:"' + filename + '"'
+    subprocess.call(cmd, shell=True)
+    new_code = locale.getdefaultlocale()[0]
+    assert(code == new_code)
+
 def execute(command, data_in=None, timeout=0, error=None):
     """
     Execute a command and capture outputs.
@@ -259,6 +284,7 @@ def execute(command, data_in=None, timeout=0, error=None):
     @param command: executable to run and arguments to use
     @type command: list of unicode
     """
+    win32_current_locale = None
     # Any environment variables added on Windows must be of type
     # str() on Python 2.
     env = os.environ.copy()
@@ -285,6 +311,9 @@ def execute(command, data_in=None, timeout=0, error=None):
         locale_code += lang_locales[0][3:5].upper()
         locale_code += '.' + pywikibot.config.console_encoding
         env[str('LC_ALL')] = str(locale_code)
+        if sys.platform == 'win32':
+            win32_current_locale = locale.getdefaultlocale()[0]
+            win32_set_locale(locale_code)
 
     # Set EDITOR to an executable that ignores all arguments and does nothing.
     env[str('EDITOR')] = str('call' if sys.platform == 'win32' else 'true')
@@ -301,7 +330,8 @@ def execute(command, data_in=None, timeout=0, error=None):
     except TypeError:
         # Generate a more informative error
         if sys.platform == 'win32' and sys.version_info[0] < 3:
-            unicode = str  # Needed to prevent flake8 error on py3.
+            if sys.version_info[0] > 2:
+                unicode = str  # Needed to prevent flake8 error on py3.
             unicode_env = [(k, v) for k, v in os.environ.items()
                            if isinstance(k, unicode) or
                            isinstance(v, unicode)]
@@ -339,6 +369,10 @@ def execute(command, data_in=None, timeout=0, error=None):
         stderr_lines += p.stderr.read()
 
     data_out = p.communicate()
+
+    if pywikibot.config.userinterface_lang and sys.platform == 'win32':
+        win32_set_locale(win32_current_locale)
+
     return {'exit_code': p.returncode,
             'stdout': data_out[0].decode(config.console_encoding),
             'stderr': (stderr_lines + data_out[1]).decode(config.console_encoding)}
