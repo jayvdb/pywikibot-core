@@ -45,8 +45,11 @@ __version__ = '$Id$'
 #
 
 import re
+
+from functools import partial
+
 import pywikibot
-from pywikibot import i18n, pagegenerators, Bot, WikidataBot
+from pywikibot import i18n, pagegenerators, textlib, Bot, WikidataBot
 
 try:
     import stdnum.isbn
@@ -1416,11 +1419,8 @@ def _hyphenateIsbnNumber(match):
     return i.code
 
 
-def hyphenateIsbnNumbers(text):
-    """Helper function to hyphenate an ISBN."""
-    isbnR = re.compile(r'(?<=ISBN )(?P<code>[\d\-]+[\dXx])')
-    text = isbnR.sub(_hyphenateIsbnNumber, text)
-    return text
+hyphenateIsbnNumbers = partial(textlib.reformat_ISBNs,
+                               match_func=_hyphenateIsbnNumber)
 
 
 def _isbn10toIsbn13(match):
