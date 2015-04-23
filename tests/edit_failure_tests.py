@@ -17,12 +17,14 @@ from __future__ import unicode_literals
 __version__ = '$Id$'
 
 import pywikibot
+
 from pywikibot import (
     Error,
     NoPage,
     LockedPage,
     SpamfilterError,
     OtherPageSaveError,
+    config,
 )
 from tests.aspects import unittest, TestCase, WikibaseTestCase
 
@@ -41,17 +43,20 @@ class TestSaveFailure(TestCase):
         """Test that protected titles raise the appropriate exception."""
         if self.site._username[1]:
             raise unittest.SkipTest('Testing failure of edit protected with a sysop account')
+        config.simulate = False
         page = pywikibot.Page(self.site, 'Wikipedia:Create a new page')
         self.assertRaises(LockedPage, page.save)
 
     def test_spam(self):
         """Test that spam in content raise the appropriate exception."""
+        config.simulate = False
         page = pywikibot.Page(self.site, 'Wikipedia:Sandbox')
         page.text = 'http://badsite.com'
         self.assertRaisesRegex(SpamfilterError, 'badsite.com', page.save)
 
     def test_nobots(self):
         """Test that {{nobots}} raise the appropriate exception."""
+        config.simulate = True
         page = pywikibot.Page(self.site, 'User:John Vandenberg/nobots')
         self.assertRaisesRegex(OtherPageSaveError, 'nobots', page.save)
 
@@ -98,6 +103,7 @@ class TestWikibaseSaveTest(WikibaseTestCase):
 
     def test_itempage_save(self):
         """Test ItemPage save method inherited from superclass Page."""
+        config.simulate = False
         repo = self.get_repo()
         item = pywikibot.ItemPage(repo, 'Q6')
         self.assertRaises(pywikibot.PageNotSaved, item.save)

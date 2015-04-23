@@ -195,6 +195,8 @@ if config.max_retries > 2:
         print('tests: max_retries reduced from %d to 1' % config.max_retries)
     config.max_retries = 1
 
+config.simulate = True
+
 cache_misses = 0
 cache_hits = 0
 

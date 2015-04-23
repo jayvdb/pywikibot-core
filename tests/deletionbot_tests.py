@@ -10,11 +10,10 @@ from __future__ import unicode_literals
 __version__ = '$Id$'
 
 import pywikibot
-import pywikibot.page
 
 from scripts import delete
 
-from tests.aspects import unittest, ScriptMainTestCase
+from tests.aspects import unittest, DefaultSiteTestCase, ScriptMainTestCase
 
 
 class TestDeletionBotWrite(ScriptMainTestCase):
@@ -77,14 +76,11 @@ class TestDeletionBotUser(ScriptMainTestCase):
         p1.save('unit test', botflag=True)
 
 
-class TestDeletionBot(ScriptMainTestCase):
+class TestDeletionBot(DefaultSiteTestCase):
 
     """Test deletionbot with patching to make it non-write."""
 
-    family = 'test'
-    code = 'test'
-
-    cached = True
+    write = -1
 
     delete_args = []
     undelete_args = []
@@ -101,9 +97,12 @@ class TestDeletionBot(ScriptMainTestCase):
         pywikibot.Page.undelete = self._original_undelete
         super(TestDeletionBot, self).tearDown()
 
-    def test_dry(self):
-        delete.main('-page:Main Page', '-always', '-summary:foo')
-        self.assertEqual(self.delete_args, ['[[Main Page]]', 'foo', False, True])
+    def test_delete_main_page(self):
+        mainpage = self.get_mainpage()
+        delete.main('-page:' + mainpage.title(), '-always', '-summary:foo')
+        self.assertEqual(self.delete_args, [mainpage.title(asLink=True), 'foo', False, True])
+
+    def test_undelete_foo(self):
         delete.main('-page:FoooOoOooO', '-always', '-summary:foo', '-undelete')
         self.assertEqual(self.undelete_args, ['[[FoooOoOooO]]', 'foo'])
 

@@ -518,25 +518,26 @@ class SiteWriteMixin(TestCaseBase):
         """
         Set up the test class.
 
-        Reject write test classes configured with non-test wikis, or caching.
-
-        Prevent test classes from writing to the site by default.
+        Prevent tests set up with caching, and prevent tests writing running
+        unintentionally.
 
         If class attribute 'write' is -1, the test class is skipped unless
-        environment variable PYWIKIBOT2_TEST_WRITE_FAIL is set to 1.
+        environment variable PYWIKIBOT2_TEST_WRITE_FAIL is set to 1, and.
 
         Otherwise the test class is skipped unless environment variable
-        PYWIKIBOT2_TEST_WRITE is set to 1.
+        PYWIKIBOT2_TEST_WRITE is set to 1, and the class is prevented
+        from using a non-test site.
+
         """
         super(SiteWriteMixin, cls).setUpClass()
 
         site = cls.get_site()
-        assert('test' in (site.family.name, site.code))
 
         if cls.write == -1:
             env_var = 'PYWIKIBOT2_TEST_WRITE_FAIL'
         else:
             env_var = 'PYWIKIBOT2_TEST_WRITE'
+            assert('test' in (site.family.name, site.code))
 
         if os.environ.get(env_var, '0') != '1':
             raise unittest.SkipTest(
@@ -549,6 +550,22 @@ class SiteWriteMixin(TestCaseBase):
                 '%s can not be a subclass of both '
                 'SiteEditTestCase and ForceCacheMixin'
                 % cls.__name__)
+
+    def setUp(self):
+        """
+        Set up the test case.
+
+        Enable simulate mode if write is not 'True'.
+        """
+        config.simulate = bool(self.write is not True)
+        super(SiteWriteMixin, self).setUp()
+
+    def tearDown(self):
+        """
+        Always re-enable simulate mode.
+        """
+        config.simulate = True
+        super(SiteWriteMixin, self).tearDown()
 
 
 class RequireUserMixin(TestCaseBase):

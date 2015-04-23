@@ -134,14 +134,14 @@ The 'user' tests are not yet enabled on appveyor builds.
 Environment variables
 =====================
 
-There are a set of 'edit failure' tests, which attempt to write to the wikis
-and **should** fail.  If there is a bug in pywikibot or MediaWiki, these
-tests **may** actually perform a write operation.
+There are a set of 'write' tests, which attempt to write to the wikis
+and **should** fail or be prevented.  If there is a bug in pywikibot or MediaWiki,
+these tests **may** actually perform a write operation.
 
-These 'edit failure' tests are disabled by default for the 'wikimedia' builds,
+These 'write failure' tests are disabled by default for the 'wikimedia' builds,
 but are enabled by default on builds by any other github account.
 
-To disable 'edit failure' tests, set PYWIKIBOT2_TEST_WRITE_FAIL=0
+To disable 'write failure' tests, set PYWIKIBOT2_TEST_WRITE_FAIL=0
 
 There are also several other 'write' tests which also attempt to perform
 write operations successfully.  These **will** write to the wikis, and they
