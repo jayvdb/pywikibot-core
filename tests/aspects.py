@@ -808,6 +808,7 @@ class TestCase(TestTimerMixin, TestLoggingMixin, TestCaseBase):
         Prefetch the Site object for each of the sites the test
         class has declared are needed.
         """
+        from tests.utils import DrySite  # noqa
         super(TestCase, cls).setUpClass()
 
         if not hasattr(cls, 'sites'):
@@ -823,10 +824,17 @@ class TestCase(TestTimerMixin, TestLoggingMixin, TestCaseBase):
             pywikibot._sites = {}
 
         interface = None  # defaults to 'APISite'
-        if hasattr(cls, 'dry') and cls.dry:
+        dry = hasattr(cls, 'dry') and cls.dry
+        if dry:
             interface = DrySite
 
         for data in cls.sites.values():
+            if ('code' in data and data['code'] in ('test', 'mediawiki') and
+                    'PYWIKIBOT2_TEST_PROD_ONLY' in os.environ and not dry:
+                raise unittest.SkipTest(
+                    'Site code "%s" and PYWIKIBOT2_TEST_PROD_ONLY is set.'
+                    % data['code'])
+
             if 'site' not in data and 'code' in data and 'family' in data:
                 data['site'] = Site(data['code'], data['family'],
                                     interface=interface)
