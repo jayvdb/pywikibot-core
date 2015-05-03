@@ -58,7 +58,7 @@ build: off
 test_script:
   - chcp 65001
   - mkdir "%PYWIKIBOT2_DIR%"
-  - "%PYTHON%\\python -W error::UserWarning -m generate_user_files -family:test -lang:test -v"
+  - "%PYTHON%\\python -Werror::UserWarning -m generate_user_files -family:test -lang:test -v"
 
   - set PYSETUP_TEST_NO_UI=1
   - "%WITH_COMPILER% %PYTHON%\\python setup.py test"

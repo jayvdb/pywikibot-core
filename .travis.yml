@@ -19,6 +19,13 @@ install:
   - if [[ "$SITE_ONLY" == '1' ]]; then export USE_NOSE=1; fi
   - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2==0.8.0; fi
   - pip install six
+  - if [[ "$EXTERNALS_HTTPLIB2" == "1" ]]; then
+      (cd externals/httplib2 && python setup.py install) ;
+    else
+      rm -rf externals/httplib2 ;
+      pip install httplib2
+    fi
+
   - export GITHUB_USER=`echo $TRAVIS_REPO_SLUG | cut -d '/' -f 1`
   - mkdir ~/.pywikibot
   - mkdir ~/.python-eggs
@@ -46,12 +53,6 @@ install:
   - echo "max_retries = 2" >> ~/.pywikibot/user-config.py
   - echo "maximum_GET_length = 5000" >> ~/.pywikibot/user-config.py
   - echo "console_encoding = 'utf8'" >> ~/.pywikibot/user-config.py
-
-  - if [[ "$EXTERNALS_HTTPLIB2" == "1" ]]; then
-      (cd externals/httplib2 && python setup.py install) ;
-    else
-      rm -rf externals/httplib2 ;
-    fi
 
   - python -c "import setuptools; print(setuptools.__version__)"
 
