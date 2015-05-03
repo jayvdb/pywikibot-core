@@ -57,9 +57,9 @@ build: off
 
 test_script:
   - chcp 65001
-  - mkdir "%PYWIKIBOT2_DIR%"
+  - "mkdir %PYWIKIBOT2_DIR%"
   - "%PYTHON%\\python -Werror::UserWarning -m generate_user_files -dir:"%PYWIKIBOT2_DIR%" -family:test -lang:test -v"
-  - echo transliteration_target = None >> "%PYWIKIBOT2_DIR%\\user-config.py"
+  - "echo transliteration_target = None >> %PYWIKIBOT2_DIR%\\user-config.py"
 
   - set PYSETUP_TEST_NO_UI=1
   - "%WITH_COMPILER% %PYTHON%\\python setup.py test"
