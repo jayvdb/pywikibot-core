@@ -24,32 +24,28 @@ install:
   - mkdir ~/.python-eggs
   - chmod 700 ~/.python-eggs
 
-  - touch ~/.pywikibot/user-config.py
-  - echo "import os" >> ~/.pywikibot/user-config.py
-  - echo "mylang = '$LANGUAGE'" >> ~/.pywikibot/user-config.py
-  - echo "family = '$FAMILY'" >> ~/.pywikibot/user-config.py
-
-  - echo "password_file = os.path.expanduser('~/.pywikibot/passwordfile')" >> ~/.pywikibot/user-config.py
-  - touch ~/.pywikibot/passwordfile
-
-  - echo "max_retries = 2" >> ~/.pywikibot/user-config.py
-  - echo "maximum_GET_length = 5000" >> ~/.pywikibot/user-config.py
-  - echo "console_encoding = 'utf8'" >> ~/.pywikibot/user-config.py
-
   - if [[ "$GITHUB_USER" == "wikimedia" ]]; then
       PYWIKIBOT2_USERNAME="Pywikibot-test" ;
     else
       export PYWIKIBOT2_TEST_WRITE_FAIL=1 ;
     fi
 
+  - python -W error::UserWarning -m generate_user_files -family:$FAMILY -lang:$LANGUAGE -v -user:"$PYWIKIBOT2_USERNAME"
+
   - if [[ -n "$USER_PASSWORD" && -n "$PYWIKIBOT2_USERNAME" ]]; then
-      echo "usernames['$FAMILY']['$LANGUAGE'] = '$PYWIKIBOT2_USERNAME'" >> ~/.pywikibot/user-config.py ;
       echo "usernames['wikipedia']['en'] = '$PYWIKIBOT2_USERNAME'" >> ~/.pywikibot/user-config.py ;
       echo "usernames['wikipedia']['test'] = '$PYWIKIBOT2_USERNAME'" >> ~/.pywikibot/user-config.py ;
       echo "usernames['wikidata']['test'] = '$PYWIKIBOT2_USERNAME'" >> ~/.pywikibot/user-config.py ;
       echo "usernames['commons']['commons'] = '$PYWIKIBOT2_USERNAME'" >> ~/.pywikibot/user-config.py ;
       echo "('$PYWIKIBOT2_USERNAME', '$USER_PASSWORD')" > ~/.pywikibot/passwordfile ;
+      touch ~/.pywikibot/passwordfile ;
+      echo "import os" >> ~/.pywikibot/user-config.py ;
+      echo "password_file = os.path.expanduser('~/.pywikibot/passwordfile')" >> ~/.pywikibot/user-config.py ;
     fi
+
+  - echo "max_retries = 2" >> ~/.pywikibot/user-config.py
+  - echo "maximum_GET_length = 5000" >> ~/.pywikibot/user-config.py
+  - echo "console_encoding = 'utf8'" >> ~/.pywikibot/user-config.py
 
   - if [[ "$EXTERNALS_HTTPLIB2" == "1" ]]; then
       (cd externals/httplib2 && python setup.py install) ;
