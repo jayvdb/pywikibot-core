@@ -23,7 +23,7 @@ install:
       (cd externals/httplib2 && python setup.py install) ;
     else
       rm -rf externals/httplib2 ;
-      pip install httplib2
+      pip install httplib2 ;
     fi
 
   - export GITHUB_USER=`echo $TRAVIS_REPO_SLUG | cut -d '/' -f 1`
