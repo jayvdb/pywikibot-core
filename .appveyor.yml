@@ -35,12 +35,11 @@ test_script:
   - chcp 65001
   - "mkdir %PYWIKIBOT2_DIR%"
   - "%PYTHON%\\python -Werror::UserWarning -m generate_user_files -dir:%PYWIKIBOT2_DIR% -family:test -lang:test -v -debug"
-  - "echo  >> %PYWIKIBOT2_DIR%\\user-config.py"
   - "echo max_retries = 2 >> %PYWIKIBOT2_DIR%\\user-config.py"
   - "echo maximum_GET_length = 5000 >> %PYWIKIBOT2_DIR%\\user-config.py"
   - "echo console_encoding = 'utf8' >> %PYWIKIBOT2_DIR%\\user-config.py"
   - "echo transliteration_target = None >> %PYWIKIBOT2_DIR%\\user-config.py"
-  - "copy %PYWIKIBOT2_DIR%\\user-config.py con:"
+  - ps: Get-Content %PYWIKIBOT2_DIR%\\user-config.py
 
   - set PYSETUP_TEST_NO_UI=1
   - "%WITH_COMPILER% %PYTHON%\\python setup.py test"
