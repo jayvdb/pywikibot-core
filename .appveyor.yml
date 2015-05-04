@@ -63,6 +63,7 @@ test_script:
   - "echo maximum_GET_length = 5000 >> %PYWIKIBOT2_DIR%\\user-config.py"
   - "echo console_encoding = 'utf8' >> %PYWIKIBOT2_DIR%\\user-config.py"
   - "echo transliteration_target = None >> %PYWIKIBOT2_DIR%\\user-config.py"
+  - "copy %PYWIKIBOT2_DIR%\\user-config.py con:"
 
   - set PYSETUP_TEST_NO_UI=1
   - "%WITH_COMPILER% %PYTHON%\\python setup.py test"
