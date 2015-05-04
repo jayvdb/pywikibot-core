@@ -8,33 +8,9 @@ environment:
     PYWIKIBOT2_DIR: "%appdata%\\Pywikibot"
 
   matrix:
-    - PYTHON: "C:\\Python27"
-      PYTHON_VERSION: "2.7.8"
-      PYTHON_ARCH: "32"
-
-    - PYTHON: "C:\\Python33"
-      PYTHON_VERSION: "3.3.5"
-      PYTHON_ARCH: "32"
-
-    - PYTHON: "C:\\Python34"
-      PYTHON_VERSION: "3.4.1"
-      PYTHON_ARCH: "32"
-
     - PYTHON: "C:\\Python26"
       PYTHON_VERSION: "2.6.6"
       PYTHON_ARCH: "32"
-
-    - PYTHON: "C:\\Python27-x64"
-      PYTHON_VERSION: "2.7.8"
-      PYTHON_ARCH: "64"
-
-    - PYTHON: "C:\\Python33-x64"
-      PYTHON_VERSION: "3.3.5"
-      PYTHON_ARCH: "64"
-
-    - PYTHON: "C:\\Python34-x64"
-      PYTHON_VERSION: "3.4.1"
-      PYTHON_ARCH: "64"
 
     - PYTHON: "C:\\Python26"
       PYTHON_VERSION: "2.6.6"
@@ -59,10 +35,12 @@ test_script:
   - chcp 65001
   - "mkdir %PYWIKIBOT2_DIR%"
   - "%PYTHON%\\python -Werror::UserWarning -m generate_user_files -dir:%PYWIKIBOT2_DIR% -family:test -lang:test -v -debug"
+  - "echo  >> %PYWIKIBOT2_DIR%\\user-config.py"
   - "echo max_retries = 2 >> %PYWIKIBOT2_DIR%\\user-config.py"
   - "echo maximum_GET_length = 5000 >> %PYWIKIBOT2_DIR%\\user-config.py"
   - "echo console_encoding = 'utf8' >> %PYWIKIBOT2_DIR%\\user-config.py"
   - "echo transliteration_target = None >> %PYWIKIBOT2_DIR%\\user-config.py"
+  - "copy %PYWIKIBOT2_DIR%\\user-config.py con:"
 
   - set PYSETUP_TEST_NO_UI=1
   - "%WITH_COMPILER% %PYTHON%\\python setup.py test"
