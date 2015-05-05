@@ -936,7 +936,7 @@ for _key in _modified:
 # Fix up default console_encoding
 if console_encoding is None:
     if sys.platform == 'win32':
-        console_encoding = 'cp850'
+        console_encoding = 'utf8'
     else:
         console_encoding = 'iso-8859-1'
 elif console_encoding == 'cp65001':
