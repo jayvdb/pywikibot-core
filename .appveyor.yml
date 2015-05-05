@@ -35,7 +35,7 @@ test_script:
   - chcp 65001
   - "mkdir %PYWIKIBOT2_DIR%"
   - "%PYTHON%\\python -Werror::UserWarning -m generate_user_files -dir:%PYWIKIBOT2_DIR% -family:test -lang:test -v -debug"
-  - ps: [IO.File]::AppendAllText("$env:PYWIKIBOT2_DIR\\user-config.py", "max_retries = 2; maximum_GET_length = 5000; console_encoding = None; transliteration_target = None;")
+  - ps: "[IO.File]::AppendAllText('$env:PYWIKIBOT2_DIR\\user-config.py', 'max_retries = 2; maximum_GET_length = 5000; console_encoding = None; transliteration_target = None;')"
   - ps: Get-Content "$env:PYWIKIBOT2_DIR\user-config.py"
 
   - set PYSETUP_TEST_NO_UI=1
