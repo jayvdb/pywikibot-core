@@ -33,6 +33,8 @@ build: off
 
 test_script:
   - chcp 65001
+  - set PYTHONIOENCODING=utf8
+
   - "mkdir %PYWIKIBOT2_DIR%"
   - "%PYTHON%\\python -Werror::UserWarning -m generate_user_files -dir:%PYWIKIBOT2_DIR% -family:test -lang:test -v -debug"
   - ps: "[IO.File]::AppendAllText('C:\\Users\\appveyor\\AppData\\Roaming\\Pywikibot\\user-config.py', 'max_retries = 2; maximum_GET_length = 5000;')"
