@@ -6,6 +6,7 @@ python:
   - '3.3'
   - '3.4'
   - '2.6'
+  - 'pypy'
 
 # OSX builds are not yet available
 os:
