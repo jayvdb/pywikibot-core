@@ -35,11 +35,8 @@ test_script:
   - chcp 65001
   - "mkdir %PYWIKIBOT2_DIR%"
   - "%PYTHON%\\python -Werror::UserWarning -m generate_user_files -dir:%PYWIKIBOT2_DIR% -family:test -lang:test -v -debug"
-  - "echo max_retries = 2>> %PYWIKIBOT2_DIR%\\user-config.py"
-  - "echo maximum_GET_length = 5000>> %PYWIKIBOT2_DIR%\\user-config.py"
-  - "echo console_encoding = 'utf8'>> %PYWIKIBOT2_DIR%\\user-config.py"
-  - "echo transliteration_target = None>> %PYWIKIBOT2_DIR%\\user-config.py"
-  - ps: Get-Content C:\\Users\appveyor\\AppData\\Roaming\\Pywikibot\\user-config.py
+  - ps: [System.IO.File]::AppendAllText("$env:PYWIKIBOT2_DIR\user-config.py", "max_retries = 2; maximum_GET_length = 5000; console_encoding = 'utf8'; transliteration_target = None;", [System.Text.Encoding]::Unicode)
+  - ps: Get-Content "$env:PYWIKIBOT2_DIR\user-config.py"
 
   - set PYSETUP_TEST_NO_UI=1
   - "%WITH_COMPILER% %PYTHON%\\python setup.py test"
