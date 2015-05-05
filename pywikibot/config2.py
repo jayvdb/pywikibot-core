@@ -939,10 +939,12 @@ if console_encoding is None:
         console_encoding = 'cp850'
     else:
         console_encoding = 'iso-8859-1'
+elif console_encoding == 'cp65001':
+    console_encoding = 'utf8'
 
 # Fix up transliteration_target
 if transliteration_target == 'not set':
-    if sys.platform == 'win32':
+    if sys.platform == 'win32' and console_encoding != 'utf8':
         transliteration_target = console_encoding
         print("WARNING: Running on Windows and transliteration_target is not "
               "set.")
