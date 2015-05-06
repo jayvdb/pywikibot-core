@@ -42,6 +42,7 @@ import pywikibot
 
 from pywikibot import config
 from pywikibot.comms import http
+from pywikibot.cosmetic_changes import CosmeticChangesToolkit
 from pywikibot.family import Family
 from pywikibot.site import Namespace
 from pywikibot.exceptions import (
@@ -1095,11 +1096,7 @@ class BasePage(UnicodeMixin, ComparableMixin):
                self.site.lang in config.cosmetic_changes_disable[family]))
         if not cc:
             return
-        try:
-            from scripts.cosmetic_changes import CosmeticChangesToolkit
-        except ImportError:
-            pywikibot.log(u'Cosmetic changes module not available.')
-            return
+
         old = self.text
         pywikibot.log(u'Cosmetic changes for %s-%s enabled.'
                       % (family, self.site.lang))

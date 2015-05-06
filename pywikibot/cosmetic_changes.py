@@ -95,7 +95,6 @@ import pywikibot
 
 from pywikibot import config, i18n, textlib, pagegenerators
 from pywikibot.bot import ExistingPageBot, NoRedirectPageBot
-from pywikibot.page import url2unicode
 from pywikibot.tools import deprecate_arg, first_lower, first_upper
 from pywikibot.tools import MediaWikiVersion
 
@@ -536,8 +535,8 @@ class CosmeticChangesToolkit:
                                              titleLength)
 
                     # Convert URL-encoded characters to unicode
-                    titleWithSection = url2unicode(titleWithSection,
-                                                   encodings=self.site)
+                    titleWithSection = pywikibot.url2unicode(
+                        titleWithSection, encodings=self.site)
 
                     if titleWithSection == '':
                         # just skip empty links.
