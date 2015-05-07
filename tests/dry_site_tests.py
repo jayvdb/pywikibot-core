@@ -109,7 +109,7 @@ class TestMustBe(DebugOnlyTestCase):
     # were not completely disposed and recreated but retained 'memory'
     def setUp(self):
         self.code = 'test'
-        self.family = lambda: None
+        self.family = pywikibot.family.Family()
         self.family.name = 'test'
         self._logged_in_as = None
         self.obsolete = False
