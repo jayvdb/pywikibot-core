@@ -56,6 +56,7 @@ from pywikibot.exceptions import (
     UnknownSite,
     UnknownExtension,
     FamilyMaintenanceWarning,
+    UserRightsError,
     NoUsername,
     SpamfilterError,
     NoCreateError,
@@ -552,6 +553,7 @@ class BaseSite(ComparableMixin):
                                   % (self.__code, self.__family.name))
 
         self._username = [normalize_username(user), normalize_username(sysop)]
+        self._user_rights = [None, None]
 
         self.use_hard_category_redirects = (
             self.code in self.family.use_hard_category_redirects)
@@ -1049,16 +1051,15 @@ class BaseSite(ComparableMixin):
         return self.getUrl(address, data=data)
 
 
-def must_be(group=None, right=None):
+@deprecated_args(right=None)
+@deprecated('need_right')
+def must_be(group=None):
     """Decorator to require a certain user status when method is called.
 
     @param group: The group the logged in user should belong to
                   this parameter can be overridden by
                   keyword argument 'as_group'.
     @type group: str ('user' or 'sysop')
-    @param right: The rights the logged in user should have.
-                  Not supported yet and thus ignored.
-
     @return: method decorator
     """
     def decorator(fn):
@@ -1066,6 +1067,7 @@ def must_be(group=None, right=None):
             if self.obsolete:
                 raise UnknownSite("Language %s in family %s is obsolete"
                                   % (self.code, self.family.name))
+
             grp = kwargs.pop('as_group', group)
             if grp == 'user':
                 self.login(False)
@@ -1073,7 +1075,83 @@ def must_be(group=None, right=None):
                 self.login(True)
             else:
                 raise Exception("Not implemented")
+
             return fn(self, *args, **kwargs)
+
+        if not __debug__:
+            return fn
+
+        manage_wrapping(callee, fn)
+
+        return callee
+
+    return decorator
+
+
+def need_right(rights):
+    """Decorator to require user rights when method is called.
+
+    If the user doesnt have sufficient rights, log in as user or
+    sysop to obtain these rights, if an account exists.
+
+    @param rights: The rights the logged in user should have.
+    @type rights: array of str
+    @raises UserRightsError: user has insufficient rights.
+    @return: method decorator
+    """
+    def decorator(fn):
+        def callee(self, *args, **kwargs):
+            # Get site from self, or verify self is a site
+            if hasattr(self, 'site'):
+                site = self.site
+            else:
+                assert(hasattr(self, 'family'))
+                assert(isinstance(self.family, pywikibot.family.Family))
+                site = self
+
+            # Obsolete sites are not in Family.langs, thus do not have a API
+            # endpoint registered.
+            if site.obsolete:
+                raise UnknownSite("Language %s in family %s is obsolete"
+                                  % (site.code, site.family.name))
+
+            # Current rights, even anon, may be sufficient.
+            # However pywikibot prevents anon actions in api.py.
+            # If that was changed, to allow anon actions, add:
+            #
+            # if site.has_right(rights, sysop=None):
+            #    return fn(self, *args, **kwargs)
+
+            # Currently site._username only has two usernames, and _loginstatus
+            # is only 0 or 1 for logged in users.  But the design will be
+            # revised to allow any number of usernames.
+            # Find the first username with the necessary rights.
+
+            for (i, username) in enumerate(site._username):
+                if username is None:
+                    continue
+
+                # Avoid raising NoUsername.
+                try:
+                    has_right = site.has_right(rights, sysop=i, login=False)
+                except NoUsername:
+                    pywikibot.exception()
+                    pywikibot.warning(
+                        '%s: removing username %s'
+                        % (site, site._username[i]))
+                    site._username[i] = None
+                    continue
+
+                if has_right:
+                    site.login(bool(i))
+                    return fn(self, *args, **kwargs)
+
+            if set(site._username) == set([None]):
+                raise UserRightsError('%s has_right(%r): no usernames'
+                                      % (site, rights))
+
+            raise UserRightsError('Users %r do not have rights: %r'
+                                  % (site._username, rights))
 
         if not __debug__:
             return fn
@@ -1733,6 +1811,8 @@ class APISite(BaseSite):
             assert 'userinfo' in uidata['query'], \
                    "API userinfo response lacks 'userinfo' key"
             self._userinfo = uidata['query']['userinfo']
+
+            self._user_rights[sysop] = self._userinfo['rights']
         return self._userinfo
 
     userinfo = property(fget=getuserinfo, doc=getuserinfo.__doc__)
@@ -1769,6 +1849,7 @@ class APISite(BaseSite):
 
     globaluserinfo = property(fget=getglobaluserinfo, doc=getuserinfo.__doc__)
 
+    @deprecated('has_right() or allusers()')
     def is_blocked(self, sysop=False):
         """
         Return True when logged in user is blocked.
@@ -1784,7 +1865,7 @@ class APISite(BaseSite):
             self.login(sysop)
         return 'blockinfo' in self._userinfo
 
-    @deprecated('has_right() or is_blocked()')
+    @deprecated('has_right() or allusers()')
     def checkBlocks(self, sysop=False):
         """
         Raise an exception when the user is blocked. DEPRECATED.
@@ -1842,20 +1923,62 @@ class APISite(BaseSite):
                 raise Error(
                     "%s: start must be later than end with reverse=False" % msg_prefix)
 
-    def has_right(self, right, sysop=False):
+    @deprecated_args(right='rights')
+    def has_right(self, rights, sysop=False, login=True):
         """Return true if and only if the user has a specific right.
 
         Possible values of 'right' may vary depending on wiki settings,
         but will usually include:
 
         * Actions: edit, move, delete, protect, upload
-        * User levels: autoconfirmed, sysop, bot
 
+        @param rights: list of rights. a right may be a tuple in which case
+            any item is sufficient
+        @type rights: list of basestring or tuple
+        @param sysop: Use user (False) or sysop (True) account,
+            or None for the current account
+        @type sysop: bool or None
+        @param login: login to fetch rights.  Set to False to use allusers
+        @param login: bool
+        @return: True if user has all rights
+        @rtype: bool
         """
-        if not self.logged_in(sysop):
-            self.login(sysop)
-        return right.lower() in self._userinfo['rights']
+        if sysop is None:
+            user_rights = self.userinfo['rights']
+        else:
+            if login and not self.logged_in(sysop):
+                self.login(sysop)
+            user_rights = self._user_rights[sysop]
+            if not user_rights:
+                if login:
+                    user_rights = self.userinfo['rights']
+                else:
+                    data = self.allusers(start=self._username[sysop], total=1,
+                                         prop='rights')
+                    user = next(iter(data))
+                    if user['name'] != self._username[sysop]:
+                        raise NoUsername
 
+                    user_rights = user['rights'].values()
+                    self._user_rights[sysop] = user_rights
+
+        if isinstance(rights, basestring):
+            rights = [rights]
+
+        for right in rights:
+            if isinstance(right, tuple):
+                for option in right:
+                    if option.lower() in user_rights:
+                        break
+                else:
+                    return False
+
+            if right.lower() not in user_rights:
+                return False
+
+        return True
+
+    @deprecated('has_right(), isBot() or allusers()')
     def has_group(self, group, sysop=False):
         """Return true if and only if the user is a member of specified group.
 
@@ -3606,7 +3729,7 @@ class APISite(BaseSite):
             yield value
 
     def allusers(self, start="!", prefix="", group=None, step=None,
-                 total=None):
+                 total=None, prop='editcount|groups|registration'):
         """Iterate registered users, ordered by username.
 
         Iterated values are dicts containing 'name', 'editcount',
@@ -3622,7 +3745,7 @@ class APISite(BaseSite):
 
         """
         augen = self._generator(api.ListGenerator, type_arg="allusers",
-                                auprop="editcount|groups|registration",
+                                auprop=prop,
                                 aufrom=start, step=step, total=total)
         if prefix:
             augen.request["auprefix"] = prefix
@@ -4175,7 +4298,7 @@ class APISite(BaseSite):
         "cascadeprotected": CascadeLockedPage,
     }
 
-    @must_be(group='user')
+    @need_right('edit')
     def editpage(self, page, summary, minor=True, notminor=False,
                  bot=True, recreate=True, createonly=False, nocreate=False,
                  watch=None):
@@ -4353,7 +4476,7 @@ class APISite(BaseSite):
 "[[%(newtitle)s]] file extension does not match content of [[%(oldtitle)s]]",
     }
 
-    @must_be(group='user')
+    @need_right('move')
     def movepage(self, page, newtitle, summary, movetalk=True,
                  noredirect=False):
         """Move a Page to a new title.
@@ -4510,7 +4633,7 @@ class APISite(BaseSite):
                         "Revision may not exist or was already undeleted."
     }  # other errors shouldn't occur because of pre-submission checks
 
-    @must_be(group='sysop')
+    @need_right('delete')
     @deprecate_arg("summary", "reason")
     def deletepage(self, page, reason):
         """Delete page from the wiki. Requires appropriate privilege level.
@@ -4543,7 +4666,7 @@ class APISite(BaseSite):
         finally:
             self.unlock_page(page)
 
-    @must_be(group='sysop')
+    @need_right('undelete')
     @deprecate_arg("summary", "reason")
     def undelete_page(self, page, reason, revisions=None):
         """Undelete page from the wiki. Requires appropriate privilege level.
@@ -4612,7 +4735,7 @@ class APISite(BaseSite):
         # implemented in b73b5883d486db0e9278ef16733551f28d9e096d
         return set(self.siteinfo.get('restrictions')['levels'])
 
-    @must_be(group='sysop')
+    @need_right('protect')
     @deprecate_arg("summary", "reason")
     def protect(self, page, protections, reason, expiry=None, **kwargs):
         """(Un)protect a wiki page. Requires administrator status.
@@ -4753,7 +4876,7 @@ class APISite(BaseSite):
 
             yield result['patrol']
 
-    @must_be(group='sysop')
+    @need_right('block')
     def blockuser(self, user, expiry, reason, anononly=True, nocreate=True,
                   autoblock=True, noemail=False, reblock=False):
         """
@@ -4800,7 +4923,7 @@ class APISite(BaseSite):
         data = req.submit()
         return data
 
-    @must_be(group='sysop')
+    @need_right('unblock')
     def unblockuser(self, user, reason):
         """
         Remove the block for the user.
@@ -4817,7 +4940,7 @@ class APISite(BaseSite):
         data = req.submit()
         return data
 
-    @must_be(group='user')
+    @need_right('editmywatchlist')
     def watchpage(self, page, unwatch=False):
         """Add or remove page from watchlist.
 
@@ -4835,7 +4958,7 @@ class APISite(BaseSite):
             return False
         return ('unwatched' if unwatch else 'watched') in result["watch"]
 
-    @must_be(group='user')
+    @need_right('purge')
     def purgepages(self, pages, **kwargs):
         """Purge the server's cache for one or multiple pages.
 
@@ -4897,7 +5020,7 @@ class APISite(BaseSite):
         """
         return self._get_titles_with_hash(hash_found)
 
-    @must_be(group='user')
+    @need_right('edit')
     def is_uploaddisabled(self):
         """Return True if upload is disabled on site.
 
@@ -5704,7 +5827,7 @@ class DataSite(APISite):
 
         return dtype
 
-    @must_be(group='user')
+    @need_right('edit')
     def editEntity(self, identification, data, bot=True, **kwargs):
         if "id" in identification and identification["id"] == "-1":
             del identification["id"]
@@ -5725,7 +5848,7 @@ class DataSite(APISite):
         data = req.submit()
         return data
 
-    @must_be(group='user')
+    @need_right('edit')
     def addClaim(self, item, claim, bot=True, **kwargs):
 
         params = dict(action='wbcreateclaim',
@@ -5751,7 +5874,7 @@ class DataSite(APISite):
             item.claims[claim.getID()] = [claim]
         item.lastrevid = data['pageinfo']['lastrevid']
 
-    @must_be(group='user')
+    @need_right('edit')
     def changeClaimTarget(self, claim, snaktype='value', bot=True, **kwargs):
         """
         Set the claim target to the value of the provided claim target.
@@ -5783,7 +5906,7 @@ class DataSite(APISite):
         data = req.submit()
         return data
 
-    @must_be(group='user')
+    @need_right('edit')
     def editSource(self, claim, source, new=False, bot=True, **kwargs):
         """
         Create/Edit a source.
@@ -5837,7 +5960,7 @@ class DataSite(APISite):
         data = req.submit()
         return data
 
-    @must_be(group='user')
+    @need_right('edit')
     def editQualifier(self, claim, qualifier, new=False, bot=True, **kwargs):
         """
         Create/Edit a qualifier.
@@ -5875,7 +5998,7 @@ class DataSite(APISite):
         data = req.submit()
         return data
 
-    @must_be(group='user')
+    @need_right('edit')
     def removeClaims(self, claims, bot=True, **kwargs):
         params = dict(action='wbremoveclaims')
         if bot:
@@ -5889,7 +6012,7 @@ class DataSite(APISite):
         data = req.submit()
         return data
 
-    @must_be(group='user')
+    @need_right('edit')
     def removeSources(self, claim, sources, bot=True, **kwargs):
         """
         Remove sources.
