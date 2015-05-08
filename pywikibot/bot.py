@@ -712,6 +712,10 @@ def handle_args(args=None, do_help=True):
     @return: list of arguments not recognised globally
     @rtype: list of unicode
     """
+    if pywikibot._sites:
+        warn('Site objects have been created before arguments were '
+             'handled', UserWarning)
+
     # get commandline arguments if necessary
     if not args:
         # it's the version in pywikibot.__init__ that is changed by scripts,
@@ -816,6 +820,7 @@ def handle_args(args=None, do_help=True):
 
     if username:
         config.usernames[config.family][config.mylang] = username
+        config.sysopnames[config.family][config.mylang] = username
 
     init_handlers()
     writeToCommandLogFile()
