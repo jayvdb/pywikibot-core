@@ -270,9 +270,11 @@ class ThreadedHttpRequestQueueTestCase(TestCase):
         },
     }
 
-    def test_threading(self):
+    def test_threading_no_cookies(self):
+        """Test using threadedhttp without a cookiejar."""
+        # Threading with cookies is tested by the doctest in api.py.
         queue = Queue.Queue()
-        cookiejar = threadedhttp.LockableCookieJar()
+        cookiejar = False
         connection_pool = threadedhttp.ConnectionPool()
         proc = threadedhttp.HttpProcessor(queue, cookiejar, connection_pool)
         proc.setDaemon(True)
