@@ -40,6 +40,7 @@ import pywikibot
 from pywikibot import config
 
 from pywikibot.tools import UnicodeMixin
+from pywikibot.comms.cookiejar import MultiSessionLWPCookieJar
 
 _logger = "comm.threadedhttp"
 
@@ -137,8 +138,8 @@ class Http(httplib2.Http):
         """
         Constructor.
 
-        @kwarg cookiejar: (optional) CookieJar to use. A new one will be
-               used when not supplied.
+        @kwarg cookiejar: (optional) L{MultiSessionLWPCookieJar} to use.
+               A new one will be created when not supplied.
         @kwarg connection_pool: (optional) Connection pool to use. A new one
                will be used when not supplied.
         @kwarg max_redirects: (optional) The maximum number of redirects to
@@ -150,7 +151,7 @@ class Http(httplib2.Http):
         try:
             self.cookiejar = kwargs.pop('cookiejar')
         except KeyError:
-            self.cookiejar = cookielib.CookieJar()
+            self.cookiejar = MultiSessionLWPCookieJar()
 
         try:
             self.connection_pool = kwargs.pop('connection_pool')
@@ -163,7 +164,7 @@ class Http(httplib2.Http):
         httplib2.Http.__init__(self, *args, **kwargs)
 
     def request(self, uri, method="GET", body=None, headers=None,
-                max_redirects=None, connection_type=None):
+                max_redirects=None, connection_type=None, sessionid=None):
         """Start an HTTP request.
 
         @param uri: The uri to retrieve
@@ -187,7 +188,7 @@ class Http(httplib2.Http):
         # Prepare headers
         headers.pop('cookie', None)
         req = DummyRequest(uri, headers)
-        self.cookiejar.add_cookie_header(req)
+        self.cookiejar.add_cookie_header(req, sessionid)
 
         headers = req.headers
 
@@ -232,7 +233,7 @@ class Http(httplib2.Http):
         del self.connections[conn_key]
 
         # First write cookies
-        self.cookiejar.extract_cookies(DummyResponse(response), req)
+        self.cookiejar.extract_cookies(DummyResponse(response), req, sessionid)
 
         # Check for possible redirects
         redirectable_response = ((response.status == 303) or
@@ -305,7 +306,7 @@ class HttpRequest(UnicodeMixin):
 
     >>> from .http import Queue
     >>> queue = Queue.Queue()
-    >>> cookiejar = cookielib.CookieJar()
+    >>> cookiejar = MultiSessionLWPCookieJar()
     >>> connection_pool = ConnectionPool()
     >>> proc = HttpProcessor(queue, cookiejar, connection_pool)
     >>> proc.setDaemon(True)

@@ -66,6 +66,7 @@ from pywikibot.exceptions import (
     FatalServerError, Server504Error, Server414Error
 )
 from pywikibot.comms import threadedhttp
+from pywikibot.comms.cookiejar import MultiSessionLWPCookieJar
 from pywikibot.tools import deprecate_arg
 import pywikibot.version
 
@@ -89,7 +90,7 @@ threads = []
 connection_pool = threadedhttp.ConnectionPool()
 http_queue = Queue.Queue()
 
-cookie_jar = cookielib.LWPCookieJar(
+cookie_jar = MultiSessionLWPCookieJar(
     config.datafilepath("pywikibot.lwp"))
 try:
     cookie_jar.load()
@@ -97,7 +98,6 @@ except (IOError, cookielib.LoadError):
     pywikibot.debug(u"Loading cookies failed.", _logger)
 else:
     pywikibot.debug(u"Loaded cookies from file.", _logger)
-
 
 # Build up HttpProcessors
 pywikibot.log(u'Starting %(numthreads)i threads...' % locals())
@@ -253,6 +253,8 @@ def request(site=None, uri=None, method='GET', body=None, headers=None,
         to automatically chose the charset from the returned header (defaults
         to latin-1)
     @type charset: CodecInfo, str, None
+    @param sessionid: session ID for cookies
+    @type sessionid: str
     @return: The received data
     @rtype: a unicode string
     """

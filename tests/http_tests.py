@@ -18,18 +18,17 @@ import pywikibot
 
 from pywikibot import config2 as config
 from pywikibot.comms import http, threadedhttp
+from pywikibot.comms.cookiejar import MultiSessionLWPCookieJar
 
 from tests import _images_dir
 from tests.aspects import unittest, TestCase
 from tests.utils import expected_failure_if
 
 if sys.version_info[0] > 2:
-    from http import cookiejar as cookielib
     import queue as Queue
 
     unicode = str
 else:
-    import cookielib
     import Queue
 
 
@@ -275,7 +274,7 @@ class ThreadedHttpRequestQueueTestCase(TestCase):
     def test_threading(self):
         """Test using threadedhttp."""
         queue = Queue.Queue()
-        cookiejar = cookielib.CookieJar()
+        cookiejar = MultiSessionLWPCookieJar()
         connection_pool = threadedhttp.ConnectionPool()
         proc = threadedhttp.HttpProcessor(queue, cookiejar, connection_pool)
         proc.setDaemon(True)
