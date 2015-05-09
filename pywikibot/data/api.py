@@ -1122,6 +1122,8 @@ class Request(MutableMapping):
         if "action" not in kwargs:
             raise ValueError("'action' specification missing from Request.")
         self.action = kwargs['action']
+        self.sessionid = kwargs.pop('sessionid', None)
+
         self.update(**kwargs)
         self._warning_handler = None
         # Actions that imply database updates on the server, used for various
@@ -1535,6 +1537,13 @@ class Request(MutableMapping):
                 pywikibot.log(
                     "Submitting unthrottled action '{0}'.".format(self.action))
             uri = self.site.scriptpath() + "/api.php"
+
+            if self.sessionid is None:
+                if self.action == 'login':
+                    self.sessionid = self._params['lgname'][0]
+                elif self.site._loginstatus >= 0:
+                    self.sessionid = self.site._username[self.site._loginstatus]
+
             try:
                 if self.mime:
                     (headers, body) = Request._build_mime_request(
@@ -1553,7 +1562,7 @@ class Request(MutableMapping):
 
                 rawdata = http.request(
                     site=self.site, uri=uri, method='GET' if use_get else 'POST',
-                    body=body, headers=headers)
+                    body=body, headers=headers, sessionid=self.sessionid)
             except Server504Error:
                 pywikibot.log(u"Caught HTTP 504 error; retrying")
                 self.wait()
@@ -1632,6 +1641,7 @@ class Request(MutableMapping):
                         status = 0  # default to non-sysop login
                     self.site.login(status)
                     # retry the previous query
+                    self.sessionid = None
                     continue
             self._handle_warnings(result)
             if "error" not in result:

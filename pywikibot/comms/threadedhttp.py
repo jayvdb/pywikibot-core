@@ -162,7 +162,7 @@ class Http(httplib2.Http):
         httplib2.Http.__init__(self, *args, **kwargs)
 
     def request(self, uri, method="GET", body=None, headers=None,
-                max_redirects=None, connection_type=None):
+                max_redirects=None, connection_type=None, sessionid=None):
         """Start an HTTP request.
 
         @param uri: The uri to retrieve
@@ -187,6 +187,7 @@ class Http(httplib2.Http):
         headers.pop('cookie', None)
         req = DummyRequest(uri, headers)
         if self.cookiejar is not False:
+            self.cookiejar.current_session = sessionid
             self.cookiejar.add_cookie_header(req)
 
         headers = req.headers
@@ -233,6 +234,7 @@ class Http(httplib2.Http):
 
         # First write cookies
         if self.cookiejar is not False:
+            self.cookiejar.current_session = sessionid
             self.cookiejar.extract_cookies(DummyResponse(response), req)
 
         # Check for possible redirects

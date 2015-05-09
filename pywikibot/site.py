@@ -1595,7 +1595,7 @@ class APISite(BaseSite):
             gen.set_maximum_items(int(total))
         return gen
 
-    def logged_in(self, sysop=False):
+    def logged_in(self, sysop=False, _status_warn=True):
         """Verify the bot is logged into the site as the expected user.
 
         The expected usernames are those provided as either the user or sysop
@@ -1618,6 +1618,15 @@ class APISite(BaseSite):
 
         if self.userinfo['name'] != self._username[sysop]:
             return False
+
+        if self._loginstatus != int(sysop):
+            if _status_warn:
+                pywikibot.warning(
+                    u'%r.logged_in(%r) set _loginstatus = %d.'
+                    % (self, sysop, self._loginstatus)
+                )
+            self._loginstatus = (LoginStatus.AS_SYSOP
+                                 if sysop else LoginStatus.AS_USER)
 
         return True
 
@@ -1651,18 +1660,16 @@ class APISite(BaseSite):
             )
         # There are several ways that the site may already be
         # logged in, and we do not need to hit the server again.
-        # logged_in() is False if _userinfo exists, which means this
+        # logged_in() is True only if _userinfo exists, which means this
         # will have no effect for the invocation from api.py
-        if self.logged_in(sysop):
-            self._loginstatus = (LoginStatus.AS_SYSOP
-                                 if sysop else LoginStatus.AS_USER)
+        if self.logged_in(sysop, _status_warn=False):
             return
         # check whether a login cookie already exists for this user
         self._loginstatus = LoginStatus.IN_PROGRESS
         if hasattr(self, "_userinfo"):
             del self._userinfo
         try:
-            self.getuserinfo()
+            self.getuserinfo(sysop)
             if self.userinfo['name'] == self._username[sysop] and \
                self.logged_in(sysop):
                 return
@@ -1696,7 +1703,7 @@ class APISite(BaseSite):
             del self._userinfo
         self.getuserinfo()
 
-    def getuserinfo(self):
+    def getuserinfo(self, sysop=False):
         """Retrieve userinfo from site and store in _userinfo attribute.
 
         self._userinfo will be a dict with the following keys and values:
@@ -1715,6 +1722,7 @@ class APISite(BaseSite):
                 self._userinfo['name'] != self._username['sysop' in self._userinfo['groups']]):
             uirequest = api.Request(
                 site=self,
+                sessionid=self._username[sysop],
                 action="query",
                 meta="userinfo",
                 uiprop="blockinfo|hasmsg|groups|rights"
