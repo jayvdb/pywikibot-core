@@ -18,6 +18,7 @@ import pywikibot
 
 from pywikibot import config2 as config
 from pywikibot.comms import http, threadedhttp
+from pywikibot.comms.cookiejar import MultiSessionLWPCookieJar
 
 from tests import _images_dir
 from tests.aspects import unittest, TestCase
@@ -275,7 +276,7 @@ class ThreadedHttpRequestQueueTestCase(TestCase):
     def test_threading(self):
         """Test using threadedhttp."""
         queue = Queue.Queue()
-        cookiejar = cookielib.CookieJar()
+        cookiejar = MultiSessionLWPCookieJar()
         connection_pool = threadedhttp.ConnectionPool()
         proc = threadedhttp.HttpProcessor(queue, cookiejar, connection_pool)
         proc.setDaemon(True)
