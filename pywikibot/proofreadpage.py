@@ -17,10 +17,14 @@ This module includes objects:
 from __future__ import unicode_literals
 
 __version__ = '$Id$'
-#
 
-import re
 import json
+import re
+
+try:
+    from bs4 import BeautifulSoup
+except ImportError as e:
+    BeautifulSoup = e
 
 import pywikibot
 
@@ -322,3 +326,160 @@ class ProofreadPage(pywikibot.Page):
         Status in the edit summary on wiki.
         """
         return '/* {0.status} */ '.format(self)
+
+
+class IndexPage(pywikibot.Page):
+
+    """Index Page page used in Mediawiki ProofreadPage extension."""
+
+    def __init__(self, source, title=''):
+        """Instantiate a IndexPage object.
+
+        In this class:
+        page number is the number in the page title in the Page namespece, e.g.
+            page_number is 12 for Page:Popular Science Monthly Volume 1.djvu/12.
+        page label is the label associated with a page in the Index page, via
+            <pagelist ... /> tag.
+
+        Raises UnknownExtension if source Site has no ProofreadPage Extension.
+        """
+        # Check if BeautifulSoup is imported.
+        if isinstance(BeautifulSoup, ImportError):
+            raise BeautifulSoup
+
+        if not isinstance(source, pywikibot.site.BaseSite):
+            site = source.site
+        else:
+            site = source
+        ns = site.proofread_index_ns
+        super(IndexPage, self).__init__(source, title, ns=site.proofread_index_ns)
+        if self.namespace() != site.proofread_index_ns:
+            raise ValueError('Page %s must belong to %s namespace'
+                             % (self.title(), ns))
+
+        # Prefix to filter page titles.
+        self._prefix = pywikibot.Page(site,
+                                      self.title(withNamespace=False),
+                                      ns=site.proofread_page_ns)
+        self._prefix = self._prefix.title()
+
+        self._title_regex = re.compile(
+            '(?P<title>%s)/(?P<number>\d+)' % self._prefix)
+
+        self._all_page_links = set(
+            self.site.pagelinks(self, namespaces=self.site.proofread_page_ns))
+        self._max_page = len(self._all_page_links)
+
+        # Cache results.
+        self._page_numbers_from_label = {}
+        self._pages_from_label = {}
+        self._labels_from_page_number = {}
+        self._labels_from_page = {}
+
+    def _get_page_labels(self):
+        """Associate label and number for each page linked to the index."""
+        self._text_html = self._get_parsed_page()
+        self._soup = BeautifulSoup(self._text_html, 'html.parser')
+        self._soup = self._soup.find(
+            'div', {'class': 'index-pagelist mw-collapsible-content'})
+
+        # Search title/n in 'index-pagelist mw-collapsible-content' html class.
+        for a_tag in self._soup.findAll('a'):
+            m_title_tag = self._title_regex.search(a_tag['title'])
+
+            title = m_title_tag.group('title')
+            page_number = int(m_title_tag.group('number'))
+
+            # Sanity check: 'Page:prefix/page_number' must be linked from page.
+            page = pywikibot.Page(self.site, '{0}/{1}'.format(title, page_number))
+            if page not in self._all_page_links:
+                raise pywikibot.Error('Page %s not recognised.' % a_tag.text)
+
+            # label is not converted to int.
+            label = a_tag.text.lstrip('0')
+
+            # mapping: numbers/pages as keys, labels as values
+            self._labels_from_page_number[page_number] = label
+            self._labels_from_page[page] = label
+
+        # reverse mapping: labels as keys, numbers as values,
+        # as set (there is a 1-to-many correspondence).
+        for number, label in self._labels_from_page_number.items():
+            self._page_numbers_from_label.setdefault(label, set()).add(number)
+
+        for page, label in self._labels_from_page.items():
+            self._pages_from_label.setdefault(label, set()).add(page)
+
+    def get_label_from_page(self, page):
+        """Return 'page label' for page.
+
+        There is a 1-to-1 correspondence (each page has a label).
+
+        @param page: Page instance
+        @return: page label
+        @rtype: unicode string
+        """
+        if not self._labels_from_page:
+            self._get_page_labels()
+
+        try:
+            return self._labels_from_page[page]
+        except KeyError:
+            raise KeyError('Invalid Page: %s.' % page)
+
+    def get_label_from_page_no(self, page_number):
+        """Return page label from page number.
+
+        There is a 1-to-1 correspondence (each page has a label).
+
+        @param page_number: int
+        @return: page label
+        @rtype: unicode string
+        """
+        if not self._labels_from_page_number:
+            self._get_page_labels()
+
+        try:
+            return self._labels_from_page_number[page_number]
+        except KeyError:
+            raise KeyError('Page number not in index range (1-%s): %s.'
+                           % (self._max_page, page_number))
+
+    def get_page_number(self, label='1'):
+        """Return page number from page label.
+
+        There is a 1-to-many correspondence (a label can be the same for
+        several pages).
+
+        There is a 1-to-1 correspondence (each page has a label).
+        @return: list containing page numbers corresponding to page label.
+        """
+        # Convert label to string if an integer is passed.
+        label = str(label)
+
+        if not self._page_numbers_from_label:
+            self._get_page_labels()
+
+        try:
+            return self._page_numbers_from_label[label]
+        except KeyError:
+            raise KeyError('No page has label: "%s".' % label)
+
+    def get_page(self, label='1'):
+        """Return page number from page label.
+
+        There is a 1-to-many correspondence (a label can be the same for
+        several pages).
+
+        @return: list containing pages corresponding to page label.
+        """
+        # Convert label to string if an integer is passed.
+        label = str(label)
+
+        if not self._pages_from_label:
+            self._get_page_labels()
+
+        try:
+            return self._pages_from_label[label]
+        except KeyError:
+            raise KeyError('No page has label: "%s".' % label)

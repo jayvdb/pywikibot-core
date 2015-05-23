@@ -11,10 +11,14 @@ __version__ = '$Id$'
 
 import json
 
-import pywikibot
+try:
+    from bs4 import BeautifulSoup
+except ImportError as e:
+    BeautifulSoup = e
 
-from pywikibot.proofreadpage import ProofreadPage
+import pywikibot
 from pywikibot.data import api
+from pywikibot.proofreadpage import ProofreadPage, IndexPage
 from tests.aspects import unittest, TestCase
 
 from tests.basepage_tests import (
@@ -201,6 +205,137 @@ class TestProofreadPageValidSite(TestCase):
         page_text = page._page_to_json()
         self.assertEqual(json.loads(page_text), json.loads(loaded_text))
 
+
+class IndexPageTestCase(TestCase):
+
+    """Run tests related to IndexPage ProofreadPage extension."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Check if beautifulsoup4 is installed."""
+        super(IndexPageTestCase, cls).setUpClass()
+        if isinstance(BeautifulSoup, ImportError):
+            raise unittest.SkipTest('beautifulsoup4 not installed')
+
+
+class TestIndexPageInvalidSite(IndexPageTestCase):
+
+    """Test IndexPage class."""
+
+    family = 'wikipedia'
+    code = 'en'
+
+    cached = True
+
+    def test_invalid_site_source(self):
+        """Test IndexPage from invalid Site as source."""
+        self.assertRaises(pywikibot.UnknownExtension,
+                          IndexPage, self.site, 'title')
+
+
+class TestIndexPageValidSite(IndexPageTestCase):
+
+    """Test IndexPage class."""
+
+    family = 'wikisource'
+    code = 'en'
+
+    cached = True
+
+    base_page = 'Page:Popular Science Monthly Volume 1.djvu/{0}'
+    valid = {
+        'index_title': 'Index:Popular Science Monthly Volume 1.djvu',
+        'page_title': 'Page:Popular Science Monthly Volume 1.djvu/11',
+        'test_get_label': [11, '1'],
+        'test_get_number': ['Cvr', set([1, 9, 10, 804])],
+        'test_get_page': ['Cvr', set()]  # will be filled in relevant test
+    }
+
+    existing_invalid = {
+        'title': 'Main Page',
+    }
+
+    not_existing_invalid = {
+        'title': 'User:cannot_exists',
+        'title1': 'User:Popular Science Monthly Volume 1.djvu/12'
+    }
+
+    def test_valid_site_source(self):
+        """Test IndexPage from valid Site as source."""
+        page = IndexPage(self.site, 'title')
+        self.assertEqual(page.namespace(), self.site.proofread_index_ns)
+
+    def test_invalid_existing_page_source_in_valid_site(self):
+        """Test IndexPage from invalid existing Page as source."""
+        source = pywikibot.Page(self.site, self.existing_invalid['title'])
+        self.assertRaises(ValueError, IndexPage, source)
+
+    def test_invalid_not_existing_page_source_in_valid_site(self):
+        """Test IndexPage from invalid not existing Page as source.
+
+        Test that namespace is forced properly.
+        """
+        source = pywikibot.Page(self.site,
+                                self.not_existing_invalid['title'])
+        fixed_source = pywikibot.Page(self.site,
+                                      source.title(withNamespace=False),
+                                      ns=self.site.proofread_index_ns)
+        page = IndexPage(fixed_source)
+        self.assertEqual(page.title(), fixed_source.title())
+
+    def test_invalid_not_existing_page_source_in_valid_site_wrong_ns(self):
+        """Test IndexPage from Page not existing in non-Page ns as source."""
+        source = pywikibot.Page(self.site,
+                                self.not_existing_invalid['title1'])
+        self.assertRaises(ValueError, IndexPage, source)
+
+    def test_invalid_link_source_in_valid_site(self):
+        """Test IndexPage from invalid Link as source."""
+        source = pywikibot.Link(self.not_existing_invalid['title'],
+                                source=self.site)
+        self.assertRaises(ValueError, IndexPage, source)
+
+    def test_valid_link_source_in_valid_site(self):
+        """Test IndexPage from valid Link as source."""
+        source = pywikibot.Link(
+            self.valid['index_title'],
+            source=self.site,
+            defaultNamespace=self.site.proofread_page_ns)
+        page = IndexPage(source)
+        self.assertEqual(page.title(withNamespace=False), source.title)
+        self.assertEqual(page.namespace(), source.namespace)
+
+    def test_page_labels_and_numbers(self):
+        """Test IndexPage page parsing functions."""
+        index_page = IndexPage(self.site, self.valid['index_title'])
+        proofread_page = ProofreadPage(self.site, self.valid['page_title'])
+
+        num, label = self.valid['test_get_label']
+        # get label from number
+        self.assertEqual(index_page.get_label_from_page_no(num), label)
+        # get label from page
+        self.assertEqual(index_page.get_label_from_page(proofread_page), label)
+
+        self.assertRaises(KeyError, index_page.get_label_from_page_no, 0)
+        self.assertRaises(KeyError, index_page.get_label_from_page, None)
+
+        # get set of numbers from label
+        label, num_set = self.valid['test_get_number']
+        self.assertEqual(index_page.get_page_number(label), num_set)
+
+        label, num_set = 'dummy label', []
+        self.assertRaises(KeyError, index_page.get_page_number, 'dummy label')
+
+        # fill list of pages corresponding to chosen numbers for test
+        for i in self.valid['test_get_number'][1]:
+            self.valid['test_get_page'][1].add(
+                pywikibot.Page(self.site, self.base_page.format(i)))
+        # get set of pages from label
+        label, page_set = self.valid['test_get_page']
+        self.assertEqual(index_page.get_page(label), page_set)
+
+        label, page_set = 'dummy label', set()
+        self.assertRaises(KeyError, index_page.get_page, 'dummy label')
 
 if __name__ == '__main__':
     try:
