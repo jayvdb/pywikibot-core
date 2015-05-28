@@ -42,6 +42,7 @@ install:
 
   - mkdir ~/.pywikibot
   - python -W error::UserWarning -m generate_user_files -dir:~/.pywikibot/ -family:$FAMILY -lang:$LANGUAGE -v -user:"$PYWIKIBOT2_USERNAME"
+  - echo "family_files['enwpbeta'] = 'https://en.wikipedia.beta.wmflabs.org/'" >> ~/.pywikibot/user-config.py ;
 
   - if [[ -n "$USER_PASSWORD" && -n "$PYWIKIBOT2_USERNAME" ]]; then
       echo "usernames['wikipedia']['en'] = '$PYWIKIBOT2_USERNAME'" >> ~/.pywikibot/user-config.py ;
@@ -87,10 +88,14 @@ matrix:
   include:
     - python: '2.7'
       env: LANGUAGE=he FAMILY=wikivoyage SITE_ONLY=1
+    - python: '2.7'
+      env: LANGUAGE=enwpbeta FAMILY=enwpbeta SITE_ONLY=1
     - python: '3.3'
       env: LANGUAGE=zh FAMILY=wikisource SITE_ONLY=1 EXTERNALS_HTTPLIB2=1
     - python: '3.4'
       env: LANGUAGE=test FAMILY=wikidata SITE_ONLY=1
+    - python: '3.4'
+      env: LANGUAGE=enwpbeta FAMILY=enwpbeta SITE_ONLY=1
     - python: 'nightly'
       env: LANGUAGE=ar FAMILY=wiktionary PYWIKIBOT2_TEST_NO_RC=1
     - python: '2.6'
