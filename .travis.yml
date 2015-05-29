@@ -42,7 +42,7 @@ install:
 
   - mkdir ~/.pywikibot
 
-  - if [[ $FAMILY == 'enwpbeta' ]]; then
+  - if [[ $FAMILY == 'wpbeta' ]]; then
       python -m generate_family_file 'http://en.wikipedia.beta.wmflabs.org/' 'enwpbeta' 'y' ;
     fi
 
@@ -85,7 +85,7 @@ env:
     - secure: kofInMlisiTBt9o/Ustc/vySlkKfxGzGCX2LwA1D2waym8sDTS0o5gMJ5LsrT/BUKwZbe1vLozPHqZrrkQvsdTml+DpZuotzdILs0m0f3BUoexEC6OON5IDljuxFyETrD1Ug44ih5Mc4lVFOdTcBzg501ZmswGwQrBvg/OyEFfE=
 
   matrix:
-    - LANGUAGE=enwpbeta FAMILY=enwpbeta SITE_ONLY=1
+    - LANGUAGE=en FAMILY=wpbeta SITE_ONLY=1
 
 notifications:
   email:
