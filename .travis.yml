@@ -41,8 +41,12 @@ install:
     fi
 
   - mkdir ~/.pywikibot
+
+  - if [[ $FAMILY == 'enwpbeta' ]]; then
+      python -m generate_family_file 'http://en.wikipedia.beta.wmflabs.org/' 'enwpbeta' ;
+    fi
+
   - python -W error::UserWarning -m generate_user_files -dir:~/.pywikibot/ -family:$FAMILY -lang:$LANGUAGE -v -user:"$PYWIKIBOT2_USERNAME"
-  - echo "family_files['enwpbeta'] = 'https://en.wikipedia.beta.wmflabs.org/'" >> ~/.pywikibot/user-config.py ;
 
   - if [[ -n "$USER_PASSWORD" && -n "$PYWIKIBOT2_USERNAME" ]]; then
       echo "usernames['wikipedia']['en'] = '$PYWIKIBOT2_USERNAME'" >> ~/.pywikibot/user-config.py ;
