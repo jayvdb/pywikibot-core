@@ -103,6 +103,19 @@ usernames['%(fam_name)s']['%(wiki_code)s'] = 'myUsername'"""
         if getattr(config, 'password_file', ''):
             self.readPassword()
 
+    def check_user_exists(self):
+        """
+        Check that the username exists on the site.
+
+        @raises NoUsername: Username doesnt exist in user list.
+        """
+        data = self.site.allusers(start=self.username, total=1)
+        user = next(iter(data))
+        if user['name'] != self.username:
+            # Report the same error as server error code NotExists
+            raise NoUsername('Username \'%s\' is invalid on %s'
+                             % (self.username, self.site))
+
     def botAllowed(self):
         """
         Check whether the bot is listed on a specific page.
@@ -224,6 +237,10 @@ usernames['%(fam_name)s']['%(wiki_code)s'] = 'myUsername'"""
         @raises NoUsername: Username is not recognised by the site.
         """
         if not self.password:
+            # First check that the username exists,
+            # to avoid asking for a password that will not work.
+            self.check_user_exists()
+
             # As we don't want the password to appear on the screen, we set
             # password = True
             self.password = pywikibot.input(
