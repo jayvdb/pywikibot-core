@@ -823,8 +823,23 @@ class BaseSite(ComparableMixin):
 
     @remove_last_args(('default', ))
     def redirect(self):
-        """Return list of localized redirect tags for the site."""
+        """
+        Return list of localized redirect tags for the site.
+
+        On BaseSite, this method only the unlocalised 'REDIRECT'.
+
+        @rtype: list with one entry
+        """
         return [u"REDIRECT"]
+
+    @property
+    def _redirect_keywords(self):
+        """
+        Return all redirect keywords.
+
+        @rtype: set
+        """
+        return set(self.redirect())
 
     @remove_last_args(('default', ))
     def pagenamecodes(self):
@@ -904,19 +919,24 @@ class BaseSite(ComparableMixin):
         linkfam, linkcode = pywikibot.Link(text, self).parse_site()
         return linkfam != self.family.name or linkcode != self.code
 
-    def redirectRegex(self, pattern=None):
+    @remove_last_args(('pattern', ))
+    def redirectRegex(self):
         """Return a compiled regular expression matching on redirect pages.
 
         Group 1 in the regex match object will be the target title.
 
         """
-        if pattern is None:
-            pattern = "REDIRECT"
+        keywords = self._redirect_keywords
+        if len(keywords) == 1:
+            pattern = keywords.pop()
+        else:
+            pattern = "(?:" + "|".join(keywords) + ")"
+
         # A redirect starts with hash (#), followed by a keyword, then
         # arbitrary stuff, then a wikilink. The wikilink may contain
         # a label, although this is not useful.
         return re.compile(r'\s*#%(pattern)s\s*:?\s*\[\[(.+?)(?:\|.*?)?\]\]'
-                          % locals(),
+                          % {'pattern': pattern},
                           re.IGNORECASE | re.UNICODE | re.DOTALL)
 
     def sametitle(self, title1, title2):
@@ -1543,6 +1563,22 @@ class APISite(BaseSite):
         super(APISite, self).__setstate__(attrs)
         self.tokens = TokenWallet(self)
 
+    def __getattr__(self, attr):
+        """Defer methods raising NotImplementedError to BaseSite."""
+        if hasattr(self.__class__, attr):
+            try:
+                return getattr(self.__class__, attr)
+            except (AttributeError, NotImplementedError) as e:
+                print('getattr', e)
+                method = getattr(super(APISite, self), attr)
+                print('getattr', e, method)
+                f = lambda *args, **kwargs: method(self.code, *args, **kwargs)
+                if hasattr(method, "__doc__"):
+                    f.__doc__ = method.__doc__
+                return f
+        else:
+            return super(APISite, self).__getattr__(attr)
+
     @classmethod
     def fromDBName(cls, dbname):
         # TODO this only works for some WMF sites
@@ -2115,28 +2151,28 @@ class APISite(BaseSite):
         else:
             return [word]
 
+    @property
+    def _redirect_keywords(self):
+        """
+        Return all redirect keywords.
+
+        @rtype: set
+        """
+        keywords = set(s.lstrip("#")
+                       for s in self.getmagicwords("redirect"))
+        keywords.add("REDIRECT")  # just in case
+        return keywords
+
     @remove_last_args(('default', ))
     def redirect(self):
-        """Return the localized #REDIRECT keyword."""
+        """Return the localized #REDIRECT keyword.
+
+        On 1.13 or less, defers to BaseSite.redirect to return only 'REDIRECT'.
+
+        @rtype: list with one entry
+        """
         # return the magic word without the preceding '#' character
         return self.getmagicwords("redirect")[0].lstrip("#")
-
-    def redirectRegex(self):
-        """Return a compiled regular expression matching on redirect pages.
-
-        Group 1 in the regex match object will be the target title.
-
-        """
-        # NOTE: this is needed, since the API can give false positives!
-        try:
-            keywords = set(s.lstrip("#")
-                           for s in self.getmagicwords("redirect"))
-            keywords.add("REDIRECT")  # just in case
-            pattern = "(?:" + "|".join(keywords) + ")"
-        except KeyError:
-            # no localized keyword for redirects
-            pattern = None
-        return BaseSite.redirectRegex(self, pattern)
 
     @remove_last_args(('default', ))
     def pagenamecodes(self):
@@ -2258,11 +2294,18 @@ class APISite(BaseSite):
         if not version:
             try:
                 version = self.siteinfo.get('generator', expiry=1).split(' ')[1]
-            except pywikibot.data.api.APIError:
+            except pywikibot.data.api.APIError as e:
                 # May occur if you are not logged in (no API read permissions).
-                pywikibot.exception('You have no API read permissions. Seems '
-                                    'you are not logged in')
-                version = self.family.version(self.code)
+                if e.code == 'readapidenied':
+                    pywikibot.exception(
+                        'You have no API read permissions. Seems you are not '
+                        'logged in. '
+                        'Defaulting to version defined in family class.')
+                    raise NotImplementedError(
+                        'site.version not implemented on '
+                        'private wikis when not logged in.')
+                else:
+                    raise
         return version
 
     @property
@@ -5581,7 +5624,7 @@ class DataSite(APISite):
                 if hasattr(method, "__doc__"):
                     f.__doc__ = method.__doc__
                 return f
-        return super(APISite, self).__getattr__(attr)
+        return super(DataSite, self).__getattr__(attr)
 
     def __repr__(self):
         return 'DataSite("%s", "%s")' % (self.code, self.family.name)
@@ -6036,47 +6079,3 @@ class DataSite(APISite):
         if limit is not None:
             gen.set_maximum_items(limit)
         return gen
-
-    # deprecated BaseSite methods
-    def fam(self):
-        raise NotImplementedError
-
-    def urlEncode(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def getUrl(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def linkto(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def loggedInAs(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def postData(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def postForm(self, *args, **kwargs):
-        raise NotImplementedError
-
-    # deprecated APISite methods
-    def isBlocked(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def checkBlocks(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def isAllowed(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def prefixindex(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def categories(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def linksearch(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def newimages(self, *args, **kwargs):
-        raise NotImplementedError
