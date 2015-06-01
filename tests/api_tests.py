@@ -12,6 +12,8 @@ __version__ = '$Id$'
 import datetime
 import types
 
+from warnings import warn
+
 import pywikibot.data.api as api
 import pywikibot.family
 import pywikibot.site
@@ -681,6 +683,9 @@ class TestLazyLogin(TestCase):
         fam = pywikibot.family.AutoFamily(
             'steward', 'https://steward.wikimedia.org/w/api.php')
         site = pywikibot.site.APISite('steward', fam)
+        if not site._username[0]:
+            warn('Test is not very effective if config.usernames does not '
+                 'contain an entry for steward:steward', UserWarning)
         req = api.Request(site=site, action='query')
         self.assertRaises(pywikibot.NoUsername, req.submit)
 
