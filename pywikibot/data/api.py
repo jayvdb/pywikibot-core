@@ -2534,6 +2534,7 @@ class LoginManager(login.LoginManager):
                 time.sleep(diff.seconds)
         login_request = Request(site=self.site,
                                 action="login",
+                                use_get=False,
                                 lgname=self.username,
                                 lgpassword=self.password)
         self.site._loginstatus = -2

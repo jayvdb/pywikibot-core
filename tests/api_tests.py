@@ -1,7 +1,7 @@
 # -*- coding: utf-8  -*-
 """API test module."""
 #
-# (C) Pywikibot team, 2007-2014
+# (C) Pywikibot team, 2007-2015
 #
 # Distributed under the terms of the MIT license.
 #
@@ -676,13 +676,33 @@ class TestLazyLogin(TestCase):
     net = True
     hostname = 'steward.wikimedia.org'
 
-    def test_access_denied(self):
-        """Test the query."""
+    @classmethod
+    def setUpClass(cls):
+        """Set up steward Family."""
+        super(TestLazyLogin, cls).setUpClass()
         fam = pywikibot.family.AutoFamily(
             'steward', 'https://steward.wikimedia.org/w/api.php')
-        site = pywikibot.site.APISite('steward', fam)
-        req = api.Request(site=site, action='query')
+        cls.site = pywikibot.site.APISite('steward', fam)
+
+    def test_access_denied_no_username(self):
+        """Test the query without a username."""
+        self.site._username = [None, None]
+        # FIXME: The following prevents LoginManager
+        # from loading the username from the config when the site
+        # username is None. i.e. site.login(user=None) means load
+        # username from the configuration.
+        if 'steward' in pywikibot.config.usernames:
+            del pywikibot.config.usernames['steward']
+
+        req = api.Request(site=self.site, action='query')
         self.assertRaises(pywikibot.NoUsername, req.submit)
+
+    def test_access_denied_notexist_username(self):
+        """Test the query with a username which does not exist."""
+        self.site._username = ['Missing username', None]
+        req = api.Request(site=self.site, action='query')
+        # FIXME: the error should be a username errror
+        self.assertRaises(pywikibot.data.api.APIError, req.submit)
 
 
 class TestBadTokenRecovery(TestCase):
