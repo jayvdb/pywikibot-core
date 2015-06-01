@@ -266,6 +266,16 @@ class DryPage(pywikibot.Page):
         return self._disambig
 
 
+class FakeLoginManager(pywikibot.data.api.LoginManager):
+
+    """Loads a fake password."""
+
+    def __init__(self, *args, **kwargs):
+        """Constructor."""
+        super(FakeLoginManager, self).__init__(*args, **kwargs)
+        self.password = 'foo'
+
+
 def execute(command, data_in=None, timeout=0, error=None):
     """
     Execute a command and capture outputs.
