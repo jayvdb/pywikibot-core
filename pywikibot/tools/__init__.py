@@ -879,28 +879,46 @@ def add_decorated_full_name(obj, stacklevel=1):
 
 
 def manage_wrapping(wrapper, obj):
-    """Add attributes to wrapper and wrapped functions."""
-    wrapper.__doc__ = obj.__doc__
+    """
+    Add attributes to wrapper and wrapped functions.
+
+    It is not possible to add attributes to bound instancemethods,
+    in which case only the wrapper is annotated.
+    """
+    if hasattr(obj, '__doc__'):
+        wrapper.__doc__ = obj.__doc__
     wrapper.__name__ = obj.__name__
     wrapper.__module__ = obj.__module__
     wrapper.__signature__ = signature(obj)
 
-    if not hasattr(obj, '__full_name__'):
-        add_decorated_full_name(obj, 2)
-    wrapper.__full_name__ = obj.__full_name__
+    try:
+        if not hasattr(obj, '__full_name__'):
+            add_decorated_full_name(obj, 2)
+    except AttributeError:
+        wrapper.__full_name__ = (obj.__module__ + '.' +
+                                 obj.__name__)
+    else:
+        wrapper.__full_name__ = obj.__full_name__
 
     # Use the previous wrappers depth, if it exists
     wrapper.__depth__ = getattr(obj, '__depth__', 0) + 1
 
     # Obtain the wrapped object from the previous wrapper
-    wrapped = getattr(obj, '__wrapped__', obj)
+    if hasattr(obj, '__wrapped__'):
+        wrapped = getattr(obj, '__wrapped__', obj)
+    else:
+        wrapped = obj
+
     wrapper.__wrapped__ = wrapped
 
     # Increment the number of wrappers
     if hasattr(wrapped, '__wrappers__'):
         wrapped.__wrappers__ += 1
     else:
-        wrapped.__wrappers__ = 1
+        try:
+            wrapped.__wrappers__ = 1
+        except AttributeError:
+            pass
 
 
 def get_wrapper_depth(wrapper):

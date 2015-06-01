@@ -669,16 +669,23 @@ class BaseSite(ComparableMixin):
 
     def __getattr__(self, attr):
         """Delegate undefined methods calls to the Family object."""
+        # Short circuit these two attributes used in _family_delegate
+        if attr in ['family', 'code']:
+            return self.__getattribute__(attr)
+
         if hasattr(self.__class__, attr):
             return getattr(self.__class__, attr)
+
+        return self._family_delegate(attr)
+
+    def _family_delegate(self, attr):
         try:
             method = getattr(self.family, attr)
             f = lambda *args, **kwargs: method(self.code, *args, **kwargs)
-            if hasattr(method, "__doc__"):
-                f.__doc__ = method.__doc__
+            manage_wrapping(f, method)
             return f
         except AttributeError:
-            raise AttributeError("%s instance has no attribute '%s'"
+            raise AttributeError("%s family has no attribute '%s'"
                                  % (self.__class__.__name__, attr))
 
     def __str__(self):
@@ -823,8 +830,23 @@ class BaseSite(ComparableMixin):
 
     @remove_last_args(('default', ))
     def redirect(self):
-        """Return list of localized redirect tags for the site."""
-        return [u"REDIRECT"]
+        """
+        Return list of localized redirect tags for the site.
+
+        On BaseSite, this method only the unlocalised 'REDIRECT'.
+
+        @rtype: unicode
+        """
+        return 'REDIRECT'
+
+    @property
+    def _redirect_keywords(self):
+        """
+        Return all redirect keywords.
+
+        @rtype: set
+        """
+        return set(self.redirect())
 
     @remove_last_args(('default', ))
     def pagenamecodes(self):
@@ -904,19 +926,24 @@ class BaseSite(ComparableMixin):
         linkfam, linkcode = pywikibot.Link(text, self).parse_site()
         return linkfam != self.family.name or linkcode != self.code
 
-    def redirectRegex(self, pattern=None):
+    @remove_last_args(('pattern', ))
+    def redirectRegex(self):
         """Return a compiled regular expression matching on redirect pages.
 
         Group 1 in the regex match object will be the target title.
 
         """
-        if pattern is None:
-            pattern = "REDIRECT"
+        keywords = self._redirect_keywords
+        if len(keywords) == 1:
+            pattern = keywords.pop()
+        else:
+            pattern = "(?:" + "|".join(keywords) + ")"
+
         # A redirect starts with hash (#), followed by a keyword, then
         # arbitrary stuff, then a wikilink. The wikilink may contain
         # a label, although this is not useful.
         return re.compile(r'\s*#%(pattern)s\s*:?\s*\[\[(.+?)(?:\|.*?)?\]\]'
-                          % locals(),
+                          % {'pattern': pattern},
                           re.IGNORECASE | re.UNICODE | re.DOTALL)
 
     def sametitle(self, title1, title2):
@@ -1543,6 +1570,41 @@ class APISite(BaseSite):
         super(APISite, self).__setstate__(attrs)
         self.tokens = TokenWallet(self)
 
+    def __getattribute__(self, attr):
+        """Defer methods raising NotImplementedError to BaseSite."""
+        if attr.startswith('__'):
+            return object.__getattribute__(self, attr)
+
+        cls = object.__getattribute__(self, '__class__')
+
+        try:
+            method = object.__getattribute__(cls, attr)
+        except AttributeError:
+            # If the attr is in 'APISite' class, it may be inherited
+            # or may raise AttributeError.
+            return object.__getattribute__(self, attr)
+        else:
+            if not callable(method):
+                return object.__getattribute__(self, attr)
+
+            def fallback_if_notimplemented(*args, **kwargs):
+                try:
+                    return method(self, *args, **kwargs)
+                except NotImplementedError as e:
+                    try:
+                        fallback = object.__getattribute__(BaseSite, attr)
+                        return fallback(self, *args, **kwargs)
+                    except AttributeError:
+                        try:
+                            fallback = self._family_delegate(attr)
+                            return fallback(*args, **kwargs)
+                        except AttributeError:
+                            # No fallbacks available; reraise NotImplementedError
+                            raise e
+
+            manage_wrapping(fallback_if_notimplemented, method)
+            return fallback_if_notimplemented
+
     @classmethod
     def fromDBName(cls, dbname):
         # TODO this only works for some WMF sites
@@ -2115,28 +2177,28 @@ class APISite(BaseSite):
         else:
             return [word]
 
+    @property
+    def _redirect_keywords(self):
+        """
+        Return all redirect keywords.
+
+        @rtype: set
+        """
+        keywords = set(s.lstrip("#")
+                       for s in self.getmagicwords("redirect"))
+        keywords.add("REDIRECT")  # just in case
+        return keywords
+
     @remove_last_args(('default', ))
     def redirect(self):
-        """Return the localized #REDIRECT keyword."""
+        """Return the localized #REDIRECT keyword.
+
+        On 1.13 or less, defers to BaseSite.redirect to return only 'REDIRECT'.
+
+        @rtype: unicode
+        """
         # return the magic word without the preceding '#' character
         return self.getmagicwords("redirect")[0].lstrip("#")
-
-    def redirectRegex(self):
-        """Return a compiled regular expression matching on redirect pages.
-
-        Group 1 in the regex match object will be the target title.
-
-        """
-        # NOTE: this is needed, since the API can give false positives!
-        try:
-            keywords = set(s.lstrip("#")
-                           for s in self.getmagicwords("redirect"))
-            keywords.add("REDIRECT")  # just in case
-            pattern = "(?:" + "|".join(keywords) + ")"
-        except KeyError:
-            # no localized keyword for redirects
-            pattern = None
-        return BaseSite.redirectRegex(self, pattern)
 
     @remove_last_args(('default', ))
     def pagenamecodes(self):
@@ -2262,7 +2324,8 @@ class APISite(BaseSite):
                 # May occur if you are not logged in (no API read permissions).
                 pywikibot.exception('You have no API read permissions. Seems '
                                     'you are not logged in')
-                version = self.family.version(self.code)
+                # This will delegate to the version defined in the family class.
+                raise NotImplementedError
         return version
 
     @property
@@ -5581,7 +5644,7 @@ class DataSite(APISite):
                 if hasattr(method, "__doc__"):
                     f.__doc__ = method.__doc__
                 return f
-        return super(APISite, self).__getattr__(attr)
+        return super(DataSite, self).__getattr__(attr)
 
     def __repr__(self):
         return 'DataSite("%s", "%s")' % (self.code, self.family.name)
@@ -6036,47 +6099,3 @@ class DataSite(APISite):
         if limit is not None:
             gen.set_maximum_items(limit)
         return gen
-
-    # deprecated BaseSite methods
-    def fam(self):
-        raise NotImplementedError
-
-    def urlEncode(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def getUrl(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def linkto(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def loggedInAs(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def postData(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def postForm(self, *args, **kwargs):
-        raise NotImplementedError
-
-    # deprecated APISite methods
-    def isBlocked(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def checkBlocks(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def isAllowed(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def prefixindex(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def categories(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def linksearch(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def newimages(self, *args, **kwargs):
-        raise NotImplementedError

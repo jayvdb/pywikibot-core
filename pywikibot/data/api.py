@@ -106,6 +106,9 @@ class APIError(Error):
 
     def __str__(self):
         """Return a string representation."""
+        if self.other:
+            return "%(code)s: %(info)s : %(other)s" % self.__dict__
+
         return "%(code)s: %(info)s" % self.__dict__
 
 
@@ -1612,6 +1615,7 @@ class Request(MutableMapping):
                 raise APIError("Unknown",
                                "Unable to process query response of type %s."
                                % type(result),
+                               params=self._params,
                                data=result)
             if self.action == 'query':
                 if 'userinfo' in result.get('query', ()):
@@ -1731,7 +1735,10 @@ class Request(MutableMapping):
                 pywikibot.log(u"           response=\n%s"
                               % result)
 
-                raise APIError(**result['error'])
+                raise APIError(code=result['error']['code'],
+                               info=result['error']['info'],
+                               params=self._params,
+                               data=result)
             except TypeError:
                 raise RuntimeError(result)
 
