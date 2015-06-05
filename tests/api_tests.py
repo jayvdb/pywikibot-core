@@ -712,7 +712,7 @@ class TestLazyLoginNotExistUsername(TestLazyLoginBase):
         req = api.Request(site=self.site, action='query')
         self.assertRaises(pywikibot.NoUsername, req.submit)
         # FIXME: T100965
-        self.assertRaises(api.APIError, req.submit)
+        self.assertRaises(pywikibot.NoUsername, req.submit)
 
 
 class TestLazyLoginNoUsername(TestLazyLoginBase):
@@ -733,7 +733,7 @@ class TestLazyLoginNoUsername(TestLazyLoginBase):
         req = api.Request(site=self.site, action='query')
         self.assertRaises(pywikibot.NoUsername, req.submit)
         # FIXME: T100965
-        self.assertRaises(api.APIError, req.submit)
+        self.assertRaises(pywikibot.NoUsername, req.submit)
 
 
 class TestBadTokenRecovery(TestCase):
