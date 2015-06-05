@@ -179,6 +179,8 @@ class DryRequest(CachedRequest):
 
     def __init__(self, *args, **kwargs):
         """Constructor."""
+        print(args)
+        print(kwargs)
         _original_Request.__init__(self, *args, **kwargs)
 
     def _expired(self, dt):
