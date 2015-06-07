@@ -34,6 +34,7 @@ from tests.aspects import (
     AlteredDefaultSiteTestCase,
 )
 from tests.utils import allowed_failure, allowed_failure_if
+from tests.basepage_tests import BasePageLoadRevisionsCachingTestBase
 
 if sys.version_info[0] > 2:
     basestring = (str, )
@@ -1651,6 +1652,20 @@ class TestSiteinfoAsync(DefaultSiteTestCase):
         self.assertIn('statistics', self.site.siteinfo)
 
 
+class TestSiteLoadRevisionsCaching(BasePageLoadRevisionsCachingTestBase,
+                                   DefaultSiteTestCase):
+
+    """Test site.loadrevisions() caching."""
+
+    def setUp(self):
+        self._page = self.get_mainpage(force=True)
+        super(TestSiteLoadRevisionsCaching, self).setUp()
+
+    def test_page_text(self):
+        """Test site.loadrevisions() with Page.text."""
+        self._test_page_text()
+
+
 class TestSiteLoadRevisions(TestCase):
 
     """Test cases for Site.loadrevision() method."""
@@ -1670,16 +1685,20 @@ class TestSiteLoadRevisions(TestCase):
     def testLoadRevisions_basic(self):
         """Test the site.loadrevisions() method."""
         self.mysite.loadrevisions(self.mainpage, total=15)
-        self.assertTrue(hasattr(self.mainpage, "_revid"))
-        self.assertTrue(hasattr(self.mainpage, "_revisions"))
-        self.assertIn(self.mainpage._revid, self.mainpage._revisions)
+        self.assertFalse(hasattr(self.mainpage, '_text'))
         self.assertEqual(len(self.mainpage._revisions), 15)
-        self.assertEqual(self.mainpage._text, None)
+        self.assertIn(self.mainpage._revid, self.mainpage._revisions)
+        self.assertIsNone(self.mainpage._revisions[self.mainpage._revid].text)
+        self.assertIsNotNone(self.mainpage.text)
 
     def testLoadRevisions_getText(self):
         """Test the site.loadrevisions() method with getText=True."""
         self.mysite.loadrevisions(self.mainpage, getText=True, total=5)
-        self.assertGreater(len(self.mainpage._text), 0)
+        self.assertFalse(hasattr(self.mainpage, '_text'))
+        self.assertIn(self.mainpage._revid, self.mainpage._revisions)
+        self.assertIsNotNone(self.mainpage._revisions[self.mainpage._revid].text)
+        self.assertGreater(len(self.mainpage._revisions[self.mainpage._revid].text), 0)
+        self.assertIsNotNone(self.mainpage.text)
 
     def testLoadRevisions_revids(self):
         """Test the site.loadrevisions() method, listing based on revid."""
@@ -1893,8 +1912,10 @@ class TestPagePreloading(DefaultSiteTestCase):
             self.assertIsInstance(page, pywikibot.Page)
             self.assertIsInstance(page.exists(), bool)
             if page.exists():
-                self.assertTrue(hasattr(page, "_text"))
+                self.assertTrue(hasattr(page, '_revid'))
                 self.assertEqual(len(page._revisions), 1)
+                self.assertIn(page._revid, page._revisions)
+                self.assertIsNotNone(page._revisions[page._revid].text)
                 self.assertFalse(hasattr(page, '_pageprops'))
             count += 1
             if count >= 5:
@@ -1916,8 +1937,8 @@ class TestPagePreloading(DefaultSiteTestCase):
             self.assertIsInstance(page, pywikibot.Page)
             self.assertIsInstance(page.exists(), bool)
             if page.exists():
-                self.assertTrue(hasattr(page, "_text"))
                 self.assertEqual(len(page._revisions), 1)
+                self.assertIsNotNone(page._revisions[page._revid].text)
                 self.assertFalse(hasattr(page, '_pageprops'))
             count += 1
             if count >= 5:
@@ -1933,8 +1954,8 @@ class TestPagePreloading(DefaultSiteTestCase):
             self.assertIsInstance(page, pywikibot.Page)
             self.assertIsInstance(page.exists(), bool)
             if page.exists():
-                self.assertTrue(hasattr(page, "_text"))
                 self.assertEqual(len(page._revisions), 1)
+                self.assertIsNotNone(page._revisions[page._revid].text)
                 self.assertFalse(hasattr(page, '_pageprops'))
             count += 1
             if count >= 6:
@@ -1959,8 +1980,8 @@ class TestPagePreloading(DefaultSiteTestCase):
             self.assertIsInstance(page, pywikibot.Page)
             self.assertIsInstance(page.exists(), bool)
             if page.exists():
-                self.assertTrue(hasattr(page, "_text"))
                 self.assertEqual(len(page._revisions), 1)
+                self.assertIsNotNone(page._revisions[page._revid].text)
                 self.assertFalse(hasattr(page, '_pageprops'))
             count += 1
         self.assertEqual(count, link_count)
@@ -1984,8 +2005,8 @@ class TestPagePreloading(DefaultSiteTestCase):
             self.assertIsInstance(page, pywikibot.Page)
             self.assertIsInstance(page.exists(), bool)
             if page.exists():
-                self.assertTrue(hasattr(page, "_text"))
                 self.assertEqual(len(page._revisions), 1)
+                self.assertIsNotNone(page._revisions[page._revid].text)
                 self.assertFalse(hasattr(page, '_pageprops'))
             count += 1
         self.assertEqual(count, link_count)
@@ -2012,8 +2033,8 @@ class TestPagePreloading(DefaultSiteTestCase):
             self.assertIsInstance(page, pywikibot.Page)
             self.assertIsInstance(page.exists(), bool)
             if page.exists():
-                self.assertTrue(hasattr(page, "_text"))
                 self.assertEqual(len(page._revisions), 1)
+                self.assertIsNotNone(page._revisions[page._revid].text)
                 self.assertFalse(hasattr(page, '_pageprops'))
             count += 1
             if count > 5:
@@ -2041,8 +2062,8 @@ class TestPagePreloading(DefaultSiteTestCase):
             self.assertIsInstance(page, pywikibot.Page)
             self.assertIsInstance(page.exists(), bool)
             if page.exists():
-                self.assertTrue(hasattr(page, "_text"))
                 self.assertEqual(len(page._revisions), 1)
+                self.assertIsNotNone(page._revisions[page._revid].text)
                 self.assertFalse(hasattr(page, '_pageprops'))
             count += 1
             if count > 5:
@@ -2082,8 +2103,8 @@ class TestPagePreloading(DefaultSiteTestCase):
             self.assertIsInstance(page, pywikibot.Page)
             self.assertIsInstance(page.exists(), bool)
             if page.exists():
-                self.assertTrue(hasattr(page, "_text"))
                 self.assertEqual(len(page._revisions), 1)
+                self.assertIsNotNone(page._revisions[page._revid].text)
                 self.assertFalse(hasattr(page, '_pageprops'))
                 self.assertTrue(hasattr(page, '_langlinks'))
             count += 1
@@ -2104,8 +2125,8 @@ class TestPagePreloading(DefaultSiteTestCase):
             self.assertIsInstance(page, pywikibot.Page)
             self.assertIsInstance(page.exists(), bool)
             if page.exists():
-                self.assertTrue(hasattr(page, "_text"))
                 self.assertEqual(len(page._revisions), 1)
+                self.assertIsNotNone(page._revisions[page._revid].text)
                 self.assertFalse(hasattr(page, '_pageprops'))
             count += 1
 
@@ -2124,8 +2145,8 @@ class TestPagePreloading(DefaultSiteTestCase):
             self.assertIsInstance(page, pywikibot.Page)
             self.assertIsInstance(page.exists(), bool)
             if page.exists():
-                self.assertTrue(hasattr(page, "_text"))
                 self.assertEqual(len(page._revisions), 1)
+                self.assertIsNotNone(page._revisions[page._revid].text)
                 self.assertFalse(hasattr(page, '_pageprops'))
                 self.assertTrue(hasattr(page, '_langlinks'))
             count += 1
@@ -2144,8 +2165,8 @@ class TestPagePreloading(DefaultSiteTestCase):
             self.assertIsInstance(page, pywikibot.Page)
             self.assertIsInstance(page.exists(), bool)
             if page.exists():
-                self.assertTrue(hasattr(page, "_text"))
                 self.assertEqual(len(page._revisions), 1)
+                self.assertIsNotNone(page._revisions[page._revid].text)
                 self.assertFalse(hasattr(page, '_pageprops'))
                 self.assertTrue(hasattr(page, '_templates'))
             count += 1
@@ -2164,8 +2185,8 @@ class TestPagePreloading(DefaultSiteTestCase):
             self.assertIsInstance(page, pywikibot.Page)
             self.assertIsInstance(page.exists(), bool)
             if page.exists():
-                self.assertTrue(hasattr(page, "_text"))
                 self.assertEqual(len(page._revisions), 1)
+                self.assertIsNotNone(page._revisions[page._revid].text)
                 self.assertFalse(hasattr(page, '_pageprops'))
                 self.assertTrue(hasattr(page, '_templates'))
                 self.assertTrue(hasattr(page, '_langlinks'))
