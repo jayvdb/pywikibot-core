@@ -895,12 +895,12 @@ class TestCase(TestTimerMixin, TestLoggingMixin, TestCaseBase):
         # Create an instance method named the same as the class method
         self.get_site = lambda name=None: self.__class__.get_site(name)
 
-    def get_mainpage(self, site=None):
+    def get_mainpage(self, site=None, force=False):
         """Create a Page object for the sites main page."""
         if not site:
             site = self.get_site()
 
-        if hasattr(self, '_mainpage'):
+        if hasattr(self, '_mainpage') and not force:
             # For multi-site test classes, or site is specified as a param,
             # the cached mainpage object may not be the desired site.
             if self._mainpage.site == site:

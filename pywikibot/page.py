@@ -346,13 +346,7 @@ class BasePage(UnicodeMixin, ComparableMixin):
 
         """
         if force:
-            # When forcing, we retry the page no matter what:
-            # * Old exceptions do not apply any more
-            # * Deleting _revid to force reload
-            # * Deleting _redirtarget, that info is now obsolete.
-            for attr in ['_redirtarget', '_getexception', '_revid']:
-                if hasattr(self, attr):
-                    delattr(self, attr)
+            del self.latest_revision_id
         try:
             self._getInternals(sysop)
         except pywikibot.IsRedirectPage:
@@ -430,6 +424,34 @@ class BasePage(UnicodeMixin, ComparableMixin):
             self.revisions(self)
         return self._revid
 
+    @latest_revision_id.deleter
+    def latest_revision_id(self):
+        """Remove the latest revision id set for this Page.
+
+        All internal cached values specifically for the latest revision
+        of this page are cleared.
+
+        The following cached values are not cleared:
+        - text property
+        - page properties, and page coordinates
+        - lastNonBotUser
+        - isDisambig and isCategoryRedirect status
+        - langlinks, templates and deleted revisions
+        """
+        # When forcing, we retry the page no matter what:
+        # * Old exceptions do not apply any more
+        # * Deleting _revid to force reload
+        # * Deleting _redirtarget, that info is now obsolete.
+        for attr in ['_redirtarget', '_getexception', '_revid']:
+            if hasattr(self, attr):
+                delattr(self, attr)
+
+    @latest_revision_id.setter
+    def latest_revision_id(self, value):
+        """Set the latest revision for this Page."""
+        del self.latest_revision_id
+        self._revid = value
+
     @deprecated('latest_revision_id')
     def latestRevision(self):
         """Return the current revision id for this page."""
@@ -479,6 +501,8 @@ class BasePage(UnicodeMixin, ComparableMixin):
         """Delete the current (edited) wikitext."""
         if hasattr(self, "_text"):
             del self._text
+        if hasattr(self, '_expanded_text'):
+            del self._expanded_text
 
     def preloadText(self):
         """The text returned by EditFormPreloadText.
@@ -3183,7 +3207,7 @@ class WikibasePage(BasePage):
 
             self._content = data[item_index]
         if 'lastrevid' in self._content:
-            self.lastrevid = self._content['lastrevid']
+            self.latest_revision_id = self._content['lastrevid']
         else:
             if lazy_loading_id:
                 p = Page(self._site, self._title)
@@ -3287,15 +3311,38 @@ class WikibasePage(BasePage):
         return self.id
 
     @property
+    @deprecated('latest_revision_id')
+    def lastrevid(self):
+        return self.latest_revision_id
+
+    @lastrevid.setter
+    @deprecated('latest_revision_id')
+    def lastrevid(self, value):
+        self.latest_revision_id = value
+
+    @lastrevid.deleter
+    @deprecated('latest_revision_id')
+    def lastrevid(self):
+        del self.latest_revision_id
+
+    @property
     def latest_revision_id(self):
         """
         Get the revision identifier for the most recent revision of the entity.
 
         @return: long
         """
-        if not hasattr(self, 'lastrevid'):
+        if not hasattr(self, '_revid'):
             self.get()
-        return self.lastrevid
+        return self._revid
+
+    @latest_revision_id.setter
+    def latest_revision_id(self, value):
+        self._revid = value
+
+    @latest_revision_id.deleter
+    def latest_revision_id(self, value):
+        del self._revid
 
     @staticmethod
     def _normalizeLanguages(data):
@@ -3366,8 +3413,8 @@ class WikibasePage(BasePage):
         @param data: Data to be saved
         @type data: dict, or None to save the current content of the entity.
         """
-        if hasattr(self, 'lastrevid'):
-            baserevid = self.lastrevid
+        if hasattr(self, '_revid'):
+            baserevid = self.latest_revision_id
         else:
             baserevid = None
 
@@ -3378,7 +3425,7 @@ class WikibasePage(BasePage):
 
         updates = self.repo.editEntity(self._defined_by(singular=True), data,
                                        baserevid=baserevid, **kwargs)
-        self.lastrevid = updates['entity']['lastrevid']
+        self.latest_revision_id = updates['entity']['lastrevid']
 
         lazy_loading_id = not hasattr(self, 'id') and hasattr(self, '_site')
         if lazy_loading_id or self.id == '-1':
@@ -4195,7 +4242,7 @@ class Claim(Property):
         source = defaultdict(list)
         for claim in claims:
             claim.hash = data['reference']['hash']
-            self.on_item.lastrevid = data['pageinfo']['lastrevid']
+            self.on_item.latest_revision_id = data['pageinfo']['lastrevid']
             source[claim.getID()].append(claim)
         self.sources.append(source)
 
@@ -4229,7 +4276,7 @@ class Claim(Property):
         """
         data = self.repo.editQualifier(self, qualifier, **kwargs)
         qualifier.isQualifier = True
-        self.on_item.lastrevid = data['pageinfo']['lastrevid']
+        self.on_item.latest_revision_id = data['pageinfo']['lastrevid']
         if qualifier.getID() in self.qualifiers:
             self.qualifiers[qualifier.getID()].append(qualifier)
         else:

@@ -4295,10 +4295,10 @@ class APISite(BaseSite):
                     pywikibot.log(u"Page [[%s]] saved without any changes."
                                   % page.title())
                     return True
-                page._revid = result["edit"]["newrevid"]
+                page.latest_revision_id = result["edit"]["newrevid"]
                 # see https://www.mediawiki.org/wiki/API:Wikimania_2006_API_discussion#Notes
                 # not safe to assume that saved text is the same as sent
-                self.loadrevisions(page, getText=True)
+                del page.text
                 return True
             elif result["edit"]["result"] == "Failure":
                 if "captcha" in result["edit"]:
@@ -5767,7 +5767,7 @@ class DataSite(APISite):
             item.claims[claim.getID()].append(claim)
         else:
             item.claims[claim.getID()] = [claim]
-        item.lastrevid = data['pageinfo']['lastrevid']
+        item.latest_revision_id = data['pageinfo']['lastrevid']
 
     @must_be(group='user')
     def changeClaimTarget(self, claim, snaktype='value', bot=True, **kwargs):
@@ -5796,7 +5796,7 @@ class DataSite(APISite):
         if snaktype == 'value':
             params['value'] = json.dumps(claim._formatValue())
 
-        params['baserevid'] = claim.on_item.lastrevid
+        params['baserevid'] = claim.on_item.last_revision_id
         req = api.Request(site=self, **params)
         data = req.submit()
         return data
@@ -5817,7 +5817,7 @@ class DataSite(APISite):
         params = {'action': 'wbsetclaim',
                   'claim': json.dumps(claim.toJSON()),
                   'token': self.tokens['edit'],
-                  'baserevid': claim.on_item.lastrevid,
+                  'baserevid': claim.on_item.latest_revision_id,
                   }
         if 'bot' not in kwargs or kwargs['bot']:
             params['bot'] = True
@@ -5846,7 +5846,7 @@ class DataSite(APISite):
                       statement=claim.snak,
                       )
         if claim.on_item:  # I think this wouldn't be false, but lets be safe
-            params['baserevid'] = claim.on_item.lastrevid
+            params['baserevid'] = claim.on_item.latest_revision_id
         if bot:
             params['bot'] = 1
         params['token'] = self.tokens['edit']
@@ -5898,7 +5898,7 @@ class DataSite(APISite):
                       claim=claim.snak,
                       )
         if claim.on_item:  # I think this wouldn't be false, but lets be safe
-            params['baserevid'] = claim.on_item.lastrevid
+            params['baserevid'] = claim.on_item.last_revision_id
         if bot:
             params['bot'] = 1
         if (not new and
