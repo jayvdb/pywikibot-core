@@ -81,8 +81,8 @@ install:
 
   # This is needed for Python versions not installed on Appveyor build machines
   - ps: if (-not(Test-Path($env:PYTHON))) { iex $wc.DownloadString($env:APPVEYOR_PYTHON_URL + 'install.ps1') }
-  - pip install unittest2==0.8
-  - pip install requests
+
+  - pip install unittest2==0.8 requests nose coverage codecov
 
 build: off
 
@@ -95,7 +95,13 @@ test_script:
   - ps: "[IO.File]::AppendAllText($env:PYWIKIBOT2_USER_CONFIG, 'max_retries = 2; maximum_GET_length = 5000; transliteration_target = None;')"
 
   - set PYSETUP_TEST_NO_UI=1
-  - "%CMD_IN_ENV% python setup.py test"
+  # Specifying '--source=pywikibot,scripts' causes:
+  # "Coverage.py warning: No data was collected"
+  # Probably related to path names.
+  - "%CMD_IN_ENV% python setup.py nosetests --tests tests --verbosity=2 --with-coverage"
+
+after_test:
+  - codecov
 
 artifacts:
   - path: dist\*

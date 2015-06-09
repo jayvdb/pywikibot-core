@@ -23,7 +23,7 @@ addons:
 install:
   - if [[ "$SITE_ONLY" == '1' ]]; then export USE_NOSE=1; fi
   - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2==0.8.0; fi
-  - pip install six
+  - pip install six coverage codecov
   - export GITHUB_USER=`echo $TRAVIS_REPO_SLUG | cut -d '/' -f 1`
   - mkdir ~/.python-eggs
   - chmod 700 ~/.python-eggs
@@ -57,13 +57,16 @@ script:
   - if [[ "$USE_NOSE" == "1" ]]; then
       if [[ "$SITE_ONLY" == "1" ]]; then
         echo "Running site tests only code ${LANGUAGE} on family ${FAMILY}" ;
-        python setup.py nosetests --tests tests --verbosity=2 -a "family=$FAMILY,code=$LANGUAGE" ;
+        python setup.py nosetests --tests tests --verbosity=2 --with-coverage -a "family=$FAMILY,code=$LANGUAGE" ;
       else
-        python setup.py nosetests --tests tests --verbosity=2 ;
+        python setup.py nosetests --tests tests --verbosity=2 --with-coverage ;
       fi ;
     else
-      python setup.py test ;
+      coverage run --source=pywikibot,scripts setup.py test ;
     fi
+
+after_success:
+  - codecov
 
 env:
   global:
