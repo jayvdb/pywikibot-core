@@ -593,7 +593,7 @@ class BasePage(UnicodeMixin, ComparableMixin):
             return self._lastNonBotUser
 
         self._lastNonBotUser = None
-        for entry in self.getVersionHistory():
+        for entry in self.revisions():
             if entry.user and (not self.site.isBot(entry.user)):
                 self._lastNonBotUser = entry.user
                 break
@@ -609,6 +609,7 @@ class BasePage(UnicodeMixin, ComparableMixin):
         return self.latest_revision.timestamp
 
     @property
+    @deprecated('latest_revision.parent_id (0 instead of -1 is no parent')
     def previous_revision_id(self):
         """Return the revision id for the previous revision of this Page.
 
@@ -616,23 +617,18 @@ class BasePage(UnicodeMixin, ComparableMixin):
 
         @return: long
         """
-        history = self.getVersionHistory(total=2)
+        return self.latest_revision.parent_id or -1
 
-        if len(history) == 1:
-            return -1
-        else:
-            return min(x.revid for x in history)
-
-    @deprecated('previous_revision_id')
+    @deprecated('latest_revision.parent_id')
     def previousRevision(self):
         """
         Return the revision id for the previous revision.
 
-        DEPRECATED: Use previous_revision_id instead.
+        DEPRECATED: Use latest_revision.parent_id instead.
 
         @return: long
         """
-        return self.previous_revision_id
+        return self.latest_revision.parent_id or -1
 
     def exists(self):
         """Return True if page exists on the wiki, even if it's a redirect.
@@ -651,7 +647,7 @@ class BasePage(UnicodeMixin, ComparableMixin):
 
         @rtype: L{Revision}
         """
-        return next(self.revisions(reverseOrder=True, total=1))
+        return next(self.revisions(reverse=True, total=1))
 
     def isRedirectPage(self):
         """Return True if this is a redirect, False if not or not existing."""
@@ -4419,7 +4415,7 @@ class Revision(DotReadableDict):
                                                  'rollbacktoken'])
 
     def __init__(self, revid, timestamp, user, anon=False, comment=u"",
-                 text=None, minor=False, rollbacktoken=None):
+                 text=None, minor=False, rollbacktoken=None, previd=None):
         """
         Constructor.
 
@@ -4450,6 +4446,19 @@ class Revision(DotReadableDict):
         self.comment = comment
         self.minor = minor
         self.rollbacktoken = rollbacktoken
+        self.previd = previd
+
+    @property
+    def parent_id(self):
+        """
+        Return id of parent/previous revision.
+
+        Returns 0 if there is no previous revision
+
+        @return: id of parent/previous revision
+        @rtype: long
+        """
+        return self.previd
 
     def hist_entry(self):
         """Return a namedtuple with a Page history record."""

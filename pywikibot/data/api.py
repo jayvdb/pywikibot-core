@@ -2781,7 +2781,8 @@ def update_page(page, pagedict, props=[]):
                 comment=rev.get('comment', u''),
                 minor='minor' in rev,
                 text=rev.get('*', None),
-                rollbacktoken=rev.get('rollbacktoken', None)
+                rollbacktoken=rev.get('rollbacktoken', None),
+                previd=rev.get('parentid'),
             )
             page._revisions[revision.revid] = revision
 
