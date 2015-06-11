@@ -788,9 +788,9 @@ class TestLogeventsFactoryGenerator(DefaultSiteTestCase,
         self.assertTrue(all(isinstance(item, pywikibot.Page) for item in pages))
 
 
-class PageGeneratorIntersectTestCase(DefaultSiteTestCase,
+class PageGeneratorIntersectTestCase(GeneratorIntersectTestCase,
                                      RecentChangesTestCase,
-                                     GeneratorIntersectTestCase):
+                                     DefaultSiteTestCase):
 
     """Page intersect_generators test cases."""
 
