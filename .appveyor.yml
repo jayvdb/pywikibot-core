@@ -104,7 +104,7 @@ test_script:
 after_test:
   - if exist coverage.xml cp coverage.xml dist
   - if exist .coverage cp .coverage dist
-  - codecov
+  # codecov
 
 artifacts:
   - path: dist\*
