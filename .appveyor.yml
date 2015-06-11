@@ -102,8 +102,8 @@ test_script:
   - dir
 
 after_test:
-  - if exists coverage.xml cp coverage.xml dist
-  - if exists .coverage cp .coverage dist
+  - if exist coverage.xml cp coverage.xml dist
+  - if exist .coverage cp .coverage dist
   - codecov
 
 artifacts:
