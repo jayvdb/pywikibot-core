@@ -98,7 +98,7 @@ test_script:
   # Specifying '--source=pywikibot,scripts' causes:
   # "Coverage.py warning: No data was collected"
   # Probably related to path names.
-  - "%CMD_IN_ENV% python setup.py nosetests --tests tests --verbosity=2 --with-coverage || timeout 1"
+  - "%CMD_IN_ENV% python setup.py nosetests --tests tests --verbosity=2 --with-coverage"
 
 after_test:
   - codecov

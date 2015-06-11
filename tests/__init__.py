@@ -100,6 +100,14 @@ if not i18n.messages_available():
 disabled_tests = {
     'textlib': [
         'test_interwiki_format',  # example; very slow test
+    ],
+    'page': [
+        'test_unicode_percent_r_failure',
+        'test_unicode_type',
+        'test_unicode_value',
+    ],
+    'pwb': [
+        'test_unicode',
     ]
 }
 

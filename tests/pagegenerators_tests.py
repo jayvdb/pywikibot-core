@@ -789,6 +789,7 @@ class TestLogeventsFactoryGenerator(DefaultSiteTestCase,
 
 
 class PageGeneratorIntersectTestCase(DefaultSiteTestCase,
+                                     RecentChangesTestCase,
                                      GeneratorIntersectTestCase):
 
     """Page intersect_generators test cases."""
@@ -806,7 +807,8 @@ class PageGeneratorIntersectTestCase(DefaultSiteTestCase,
              pagegenerators.RecentChangesPageGenerator(site=site, total=200)])
 
 
-class EnglishWikipediaPageGeneratorIntersectTestCase(GeneratorIntersectTestCase):
+class EnglishWikipediaPageGeneratorIntersectTestCase(GeneratorIntersectTestCase,
+                                                     RecentChangesTestCase):
 
     """Page intersect_generators test cases."""
 
