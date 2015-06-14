@@ -1,7 +1,7 @@
 # -*- coding: utf-8  -*-
 """Test Link functionality."""
 #
-# (C) Pywikibot team, 2014
+# (C) Pywikibot team, 2015
 #
 # Distributed under the terms of the MIT license.
 #
@@ -10,9 +10,12 @@ from __future__ import unicode_literals
 __version__ = '$Id$'
 
 import pywikibot
+
 from pywikibot import config2 as config
 from pywikibot.page import Link, Page
 from pywikibot.exceptions import Error, InvalidTitle
+from pywikibot.tools import PYTHON_VERSION
+
 from tests.aspects import (
     unittest,
     AlteredDefaultSiteTestCase as LinkTestCase,
@@ -153,6 +156,13 @@ class TestLink(DefaultDrySiteTestCase):
         # Non-subpage link text beginning with slash
         l = Link('/bar', self.get_site())
         self.assertEquals(l.title, '/bar')
+
+    def test_issue_10254(self):
+        """Test T102461 (Python issue 10254) is not encountered."""
+        title = 'Li̍t-sṳ́'
+        l = Link(title, self.site)
+        self.assertEqual(l.title, 'Li̍t-sṳ́')
+
 
 # ---- The first set of tests are explicit links, starting with a ':'.
 
