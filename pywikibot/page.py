@@ -53,6 +53,7 @@ from pywikibot.exceptions import (
     UserRightsError,
 )
 from pywikibot.tools import (
+    PYTHON_VERSION,
     MediaWikiVersion, UnicodeMixin, ComparableMixin, DotReadableDict,
     deprecated, deprecate_arg, deprecated_args, issue_deprecation_warning,
     first_upper, remove_last_args, _NotImplementedWarning,
@@ -4647,10 +4648,15 @@ class Link(ComparableMixin):
         t = html2unicode(self._text)
 
         # Normalize unicode string to a NFC (composed) format to allow
-        # proper string comparisons. According to
-        # https://svn.wikimedia.org/viewvc/mediawiki/branches/REL1_6/phase3/includes/normal/UtfNormal.php?view=markup
-        # the MediaWiki code normalizes everything to NFC, not NFKC
-        # (which might result in information loss).
+        # proper string comparisons to strings output from MediaWiki API.
+        # Due to Python issue 10254, this is not possible on Python 2.6.6
+        # if the string contains combining characters.  See T102461.
+        if PYTHON_VERSION == (2, 6, 6):
+            if any(unicodedata.combining(c) for c in t):
+                raise UnicodeError(
+                    'Link(%r, %s): combining characters detected, which are '
+                    'not supported by Pywikibot on Python 2.6.6'
+                    % (t, self._source))
         t = unicodedata.normalize('NFC', t)
 
         # This code was adapted from Title.php : secureAndSplit()
