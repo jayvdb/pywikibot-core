@@ -4447,6 +4447,7 @@ class Revision(DotReadableDict):
         self.minor = minor
         self.rollbacktoken = rollbacktoken
         self.previd = previd
+        assert previd is not None and previd != -1
 
     @property
     def parent_id(self):
