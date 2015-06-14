@@ -143,7 +143,7 @@ no_args_expected_results = {
     'spamremove': 'No spam site specified',
     'transferbot': 'Target site not different from source site',  # Bug 68662
     'unusedfiles': ('Working on', None),
-    'version': 'unicode test: ',
+    'version': 'Config base dir: ',
     'watchlist': 'Retrieving watchlist',
 
     # The following auto-run and typically cant be validated,
