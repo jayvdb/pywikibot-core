@@ -10,9 +10,12 @@ from __future__ import unicode_literals
 __version__ = '$Id$'
 
 import pywikibot
+
 from pywikibot import config2 as config
 from pywikibot.page import Link, Page
 from pywikibot.exceptions import Error, InvalidTitle
+from pywikibot.tools import PYTHON_VERSION
+
 from tests.aspects import (
     unittest,
     AlteredDefaultSiteTestCase as LinkTestCase,
@@ -153,6 +156,20 @@ class TestLink(DefaultDrySiteTestCase):
         # Non-subpage link text beginning with slash
         l = Link('/bar', self.get_site())
         self.assertEquals(l.title, '/bar')
+
+    @unittest.skipIf(PYTHON_VERSION == (2, 6, 6), 'Python 2.6.6 found')
+    def test_issue_10254_ok(self):
+        """Test Python issue 10254 is not encountered."""
+        title = 'Li̍t-sṳ́'
+        l = Link(title, self.site)
+        self.assertEquals(l.title, 'Li̍t-sṳ́')
+
+    @unittest.skipIf(PYTHON_VERSION != (2, 6, 6), 'Python 2.6.6-only test')
+    def test_issue_10254_py266(self):
+        """Test Python issue 10254 causes an exception."""
+        title = 'Li̍t-sṳ́'
+        self.assertRaises(UnicodeError, Link, title, self.site)
+
 
 # ---- The first set of tests are explicit links, starting with a ':'.
 
