@@ -2773,6 +2773,7 @@ def update_page(page, pagedict, props=[]):
             page._protection[item['type']] = item['level'], item['expiry']
     if 'revisions' in pagedict:
         for rev in pagedict['revisions']:
+            assert 'parentid' in rev
             revision = pywikibot.page.Revision(
                 revid=rev['revid'],
                 timestamp=pywikibot.Timestamp.fromISOformat(rev['timestamp']),
