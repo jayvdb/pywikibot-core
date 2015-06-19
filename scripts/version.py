@@ -35,7 +35,12 @@ if __name__ == '__main__':
     pywikibot.output('Pywikibot: %s' % getversion())
     pywikibot.output('Release version: %s' % pywikibot.__release__)
     pywikibot.output('requests version: %s' % requests.__version__)
-
+    if hasattr(requests, 'packages') and hasattr(requests.packages, 'urllib3'):
+        pywikibot.output(
+            '  packages.urllib3 version: %s'
+            % requests.packages.urllib3.__version__)
+    else:
+        pywikibot.output('  urllib3 version: %s', urllib3.__version__)
     has_wikimedia_cert = False
     if (not hasattr(requests, 'certs') or
             not hasattr(requests.certs, 'where') or
