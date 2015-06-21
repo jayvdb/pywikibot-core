@@ -8,12 +8,13 @@ from pywikibot import family
 
 
 # The Wikitech family
-class Family(family.Family):
+class Family(family.SingleSiteFamily):
 
     """Family class for Wikitech."""
 
     name = 'wikitech'
-    langs = {'en': 'wikitech.wikimedia.org'}
+    code = 'en'
+    domain = 'wikitech.wikimedia.org'
 
     def protocol(self, code):
         """Return the protocol for this family."""

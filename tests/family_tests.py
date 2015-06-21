@@ -9,7 +9,7 @@ from __future__ import unicode_literals
 
 __version__ = '$Id$'
 
-from pywikibot.family import Family
+from pywikibot.family import Family, SingleSiteFamily
 from pywikibot.exceptions import UnknownFamily
 
 import pywikibot.site
@@ -32,8 +32,18 @@ class TestFamily(TestCase):
         for name in pywikibot.config.family_files:
             f = Family.load(name)
             self.assertIsInstance(f.langs, dict)
-            self.assertNotEqual(f.langs, {})
+            self.assertTrue(f.langs)
+            self.assertTrue(f.codes)
+            self.assertTrue(f.domains)
             self.assertEqual(f.name, name)
+            self.assertIsInstance(f.languages_by_size, list)
+            self.assertGreaterEqual(set(f.langs), set(f.languages_by_size), f.name)
+            if len(f.langs) > 6 and f.name != 'wikimediachapter':
+                self.assertNotEqual(f.languages_by_size, [])
+            if isinstance(f, SingleSiteFamily):
+                self.assertIsNotNone(f.code)
+                self.assertIsNotNone(f.domain)
+                self.assertEqual(len(f.langs), 1)
 
     def test_family_load_invalid(self):
         """Test that an invalid family raised UnknownFamily exception."""
