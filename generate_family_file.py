@@ -17,25 +17,34 @@ __version__ = '$Id$'
 #
 
 # system imports
-import sys
-import re
 import codecs
-from collections import defaultdict
-from distutils.version import LooseVersion as V
 import json
+import os
+import re
+import sys
+
+from distutils.version import LooseVersion as V
 
 # creating & retrieving urls
 if sys.version_info[0] > 2:
     from urllib.parse import urlparse, urljoin
     from urllib.error import HTTPError
     import urllib.request as urllib2
-    from html.parser import HTMLParser
     raw_input = input
 else:
     from urlparse import urlparse, urljoin
     import urllib2
     from urllib2 import HTTPError
-    from HTMLParser import HTMLParser
+
+# Disable user-config usage as we are creating it here
+_orig_no_user_config = os.environ.get('PYWIKIBOT2_NO_USER_CONFIG')  # noqa
+os.environ['PYWIKIBOT2_NO_USER_CONFIG'] = '2'  # noqa
+
+import pywikibot
+
+from pywikibot.htmllib import (
+    WikiSiteHTMLMainPageParser as WikiHTMLPageParser,
+)
 
 
 def urlopen(url):
@@ -52,24 +61,6 @@ def urlopen(url):
     except IndexError:
         uo.charset = 'latin-1'
     return uo
-
-
-class WikiHTMLPageParser(HTMLParser):
-
-    """Wiki HTML page parser."""
-
-    def __init__(self, *args, **kwargs):
-        HTMLParser.__init__(self, *args, **kwargs)
-        self.generator = None
-
-    def handle_starttag(self, tag, attrs):
-        attrs = defaultdict(lambda: None, attrs)
-        if tag == "meta":
-            if attrs["name"] == "generator":
-                self.generator = attrs["content"]
-        if tag == "link":
-            if attrs["rel"] == "EditURI":
-                self.edituri = attrs["href"]
 
 
 class FamilyFileGenerator(object):

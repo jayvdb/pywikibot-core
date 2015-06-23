@@ -34,7 +34,7 @@ install:
       export PYWIKIBOT2_TEST_WRITE_FAIL=1 ;
     fi
 
-  - mkdir ~/.pywikibot
+  - python pwb.py generate_family_file 'http://botwiki.sno.cc/wiki/Main_Page' botwiki
   - python -W error::UserWarning -m generate_user_files -dir:~/.pywikibot/ -family:$FAMILY -lang:$LANGUAGE -v -user:"$PYWIKIBOT2_USERNAME"
 
   - if [[ -n "$USER_PASSWORD" && -n "$PYWIKIBOT2_USERNAME" ]]; then
@@ -80,7 +80,7 @@ env:
 matrix:
   include:
     - python: '2.7'
-      env: LANGUAGE=he FAMILY=wikivoyage SITE_ONLY=1
+      env: LANGUAGE=en FAMILY=botwiki SITE_ONLY=1
     - python: '3.3'
       env: LANGUAGE=zh FAMILY=wikisource SITE_ONLY=1
     - python: '3.4'
