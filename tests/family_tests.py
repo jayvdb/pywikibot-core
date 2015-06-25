@@ -135,7 +135,7 @@ class TestFamilyUrlRegex(TestCase):
         f = Family.load('wikipedia')
         regex = f._get_regex_all()
 
-        self.assertTrue(regex.startswith('(?:\/\/|https\:\/\/)('))
+        self.assertTrue(regex.startswith('(?:(?:https\:)?\/\/)('))
         self.assertIn('vo\.wikipedia\.org', regex)
         self.assertTrue(regex.endswith(')(?:\/w\/index\.php\/?|\/wiki\/)'))
 

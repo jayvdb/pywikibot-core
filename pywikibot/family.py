@@ -1126,6 +1126,9 @@ class Family(object):
         lookup the correct value in a dictionary such as C{langs}.
         On KeyError, it retries it with each key from C{langs}.
 
+        The regex capture the domain in the url, however it will appear
+        in any one of the regex groups.
+
         @return: regex string
         @rtype: unicode
         """
@@ -1146,49 +1149,44 @@ class Family(object):
             return self._regex_all
 
         try:
-            protocol = self.protocol(None) + '\:\/\/'
+            protocols = set([self.protocol(None)])
         except KeyError:
-            protocol = None
+            protocols = set(self.protocol(code)
+                            for code in self.langs.keys())
 
         try:
-            hostname = re.escape(self.hostname(None))
+            hostnames = set([re.escape(self.hostname(None))])
         except KeyError:
-            hostname = None
+            hostnames = set(re.escape(self.hostname(code))
+                            for code in self.langs.keys())
 
         try:
-            path = self._get_path_regex(None)
+            paths = set([self._get_path_regex(None)])
         except KeyError:
-            path = None
+            paths = set(self._get_path_regex(code)
+                        for code in self.langs.keys())
 
-        # If two or more of the three above varies, the regex cant be optimised
-        none_count = [protocol, hostname, path].count(None)
+        single_item_elements = (
+            len(protocols), len(hostnames), len(paths)).count(1)
 
-        if none_count > 1:
+        # If two or more of the three elements have multiple items,
+        # the regex can not be optimised.
+        if single_item_elements < 2:
             self._regex_all = ('(?:%s)'
                                % '|'.join(self._get_url_regex(code)
                                           for code in self.langs.keys()))
             return self._regex_all
 
-        if not protocol:
-            protocols = set(self.protocol(code) + '\:\/\/'
-                            for code in self.langs.keys())
-            protocol = '|'.join(protocols)
-
         # Allow protocol neutral '//'
-        protocol = '(?:\/\/|%s)' % protocol
-
-        if not hostname:
-            hostnames = set(re.escape(self.hostname(code))
-                            for code in self.langs.keys())
-            hostname = '|'.join(hostnames)
+        protocol = '(?:(?:%s\:)?\/\/)' % '|'.join(protocols)
 
         # capture hostname
-        hostname = '(' + hostname + ')'
+        hostname = '(%s)' % '|'.join(hostnames)
 
-        if not path:
-            regexes = set(self._get_path_regex(code)
-                          for code in self.langs.keys())
-            path = '(?:%s)' % '|'.join(regexes)
+        if len(paths) > 1:
+            path = '(?:%s)' % '|'.join(paths)
+        else:
+            path = paths.pop()
 
         self._regex_all = protocol + hostname + path
         return self._regex_all
@@ -1216,11 +1214,15 @@ class Family(object):
         if not url_match:
             return None
 
+        url_domain = [s for s in url_match.groups() if s is not None]
+        assert len(url_domain) == 1
+        url_domain = url_domain[0]
+
         for code, domain in self.langs.items():
             if domain is None:
-                warn('Family(%s): langs missing domain names' % self.name,
+                warn('Family(%s): code %s has no domain name' % self.name,
                      FamilyMaintenanceWarning)
-            elif domain == url_match.group(1):
+            elif domain == url_domain:
                 return code
 
         # if domain was None, this will return the only possible code.
@@ -1228,8 +1230,8 @@ class Family(object):
             return next(iter(self.langs))
 
         raise RuntimeError(
-            'Family(%s): matched regex has not matched a domain in langs'
-            % self.name)
+            'Family(%s): regex matched %s without domain in langs'
+            % (self.name, url))
 
     def maximum_GET_length(self, code):
         return config.maximum_GET_length
