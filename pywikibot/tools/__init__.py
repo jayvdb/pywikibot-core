@@ -994,6 +994,9 @@ def add_decorated_full_name(obj, stacklevel=1):
     # The next frame is the object being decorated
     frame = sys._getframe(stacklevel + 1)
     class_name = frame.f_code.co_name
+    assert obj.__module__, \
+        '%s %r does not have a __module__' % (obj.__class__.__name__, obj)
+
     if class_name and class_name != '<module>':
         obj.__full_name__ = (obj.__module__ + '.' +
                              class_name + '.' +

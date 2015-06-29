@@ -10,12 +10,15 @@ from __future__ import unicode_literals
 __version__ = '$Id$'
 #
 
-import sys
-import logging
-import re
 import collections
 import imp
+import importlib
+import logging
+import os
+import pkgutil
+import re
 import string
+import sys
 import warnings
 
 if sys.version_info[0] > 2:
@@ -34,11 +37,106 @@ from pywikibot.tools import (
 )
 from pywikibot.exceptions import UnknownFamily, FamilyMaintenanceWarning
 
+try:
+    import pywikibot_families
+except ImportError:
+    pywikibot_families = None
+
 logger = logging.getLogger("pywiki.wiki.family")
 
 # Legal characters for Family.name and Family.langs keys
 NAME_CHARACTERS = string.ascii_letters + string.digits
 CODE_CHARACTERS = string.ascii_lowercase + string.digits + '-'
+
+_internal_family_files = None
+
+
+def _get_families_files(folder_path):
+    """Collect all family class files contained in a directory."""
+    family_files = {}
+    if not os.path.exists(folder_path):
+        return family_files
+
+    for file_name in os.listdir(folder_path):
+        path = os.path.join(folder_path, file_name)
+        if file_name.endswith("_family.py"):
+            family_name = file_name[:-len("_family.py")]
+            family_files[family_name] = path
+        elif os.path.isdir(path) and '__' not in file_name:
+            family_files.update(_get_families_files(path))
+
+    return family_files
+
+
+def get_families_files():
+    """Register all family class files contained in a directory."""
+    global _internal_family_files
+    if _internal_family_files is not None:
+        return _internal_family_files
+    folder_path = os.path.join(os.path.dirname(__file__), 'families')
+    _internal_family_files = _get_families_files(folder_path)
+    return _internal_family_files
+
+
+def package_subpackages(package):
+    """Get list of subpackages."""
+    return [modname for importer, modname, ispkg
+            in pkgutil.walk_packages(path=package.__path__)]
+
+
+def package_submodules(package):
+    """Get list of all submodules without loading the leaf modules."""
+    modules = []
+    prefix = package.__name__ + '.'
+    for importer, modname, ispkg in pkgutil.walk_packages(
+            path=package.__path__,
+            prefix=prefix,
+            onerror=lambda x: None):
+        modules.append(modname[len(prefix):])
+    return modules
+
+
+def _add_family_names(package, names, ignore_duplicates=False):
+    """Add names."""
+    subpackages = package_subpackages(package)
+    modules = package_submodules(package)
+    for mod in modules:
+        base, dummy, rest = mod.partition('.')
+        assert base in subpackages
+        if not dummy:
+            continue
+
+        assert '.' not in rest
+        if rest.endswith('_family'):
+            rest = rest[:-7]
+        if not ignore_duplicates:
+            assert rest not in names
+
+        names.add(rest)
+
+
+def family_names():
+    """Obtain list of all families."""
+    names = set()
+
+    if pywikibot_families:
+        _add_family_names(pywikibot_families, names)
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", ImportWarning)
+            import pywikibot.families
+    except ImportError:
+        pass
+    else:
+        _add_family_names(pywikibot.families, names, True)
+
+    # Get the names of all known families by inspecting ‘families/’ which
+    # is a subdirectory of the directory in which family.py is found.
+    internal = get_families_files()
+
+    names.update(internal.keys())
+
+    return names
 
 
 class Family(object):
@@ -891,34 +989,56 @@ class Family(object):
             fam = config.family
 
         assert all(x in NAME_CHARACTERS for x in fam), \
-            'Name of family must be ASCII character'
+            'Name of family %s must be ASCII character' % fam
 
         if fam in Family._families:
             return Family._families[fam]
 
-        if fam in config.family_files:
-            family_file = config.family_files[fam]
-
+        if fam in pywikibot.config.family_files:
+            family_file = pywikibot.config.family_files[fam]
             if family_file.startswith('http://') or family_file.startswith('https://'):
                 myfamily = AutoFamily(fam, family_file)
                 Family._families[fam] = myfamily
                 return Family._families[fam]
-        elif fam == 'lockwiki':
-            raise UnknownFamily(
-                "Family 'lockwiki' has been removed as it not a public wiki.\n"
-                "You may install your own family file for this wiki, and a "
-                "old family file may be found at:\n"
-                "http://git.wikimedia.org/commitdiff/pywikibot%2Fcore.git/dfdc0c9150fa8e09829bb9d236")
 
-        try:
-            # Ignore warnings due to dots in family names.
-            # TODO: use more specific filter, so that family classes can use
-            #     RuntimeWarning's while loading.
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", RuntimeWarning)
-                mod = imp.load_source(fam, config.family_files[fam])
-        except (ImportError, KeyError):
-            raise UnknownFamily(u'Family %s does not exist' % fam)
+            raise UnknownFamily(
+                'Family %s in pywikibot.config.family_files is not supported. '
+                'Create your own family package following instructions at '
+                'https://www.mediawiki.org/wiki/Manual:Pywikibot/custom_family'
+                % fam)
+
+        if fam not in family_names():
+            raise UnknownFamily(
+                'Family name %s is not known. '
+                'Create your own family package following instructions at '
+                'https://www.mediawiki.org/wiki/Manual:Pywikibot/custom_family'
+                % fam)
+
+        mod = None
+        # Ignore ImportWarning, as on Python 2 it will not load pywikibot.families
+        # due to missing __init__.py
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", ImportWarning)
+            try:
+                mod = importlib.import_module('pywikibot.families.%s' % fam)
+            except ImportError:
+                try:
+                    mod = importlib.import_module('pywikibot.families.%s_family' % fam)
+                except ImportError:
+                    pass
+
+        if not mod:
+            internal = get_families_files()
+            if fam not in internal:
+                raise UnknownFamily(u'Family %s does not exist' % fam)
+            try:
+                mod = imp.load_source(fam, internal[fam])
+            except ImportError as e:
+                raise UnknownFamily('Family %s (%s) could not be loaded: %s'
+                                    % (fam, internal[fam], e))
+
+        assert mod
+
         cls = mod.Family()
         if cls.name != fam:
             warn(u'Family name %s does not match family module name %s'

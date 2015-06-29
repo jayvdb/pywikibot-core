@@ -141,6 +141,10 @@ name = 'pywikibot'
 version = '2.0rc1.post2'
 github_url = 'https://github.com/wikimedia/pywikibot-core'
 
+packages = ['pywikibot', 'pywikibot.families']
+packages.extend(package for package in find_packages()
+                if package.startswith('pywikibot.'))
+
 setup(
     name=name,
     version=version,
@@ -149,9 +153,7 @@ setup(
     maintainer='The Pywikibot team',
     maintainer_email='pywikibot@lists.wikimedia.org',
     license='MIT License',
-    packages=['pywikibot'] + [package
-                              for package in find_packages()
-                              if package.startswith('pywikibot.')],
+    packages=packages,
     install_requires=dependencies,
     dependency_links=dependency_links,
     extras_require=extra_deps,

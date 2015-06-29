@@ -25,6 +25,9 @@ else:
 
 from warnings import warn
 
+from pkgutil import extend_path
+__path__ = extend_path(__path__, __name__)
+
 # Use pywikibot. prefix for all in-package imports; this is to prevent
 # confusion with similarly-named modules in version 1 framework, for users
 # who want to continue using both

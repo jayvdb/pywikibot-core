@@ -105,7 +105,7 @@ def get_site_and_lang(default_family='wikipedia', default_lang='en',
     @return: The family, language and username
     @rtype: tuple of three str
     """
-    known_families = sorted(pywikibot.config2.family_files.keys())
+    known_families = sorted(pywikibot.family.family_names())
     if default_family not in known_families:
         default_family = None
     fam = pywikibot.bot.input_list_choice(
