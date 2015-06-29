@@ -10,13 +10,12 @@ from __future__ import unicode_literals
 __version__ = '$Id$'
 #
 
-import sys
-import logging
-import re
 import collections
-import imp
+import logging
+import pkgutil
+import re
 import string
-import warnings
+import sys
 
 if sys.version_info[0] > 2:
     import urllib.parse as urlparse
@@ -25,7 +24,17 @@ else:
 
 from warnings import warn
 
+try:
+    from importlib import import_module
+except ImportError:
+    # Python 2.6 does not have importlib, however only the first parameter
+    # of import_module is used, and it can be implemented using __import__
+    def import_module(name):
+        """Python 2.6 fallback for importlib.import_module."""
+        return __import__(name, fromlist=['nonempty'])
+
 import pywikibot
+import pywikibot.families
 
 from pywikibot import config2 as config
 from pywikibot.tools import (
@@ -39,6 +48,47 @@ logger = logging.getLogger("pywiki.wiki.family")
 # Legal characters for Family.name and Family.langs keys
 NAME_CHARACTERS = string.ascii_letters + string.digits
 CODE_CHARACTERS = string.ascii_lowercase + string.digits + '-'
+
+_families = None
+
+
+def _get_families(force=False):
+    """Build dictionary of families."""
+    global _families
+    if _families and not force:
+        return _families
+
+    families = {}
+
+    # load all families in the package, with names later in the
+    # package __path__ overwriting earlier entries.
+    # TODO: Force the pywikibot entry to be first in the __path__.
+    prefix = 'pywikibot.families.'
+    for importer, entry, ispkg in pkgutil.walk_packages(
+            path=pywikibot.families.__path__,
+            prefix=prefix,
+            onerror=lambda x: None):
+        if ispkg:
+            continue
+
+        package_name, dummy, module_name = entry.rpartition('.')
+
+        name = module_name
+
+        if name.endswith('_family'):
+            name = name[:-7]
+
+        families[name] = entry
+
+    families.update(config.family_files)
+
+    _families = families
+    return families
+
+
+def family_names(force=False):
+    """Obtain list of all families."""
+    return _get_families(force).keys()
 
 
 class Family(object):
@@ -891,35 +941,45 @@ class Family(object):
             fam = config.family
 
         assert all(x in NAME_CHARACTERS for x in fam), \
-            'Name of family must be ASCII character'
+            'Name of family %s must be ASCII character' % fam
 
         if fam in Family._families:
             return Family._families[fam]
 
-        if fam in config.family_files:
-            family_file = config.family_files[fam]
-
+        if fam in pywikibot.config.family_files:
+            family_file = pywikibot.config.family_files[fam]
             if family_file.startswith('http://') or family_file.startswith('https://'):
                 myfamily = AutoFamily(fam, family_file)
                 Family._families[fam] = myfamily
                 return Family._families[fam]
-        elif fam == 'lockwiki':
+
             raise UnknownFamily(
-                "Family 'lockwiki' has been removed as it not a public wiki.\n"
-                "You may install your own family file for this wiki, and a "
-                "old family file may be found at:\n"
-                "http://git.wikimedia.org/commitdiff/pywikibot%2Fcore.git/dfdc0c9150fa8e09829bb9d236")
+                'Family %s in pywikibot.config.family_files is not supported. '
+                'Create your own family package following instructions at '
+                'https://www.mediawiki.org/wiki/Manual:Pywikibot/custom_family'
+                % fam)
+
+        if fam not in family_names():
+            raise UnknownFamily(
+                'Family name %s is not known. '
+                'Create your own family package following instructions at '
+                'https://www.mediawiki.org/wiki/Manual:Pywikibot/custom_family'
+                % fam)
 
         try:
-            # Ignore warnings due to dots in family names.
-            # TODO: use more specific filter, so that family classes can use
-            #     RuntimeWarning's while loading.
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", RuntimeWarning)
-                mod = imp.load_source(fam, config.family_files[fam])
-        except (ImportError, KeyError):
-            raise UnknownFamily(u'Family %s does not exist' % fam)
-        cls = mod.Family()
+            mod = import_module(_families[fam])
+        except ImportError as e:
+            raise UnknownFamily('Family %s (%s) could not be loaded: %s'
+                                % (fam, _families[fam], e))
+
+        assert mod
+
+        try:
+            cls = mod.Family()
+        except AttributeError:
+            raise UnknownFamily('Family %s (%s) Family class missing'
+                                % (fam, _families[fam]))
+
         if cls.name != fam:
             warn(u'Family name %s does not match family module name %s'
                  % (cls.name, fam), FamilyMaintenanceWarning)

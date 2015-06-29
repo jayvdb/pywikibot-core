@@ -25,9 +25,17 @@ else:
 
 from warnings import warn
 
+from pkgutil import extend_path
+__path__ = extend_path(__path__, __name__)
+
 # Use pywikibot. prefix for all in-package imports; this is to prevent
 # confusion with similarly-named modules in version 1 framework, for users
 # who want to continue using both
+
+from pywikibot.tools import PY2, UnicodeMixin, redirect_func
+if PY2:
+    from pywikibot.tools.package_init import install_package_namespace_loader
+    install_package_namespace_loader(['pywikibot.families'])
 
 from pywikibot import config2 as config
 from pywikibot.bot import (
@@ -50,7 +58,6 @@ from pywikibot.exceptions import (
     CaptchaError, SpamfilterError, CircularRedirect, InterwikiRedirectPage,
     WikiBaseError, CoordinateGlobeUnknownException,
 )
-from pywikibot.tools import UnicodeMixin, redirect_func
 from pywikibot.i18n import translate
 from pywikibot.data.api import UploadWarning
 from pywikibot.diff import PatchManager
@@ -569,7 +576,7 @@ def Site(code=None, fam=None, user=None, sysop=None, interface=None, url=None):
         else:
             # Iterate through all families and look, which does apply to
             # the given URL
-            for fam in config.family_files:
+            for fam in pywikibot.family.family_names():
                 try:
                     family = pywikibot.family.Family.load(fam)
                     code = family.from_url(url)

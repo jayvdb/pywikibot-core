@@ -29,7 +29,7 @@ class TestFamily(TestCase):
 
     def test_family_load_valid(self):
         """Test that a family can be loaded via Family.load."""
-        for name in pywikibot.config.family_files:
+        for name in pywikibot.family.family_names():
             f = Family.load(name)
             self.assertIsInstance(f.langs, dict)
             self.assertNotEqual(f.langs, {})
@@ -171,7 +171,7 @@ class TestFamilyUrlRegex(TestCase):
 
     def test_each_family(self):
         """Test each family builds a working regex."""
-        for family in pywikibot.config.family_files:
+        for family in pywikibot.family.family_names():
             family = Family.load(family)
             # Test family does not respond to from_url due to overlap
             # with Wikipedia family.
