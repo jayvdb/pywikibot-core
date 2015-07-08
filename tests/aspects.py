@@ -491,7 +491,7 @@ class CheckHostnameMixin(TestCaseBase):
                 else:
                     if r.status not in [200, 301, 302, 303, 307, 308]:
                         raise ServerError('HTTP status: %d' % r.status)
-                    r.content  # default decode may raise exception
+                    r.raw  # default decode may raise exception
             except Exception as e2:
                 pywikibot.error('%s: accessing %s caused exception:'
                                 % (cls.__name__, hostname))
