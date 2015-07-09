@@ -164,11 +164,18 @@ class BasePage(UnicodeMixin, ComparableMixin):
         """Return the Site object for the data repository."""
         return self.site.data_repository()
 
+    @property
     def namespace(self):
-        """Return the number of the namespace of the page.
+        """Return a Namespace object for the page.
+
+        Page.namespace was a method which was invoked like
+            page.namespace() returns int
+
+        That calling convention is still supported, as the Namespace
+        object is callable, and when called will return an int.
 
         @return: namespace of the page
-        @rtype: int
+        @rtype: Namespace
         """
         return self._link.namespace
 
@@ -3126,7 +3133,7 @@ class WikibasePage(BasePage):
                 raise ValueError('Wikibase entity type "%s" unknown'
                                  % entity_type)
 
-            if self._namespace:
+            if self._namespace is not None:
                 if self._namespace != entity_type_ns:
                     raise ValueError('Namespace "%d" is not valid for Wikibase'
                                      ' entity type "%s"'
@@ -3143,7 +3150,7 @@ class WikibasePage(BasePage):
             self.repo = site
             return
 
-        if self._namespace:
+        if self._namespace is not None and self._namespace.id != 0:
             if self._link.namespace != self._namespace.id:
                 raise ValueError(u"'%s' is not in the namespace %d"
                                  % (title, self._namespace.id))
@@ -3237,13 +3244,16 @@ class WikibasePage(BasePage):
             attr = '_revid'
         return super(WikibasePage, self).__delattr__(attr)
 
+    @property
     def namespace(self):
-        """Return the number of the namespace of the entity.
+        """Return the Namespace of the entity.
 
-        @return: Namespace id
-        @rtype: int
+        @return: Namespace
+        @rtype: Namespace
         """
-        return self._namespace.id
+        if self._namespace is None:
+            raise AttributeError
+        return self._namespace
 
     def exists(self):
         """
@@ -4666,7 +4676,7 @@ class Link(ComparableMixin):
             self._source = source or pywikibot.Site()
 
         self._text = text
-        self._defaultns = defaultNamespace
+        self._defaultns = self._source.namespaces[defaultNamespace]
 
         # preprocess text (these changes aren't site-dependent)
         # First remove anchor, which is stored unchanged, if there is one
@@ -4780,7 +4790,7 @@ class Link(ComparableMixin):
         while u":" in t:
             # Initial colon indicates main namespace rather than default
             if t.startswith(u":"):
-                self._namespace = 0
+                self._namespace = self._site.namespaces[0]
                 # remove the colon but continue processing
                 # remove any subsequent whitespace
                 t = t.lstrip(u":").lstrip(u" ")
@@ -4791,7 +4801,7 @@ class Link(ComparableMixin):
             if ns:
                 # Ordinary namespace
                 t = t[t.index(u":"):].lstrip(u":").lstrip(u" ")
-                self._namespace = ns
+                self._namespace = self._site.namespaces[ns]
                 ns_prefix = True
                 break
             try:
@@ -4893,12 +4903,15 @@ class Link(ComparableMixin):
 
     @property
     def namespace(self):
-        """Return the namespace of the link.
+        """Return the Namespace of the link.
 
         @return: unicode
         """
         if not hasattr(self, "_namespace"):
             self.parse()
+        if not isinstance(self._namespace, Namespace):
+            pywikibot.error(u'Link(%r)._namespace expects Namespace: got %r'
+                            % (self._text, self._namespace))
         return self._namespace
 
     @property
@@ -4933,7 +4946,7 @@ class Link(ComparableMixin):
 
     def canonical_title(self):
         """Return full page title, including localized namespace."""
-        if self.namespace:
+        if self.namespace.id != 0:
             return "%s:%s" % (self.site.namespace(self.namespace),
                               self.title)
         else:
@@ -4950,8 +4963,7 @@ class Link(ComparableMixin):
             pywikibot.Error is raised.
 
         """
-        ns_id = self.namespace
-        ns = self.site.namespaces[ns_id]
+        ns = self.namespace
 
         if onsite is None:
             namespace = ns.canonical_name
@@ -4966,7 +4978,7 @@ class Link(ComparableMixin):
                 # not found
                 raise pywikibot.Error(
                     u'No corresponding namespace found for namespace %s on %s.'
-                    % (self.site.namespaces[ns_id], onsite))
+                    % (self.site.namespaces[ns.id], onsite))
 
         if namespace:
             return u'%s:%s' % (namespace, self.title)
@@ -4984,7 +4996,7 @@ class Link(ComparableMixin):
         if onsite is None:
             onsite = self._source
         title = self.title
-        if self.namespace:
+        if self.namespace.id != 0:
             title = onsite.namespace(self.namespace) + ":" + title
         if self.section:
             title = title + "#" + self.section

@@ -751,9 +751,13 @@ class TestNamespaces(WikidataTestCase):
         # it with minimal arguments
         wikidata = self.get_repo()
         page = pywikibot.page.WikibasePage(wikidata)
-        self.assertRaises(AttributeError, page.namespace)
+        # self.assertRaises(AttributeError, page.namespace) fails, because
+        # page.namespace raises AttributeError while assertRaises is finding
+        # the callable, and before the context handler is handling the
+        # exception.
+        self.assertRaises(AttributeError, getattr, page, 'namespace')
         page = pywikibot.page.WikibasePage(wikidata, title='')
-        self.assertRaises(AttributeError, page.namespace)
+        self.assertRaises(AttributeError, getattr, page, 'namespace')
 
         page = pywikibot.page.WikibasePage(wikidata, ns=0)
         self.assertEqual(page.namespace(), 0)
