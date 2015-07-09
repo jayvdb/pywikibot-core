@@ -21,18 +21,29 @@
 # mandatory; see README.conversion.txt
 requests
 
+ipaddr ; python_version < '3.3'
+
+# rcstream.py
+socketIO-client<0.6.1
+
+# wikistats.py and scripts
+unicodecsv ; python_version < '3.3'
+
 # core interwiki_graph.py:
 pydot
 
 # core pagegenerators
-pYsearch
+pYsearch ; python_version < '3.3'  # not available on Python 3
 google >= 1.7
+
+# core cosmetic_changes
+python-stdnum
 
 # scripts/script_wui.py:
 crontab
 
 # scipts/replicate_wiki.py
-argparse
+argparse ; python_version < '2.7'
 
 # scripts/flickrripper.py
 # On Python 2, flickrapi 1.4.x or 2.x may be used.  Only 2.x works on Python 3.
@@ -51,8 +62,8 @@ irc
 mwparserfromhell>=0.3.3
 
 # The mysql generator in pagegenerators depends on either oursql or MySQLdb
-# pywikibot prefers oursql
-oursql
+# pywikibot prefers oursql.  Both are Python 2 only.
+oursql ; python_version < '3.3'
 
 # scripts/script_wui.py depends on Lua, which is not available using pip
 # but can be obtained from: https://github.com/bastibe/lunatic-python
