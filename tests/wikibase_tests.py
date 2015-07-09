@@ -113,14 +113,14 @@ class TestGeneral(WikidataTestCase):
         self.assertTrue(item.labels['en'].lower().endswith('main page'))
         self.assertIn('en', item.aliases)
         self.assertIn('Home page', item.aliases['en'])
-        self.assertEqual(item.namespace(), 0)
+        self.assertEqual(item.namespace, 0)
         item2 = pywikibot.ItemPage(repo, 'q5296')
         self.assertEqual(item2.getID(), 'Q5296')
         item2.get()
         self.assertTrue(item2.labels['en'].lower().endswith('main page'))
         prop = pywikibot.PropertyPage(repo, 'Property:P21')
         self.assertEqual(prop.type, 'wikibase-item')
-        self.assertEqual(prop.namespace(), 120)
+        self.assertEqual(prop.namespace, 120)
         claim = pywikibot.Claim(repo, 'p21')
         self.assertRaises(ValueError, claim.setTarget, value="test")
         claim.setTarget(pywikibot.ItemPage(repo, 'q1'))
@@ -751,21 +751,25 @@ class TestNamespaces(WikidataTestCase):
         # it with minimal arguments
         wikidata = self.get_repo()
         page = pywikibot.page.WikibasePage(wikidata)
-        self.assertRaises(AttributeError, page.namespace)
+        # self.assertRaises(AttributeError, page.namespace) fails, because
+        # page.namespace raises AttributeError while assertRaises is finding
+        # the callable, and before the context handler is handling the
+        # exception.
+        self.assertRaises(AttributeError, getattr, page, 'namespace')
         page = pywikibot.page.WikibasePage(wikidata, title='')
-        self.assertRaises(AttributeError, page.namespace)
+        self.assertRaises(AttributeError, getattr, page, 'namespace')
 
         page = pywikibot.page.WikibasePage(wikidata, ns=0)
-        self.assertEqual(page.namespace(), 0)
+        self.assertEqual(page.namespace, 0)
         page = pywikibot.page.WikibasePage(wikidata, entity_type='item')
-        self.assertEqual(page.namespace(), 0)
+        self.assertEqual(page.namespace, 0)
 
         page = pywikibot.page.WikibasePage(wikidata, ns=120)
-        self.assertEqual(page.namespace(), 120)
+        self.assertEqual(page.namespace, 120)
         page = pywikibot.page.WikibasePage(wikidata, title='', ns=120)
-        self.assertEqual(page.namespace(), 120)
+        self.assertEqual(page.namespace, 120)
         page = pywikibot.page.WikibasePage(wikidata, entity_type='property')
-        self.assertEqual(page.namespace(), 120)
+        self.assertEqual(page.namespace, 120)
 
         # mismatch in namespaces
         self.assertRaises(ValueError, pywikibot.page.WikibasePage, wikidata,
@@ -779,50 +783,50 @@ class TestNamespaces(WikidataTestCase):
         # title without any namespace clues (ns or entity_type)
         # should verify the Link namespace is appropriate
         page = pywikibot.page.WikibasePage(wikidata, title='Q6')
-        self.assertEqual(page.namespace(), 0)
+        self.assertEqual(page.namespace, 0)
         page = pywikibot.page.WikibasePage(wikidata, title='Property:P60')
-        self.assertEqual(page.namespace(), 120)
+        self.assertEqual(page.namespace, 120)
 
     def test_wikibase_namespace_selection(self):
         """Test various ways to correctly specify the namespace."""
         wikidata = self.get_repo()
 
         page = pywikibot.page.ItemPage(wikidata, 'Q60')
-        self.assertEqual(page.namespace(), 0)
+        self.assertEqual(page.namespace, 0)
         page.get()
 
         page = pywikibot.page.ItemPage(wikidata, title='Q60')
-        self.assertEqual(page.namespace(), 0)
+        self.assertEqual(page.namespace, 0)
         page.get()
 
         page = pywikibot.page.WikibasePage(wikidata, title='Q60', ns=0)
-        self.assertEqual(page.namespace(), 0)
+        self.assertEqual(page.namespace, 0)
         page.get()
 
         page = pywikibot.page.WikibasePage(wikidata, title='Q60',
                                            entity_type='item')
-        self.assertEqual(page.namespace(), 0)
+        self.assertEqual(page.namespace, 0)
         page.get()
 
         page = pywikibot.page.PropertyPage(wikidata, 'Property:P6')
-        self.assertEqual(page.namespace(), 120)
+        self.assertEqual(page.namespace, 120)
         page.get()
 
         page = pywikibot.page.PropertyPage(wikidata, 'P6')
-        self.assertEqual(page.namespace(), 120)
+        self.assertEqual(page.namespace, 120)
         page.get()
 
         page = pywikibot.page.WikibasePage(wikidata, title='Property:P6')
-        self.assertEqual(page.namespace(), 120)
+        self.assertEqual(page.namespace, 120)
         page.get()
 
         page = pywikibot.page.WikibasePage(wikidata, title='P6', ns=120)
-        self.assertEqual(page.namespace(), 120)
+        self.assertEqual(page.namespace, 120)
         page.get()
 
         page = pywikibot.page.WikibasePage(wikidata, title='P6',
                                            entity_type='property')
-        self.assertEqual(page.namespace(), 120)
+        self.assertEqual(page.namespace, 120)
         page.get()
 
     def test_wrong_namespaces(self):
@@ -871,26 +875,26 @@ class TestAlternateNamespaces(WikidataTestCase):
 
     def test_alternate_item_namespace(self):
         item = pywikibot.ItemPage(self.repo, 'Q60')
-        self.assertEqual(item.namespace(), 90)
+        self.assertEqual(item.namespace, 90)
         self.assertEqual(item.id, 'Q60')
         self.assertEqual(item.title(), 'Item:Q60')
         self.assertEqual(item._defined_by(), {'ids': 'Q60'})
 
         item = pywikibot.ItemPage(self.repo, 'Item:Q60')
-        self.assertEqual(item.namespace(), 90)
+        self.assertEqual(item.namespace, 90)
         self.assertEqual(item.id, 'Q60')
         self.assertEqual(item.title(), 'Item:Q60')
         self.assertEqual(item._defined_by(), {'ids': 'Q60'})
 
     def test_alternate_property_namespace(self):
         prop = pywikibot.PropertyPage(self.repo, 'P21')
-        self.assertEqual(prop.namespace(), 92)
+        self.assertEqual(prop.namespace, 92)
         self.assertEqual(prop.id, 'P21')
         self.assertEqual(prop.title(), 'Prop:P21')
         self.assertEqual(prop._defined_by(), {'ids': 'P21'})
 
         prop = pywikibot.PropertyPage(self.repo, 'Prop:P21')
-        self.assertEqual(prop.namespace(), 92)
+        self.assertEqual(prop.namespace, 92)
         self.assertEqual(prop.id, 'P21')
         self.assertEqual(prop.title(), 'Prop:P21')
         self.assertEqual(prop._defined_by(), {'ids': 'P21'})

@@ -270,16 +270,19 @@ class TestPageObject(DefaultSiteTestCase):
         self.assertEqual(mainpage.site, self.site)
 
     def testNamespace(self):
-        """Test namespace() method."""
+        """Test namespace callable attribute."""
         mainpage = self.get_mainpage()
         maintalk = mainpage.toggleTalkPage()
+        print(mainpage, maintalk)
 
         if u':' not in mainpage.title():
-            self.assertEqual(mainpage.namespace(), 0)
-        self.assertEqual(maintalk.namespace(), mainpage.namespace() + 1)
+            self.assertEqual(mainpage.namespace, 0)
+
+        print(mainpage.namespace, maintalk.namespace)
+        self.assertEqual(maintalk.namespace, mainpage.namespace + 1)
 
         badpage = self.get_missing_article()
-        self.assertEqual(badpage.namespace(), 0)
+        self.assertEqual(badpage.namespace, 0)
 
     def testBasePageConstructor(self):
         """Test BasePage constructor."""

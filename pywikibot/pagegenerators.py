@@ -1249,7 +1249,7 @@ def NamespaceFilterPageGenerator(generator, namespaces, site=None):
         raise
 
     for page in generator:
-        if page.namespace() in namespaces:
+        if page.namespace in namespaces:
             yield page
 
 
@@ -1697,7 +1697,7 @@ def PreloadingItemGenerator(generator, step=50):
     for page in generator:
         if not isinstance(page, pywikibot.page.WikibasePage):
             datasite = page.site.data_repository()
-            if page.namespace() != datasite.item_namespace:
+            if page.namespace != datasite.item_namespace:
                 pywikibot.output(
                     u'PreloadingItemGenerator skipping %s as it is not in %s'
                     % (page, datasite.item_namespace))

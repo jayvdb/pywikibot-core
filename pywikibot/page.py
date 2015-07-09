@@ -164,11 +164,18 @@ class BasePage(UnicodeMixin, ComparableMixin):
         """Return the Site object for the data repository."""
         return self.site.data_repository()
 
+    @property
     def namespace(self):
-        """Return the number of the namespace of the page.
+        """Return a Namespace object for the page.
+
+        Page.namespace was a method which was invoked like
+            page.namespace() returns int
+
+        That calling convention is still supported, as the Namespace
+        object is callable, and when called will return an int.
 
         @return: namespace of the page
-        @rtype: int
+        @rtype: Namespace
         """
         return self._link.namespace
 
@@ -241,13 +248,13 @@ class BasePage(UnicodeMixin, ComparableMixin):
                     title = u'%s:%s' % (self.site.code, title)
             elif textlink and (self.isImage() or self.isCategory()):
                 title = u':%s' % title
-            elif self.namespace() == 0 and not section:
+            elif self.namespace == 0 and not section:
                 withNamespace = True
             if withNamespace:
                 return u'[[%s%s]]' % (title, section)
             else:
                 return u'[[%s%s|%s]]' % (title, section, label)
-        if not withNamespace and self.namespace() != 0:
+        if not withNamespace and self.namespace != 0:
             title = label + section
         else:
             title += section
@@ -299,7 +306,7 @@ class BasePage(UnicodeMixin, ComparableMixin):
 
         Page objects are sortable by site, namespace then title.
         """
-        return (self.site, self.namespace(), self.title())
+        return (self.site, self.namespace, self.title())
 
     def __hash__(self):
         """
@@ -703,7 +710,7 @@ class BasePage(UnicodeMixin, ComparableMixin):
                     # Get target (first template argument)
                     try:
                         p = pywikibot.Page(self.site, args[0].strip(), ns=14)
-                        if p.namespace() == 14:
+                        if p.namespace == 14:
                             self._catredirect = p.title()
                         else:
                             pywikibot.warning(
@@ -745,7 +752,7 @@ class BasePage(UnicodeMixin, ComparableMixin):
 
     def isTalkPage(self):
         """Return True if this page is in any talk namespace."""
-        ns = self.namespace()
+        ns = self.namespace
         return ns >= 0 and ns % 2 == 1
 
     def toggleTalkPage(self):
@@ -757,28 +764,29 @@ class BasePage(UnicodeMixin, ComparableMixin):
 
         @return: Page or None if self is a special page.
         """
-        ns = self.namespace()
+        ns = self.namespace
         if ns < 0:  # Special page
+            print('toggle', None)
             return
         if self.isTalkPage():
-            if self.namespace() == 1:
+            if self.namespace == 1:
                 return Page(self.site, self.title(withNamespace=False))
             else:
                 return Page(self.site,
-                            "%s:%s" % (self.site.namespace(ns - 1),
+                            "%s:%s" % (self.site.namespaces[ns - 1],
                                        self.title(withNamespace=False)))
         else:
             return Page(self.site,
-                        "%s:%s" % (self.site.namespace(ns + 1),
+                        "%s:%s" % (self.site.namespaces[ns + 1],
                                    self.title(withNamespace=False)))
 
     def isCategory(self):
         """Return True if the page is a Category, False otherwise."""
-        return self.namespace() == 14
+        return self.namespace == 14
 
     def isImage(self):
         """Return True if this is an image description page, False otherwise."""
-        return self.namespace() == 6
+        return self.namespace == 6
 
     @remove_last_args(('get_Index', ))
     def isDisambig(self):
@@ -818,7 +826,7 @@ class BasePage(UnicodeMixin, ComparableMixin):
                 if disambigpages.exists():
                     disambigs = set(link.title(withNamespace=False)
                                     for link in disambigpages.linkedPages()
-                                    if link.namespace() == 10)
+                                    if link.namespace == 10)
                 elif self.site.has_mediawiki_message('disambiguationspage'):
                     message = self.site.mediawiki_message(
                         'disambiguationspage').split(':', 1)[1]
@@ -840,7 +848,7 @@ class BasePage(UnicodeMixin, ComparableMixin):
         disambigs.update(self.site._disambigtemplates)
         # see if any template on this page is in the set of disambigs
         disambigInPage = disambigs.intersection(templates)
-        return self.namespace() != 10 and len(disambigInPage) > 0
+        return self.namespace != 10 and len(disambigInPage) > 0
 
     def getReferences(self, follow_redirects=True, withTemplateInclusion=True,
                       onlyTemplateInclusion=False, redirectsOnly=False,
@@ -1144,7 +1152,7 @@ class BasePage(UnicodeMixin, ComparableMixin):
                       % (family, self.site.lang))
         ccToolkit = CosmeticChangesToolkit(self.site,
                                            redirect=self.isRedirectPage(),
-                                           namespace=self.namespace(),
+                                           namespace=self.namespace,
                                            pageTitle=self.title(),
                                            ignore=3)  # CANCEL_MATCH
         self.text = ccToolkit.change(old)
@@ -1890,7 +1898,7 @@ class BasePage(UnicodeMixin, ComparableMixin):
             newCat = None
 
         oldtext = self.text
-        if inPlace or self.namespace() == 10:
+        if inPlace or self.namespace == 10:
             newtext = textlib.replaceCategoryInPlace(oldtext, oldCat, newCat,
                                                      site=self.site)
         else:
@@ -2133,7 +2141,7 @@ class FilePage(Page):
         """Constructor."""
         self._file_revisions = {}  # dictionary to cache File history.
         super(FilePage, self).__init__(source, title, 6)
-        if self.namespace() != 6:
+        if self.namespace != 6:
             raise ValueError(u"'%s' is not in the file namespace!" % title)
 
     def _load_file_revisions(self, imageinfo):
@@ -2318,7 +2326,7 @@ class Category(Page):
         """
         self.sortKey = sortKey
         Page.__init__(self, source, title, ns=14)
-        if self.namespace() != 14:
+        if self.namespace != 14:
             raise ValueError(u"'%s' is not in the category namespace!"
                              % title)
 
@@ -2661,7 +2669,7 @@ class Category(Page):
                 cmtitle=self.title()):
             # TODO: Upcast to suitable class
             page = pywikibot.Page(self.site, member['title'])
-            assert page.namespace() == member['ns'], \
+            assert page.namespace == member['ns'], \
                 'Namespace of the page is not consistent'
             cached = check_cache(pywikibot.Timestamp.fromISOformat(
                 member['timestamp']))
@@ -2720,7 +2728,7 @@ class User(Page):
         else:
             self._isAutoblock = False
         Page.__init__(self, source, title, ns=2)
-        if self.namespace() != 2:
+        if self.namespace != 2:
             raise ValueError(u"'%s' is not in the user namespace!"
                              % title)
         if self._isAutoblock:
@@ -3126,7 +3134,7 @@ class WikibasePage(BasePage):
                 raise ValueError('Wikibase entity type "%s" unknown'
                                  % entity_type)
 
-            if self._namespace:
+            if self._namespace is not None:
                 if self._namespace != entity_type_ns:
                     raise ValueError('Namespace "%d" is not valid for Wikibase'
                                      ' entity type "%s"'
@@ -3143,7 +3151,7 @@ class WikibasePage(BasePage):
             self.repo = site
             return
 
-        if self._namespace:
+        if self._namespace is not None and self._namespace.id != 0:
             if self._link.namespace != self._namespace.id:
                 raise ValueError(u"'%s' is not in the namespace %d"
                                  % (title, self._namespace.id))
@@ -3237,13 +3245,16 @@ class WikibasePage(BasePage):
             attr = '_revid'
         return super(WikibasePage, self).__delattr__(attr)
 
+    @property
     def namespace(self):
-        """Return the number of the namespace of the entity.
+        """Return the Namespace of the entity.
 
-        @return: Namespace id
-        @rtype: int
+        @return: Namespace
+        @rtype: Namespace
         """
-        return self._namespace.id
+        if self._namespace is None:
+            raise AttributeError
+        return self._namespace
 
     def exists(self):
         """
@@ -3732,7 +3743,7 @@ class ItemPage(WikibasePage):
             raise pywikibot.Error(u'%s has redirect target %s with content '
                                   u'model %s instead of wikibase-item' %
                                   (self, target, cmodel))
-        return self.__class__(target.site, target.title(), target.namespace())
+        return self.__class__(target.site, target.title(), target.namespace)
 
     def toJSON(self, diffto=None):
         """
@@ -4666,7 +4677,7 @@ class Link(ComparableMixin):
             self._source = source or pywikibot.Site()
 
         self._text = text
-        self._defaultns = defaultNamespace
+        self._defaultns = self._source.namespaces[defaultNamespace]
 
         # preprocess text (these changes aren't site-dependent)
         # First remove anchor, which is stored unchanged, if there is one
@@ -4780,7 +4791,7 @@ class Link(ComparableMixin):
         while u":" in t:
             # Initial colon indicates main namespace rather than default
             if t.startswith(u":"):
-                self._namespace = 0
+                self._namespace = self._site.namespaces[0]
                 # remove the colon but continue processing
                 # remove any subsequent whitespace
                 t = t.lstrip(u":").lstrip(u" ")
@@ -4788,10 +4799,10 @@ class Link(ComparableMixin):
 
             prefix = t[:t.index(u":")].lower()
             ns = self._site.namespaces.lookup_name(prefix)
-            if ns:
+            if ns is not None:
                 # Ordinary namespace
                 t = t[t.index(u":"):].lstrip(u":").lstrip(u" ")
-                self._namespace = ns
+                self._namespace = self._site.namespaces[ns]
                 ns_prefix = True
                 break
             try:
@@ -4893,12 +4904,15 @@ class Link(ComparableMixin):
 
     @property
     def namespace(self):
-        """Return the namespace of the link.
+        """Return the Namespace of the link.
 
         @return: unicode
         """
         if not hasattr(self, "_namespace"):
             self.parse()
+        if not isinstance(self._namespace, Namespace):
+            pywikibot.error(u'Link(%r)._namespace expects Namespace: got %r'
+                            % (self._text, self._namespace))
         return self._namespace
 
     @property
@@ -4933,7 +4947,7 @@ class Link(ComparableMixin):
 
     def canonical_title(self):
         """Return full page title, including localized namespace."""
-        if self.namespace:
+        if self.namespace.id != 0:
             return "%s:%s" % (self.site.namespace(self.namespace),
                               self.title)
         else:
@@ -4950,8 +4964,7 @@ class Link(ComparableMixin):
             pywikibot.Error is raised.
 
         """
-        ns_id = self.namespace
-        ns = self.site.namespaces[ns_id]
+        ns = self.namespace
 
         if onsite is None:
             namespace = ns.canonical_name
@@ -4966,7 +4979,7 @@ class Link(ComparableMixin):
                 # not found
                 raise pywikibot.Error(
                     u'No corresponding namespace found for namespace %s on %s.'
-                    % (self.site.namespaces[ns_id], onsite))
+                    % (self.site.namespaces[ns.id], onsite))
 
         if namespace:
             return u'%s:%s' % (namespace, self.title)
@@ -4984,7 +4997,7 @@ class Link(ComparableMixin):
         if onsite is None:
             onsite = self._source
         title = self.title
-        if self.namespace:
+        if self.namespace.id != 0:
             title = onsite.namespace(self.namespace) + ":" + title
         if self.section:
             title = title + "#" + self.section
@@ -5049,7 +5062,7 @@ class Link(ComparableMixin):
         link = cls.__new__(cls)
         link._site = page.site
         link._section = page.section()
-        link._namespace = page.namespace()
+        link._namespace = page.namespace
         link._title = page.title(withNamespace=False,
                                  allowInterwiki=False,
                                  withSection=False)

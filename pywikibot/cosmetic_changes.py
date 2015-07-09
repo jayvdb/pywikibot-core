@@ -493,7 +493,7 @@ class CosmeticChangesToolkit:
                 page = pywikibot.Page(pywikibot.Link(titleWithSection,
                                                      self.site))
                 try:
-                    namespace = page.namespace()
+                    namespace = page.namespace
                 except pywikibot.InvalidTitle:
                     return match.group()
                 if namespace == 0:

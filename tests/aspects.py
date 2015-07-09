@@ -115,7 +115,7 @@ class TestCaseBase(unittest.TestCase):
         if isinstance(namespaces, int):
             namespaces = set([namespaces])
 
-        self.assertIn(page.namespace(), namespaces,
+        self.assertIn(page.namespace, namespaces,
                       "%s not in namespace %r" % (page, namespaces))
 
     def _get_gen_pages(self, gen, count=None, site=None):
@@ -201,7 +201,7 @@ class TestCaseBase(unittest.TestCase):
         else:
             assert isinstance(namespaces, set)
 
-        page_namespaces = [page.namespace() for page in gen]
+        page_namespaces = [page.namespace for page in gen]
 
         if skip and set(page_namespaces) != namespaces:
             raise unittest.SkipTest('Pages in namespaces %r not found.'
