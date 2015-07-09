@@ -248,9 +248,11 @@ class CosmeticChangesToolkit:
         )
 
     @classmethod
-    def from_page(cls, page, diff, ignore):
+    def from_page(cls, page, diff=False, ignore=CANCEL_ALL):
         """Create toolkit based on the page."""
-        return cls(page.site, diff=diff, namespace=page.namespace(),
+        return cls(page.site, diff=diff,
+                   namespace=page.namespace,
+                   redirect=page.isRedirectPage(),
                    pageTitle=page.title(), ignore=ignore)
 
     def safe_execute(self, method, text):
@@ -493,7 +495,7 @@ class CosmeticChangesToolkit:
                 page = pywikibot.Page(pywikibot.Link(titleWithSection,
                                                      self.site))
                 try:
-                    namespace = page.namespace()
+                    namespace = page.namespace.id
                 except pywikibot.InvalidTitle:
                     return match.group()
                 if namespace == 0:

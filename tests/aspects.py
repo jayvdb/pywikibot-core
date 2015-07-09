@@ -110,12 +110,12 @@ class TestCaseBase(unittest.TestCase):
         @param page: Page
         @type page: Page
         @param namespaces: expected namespaces
-        @type namespaces: int or set of int
+        @type namespaces: NamespaceDict, set of int, or int
         """
         if isinstance(namespaces, int):
             namespaces = set([namespaces])
 
-        self.assertIn(page.namespace(), namespaces,
+        self.assertIn(page.namespace, namespaces,
                       "%s not in namespace %r" % (page, namespaces))
 
     def _get_gen_pages(self, gen, count=None, site=None):
@@ -175,7 +175,7 @@ class TestCaseBase(unittest.TestCase):
         @param gen: generator to iterate
         @type gen: generator
         @param namespaces: expected namespaces
-        @type namespaces: int or set of int
+        @type namespaces: NamespaceDict, set of int, or int
         """
         if isinstance(namespaces, int):
             namespaces = set([namespaces])
@@ -190,7 +190,7 @@ class TestCaseBase(unittest.TestCase):
         @param gen: generator to iterate
         @type gen: generator
         @param namespaces: expected namespaces
-        @type namespaces: int or set of int
+        @type namespaces: NamespaceDict, set of int, or int
         @param count: maximum results to process
         @type count: int
         @param skip: skip test if not all namespaces found
@@ -199,9 +199,9 @@ class TestCaseBase(unittest.TestCase):
         if isinstance(namespaces, int):
             namespaces = set([namespaces])
         else:
-            assert isinstance(namespaces, set)
+            namespaces = set(namespaces)
 
-        page_namespaces = [page.namespace() for page in gen]
+        page_namespaces = set(page.namespace for page in gen)
 
         if skip and set(page_namespaces) != namespaces:
             raise unittest.SkipTest('Pages in namespaces %r not found.'

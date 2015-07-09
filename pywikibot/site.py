@@ -289,6 +289,39 @@ class Namespace(Iterable, ComparableMixin, UnicodeMixin):
         else:
             return len(self.aliases) + 2
 
+    @deprecated('Namespace.id')
+    def __call__(self):
+        """
+        DEPRECATED: Return the namespace id.
+
+        This functionality exists only to provide backwards compatibility for
+        Page.namespace.
+
+        Page.namespace was a method, which returned the namespace as an int.
+             i.e. page.namespace() returned an int
+        Page.namespace has been converted to a property which returns a
+        Namespace object, which if called will invoke this method, which will
+        return the namespace id.
+            i.e. page.namespace returns Namespace,
+            and  page.namespace() returns int
+        """
+        return self.id
+
+    @deprecated('Namespace.id')
+    def __bool__(self):
+        """
+        DEPRECATED: Return whether it's not the main namespace.
+
+        This method is needed because __call__ makes Namespace callable,
+        which would make it always True in boolean contexts.
+
+        Instead of checking the truth operator it should check the id to
+        determine if it's not in the main namespace.
+        """
+        return self.id != 0
+
+    __nonzero__ = __bool__
+
     def __iter__(self):
         """Return an iterator."""
         return iter(self._distinct())
@@ -509,7 +542,7 @@ class NamespacesDict(Mapping, SelfCallMixin):
             return self._namespaces[key]
         else:
             namespace = self.lookup_name(key)
-            if namespace:
+            if namespace is not None:
                 return namespace
 
         return super(NamespacesDict, self).__getitem__(key)
@@ -528,7 +561,7 @@ class NamespacesDict(Mapping, SelfCallMixin):
                 return self[0]
 
             namespace = self.lookup_name(attr)
-            if namespace:
+            if namespace is not None:
                 return namespace
 
         return self.__getattribute__(attr)
@@ -908,15 +941,17 @@ class BaseSite(ComparableMixin):
 
         @param namespace: name
         @type namespace: unicode
-        @return: The matching Namespace object on this Site
-        @rtype: Namespace, or None if invalid
+        @return: The matching Namespace id on this Site
+        @rtype: int, or None if invalid
         """
-        return self.namespaces.lookup_name(namespace)
+        ns = self.namespaces.lookup_name(namespace)
+        return ns.id if ns is not None else None
 
     @deprecated('APISite.namespaces.lookup_name')
     def getNamespaceIndex(self, namespace):
         """DEPRECATED: Return the Namespace for a given namespace name."""
-        return self.namespaces.lookup_name(namespace)
+        ns = self.namespaces.lookup_name(namespace)
+        return ns.id if ns is not None else None
 
     def _build_namespaces(self):
         """Create default namespaces."""
@@ -1055,7 +1090,7 @@ class BaseSite(ComparableMixin):
             ns, delim, name = title.partition(':')
             if delim:
                 ns = self.namespaces.lookup_name(ns)
-            if not delim or not ns:
+            if not delim or ns is None:
                 return default_ns, title
             else:
                 return ns, name
@@ -3396,7 +3431,7 @@ class APISite(BaseSite):
         @raises TypeError: a namespace identifier has an inappropriate
             type such as NoneType or bool
         """
-        if category.namespace() != 14:
+        if category.namespace != Namespace.CATEGORY:
             raise Error(
                 u"categorymembers: non-Category page '%s' specified"
                 % category.title())
@@ -4730,9 +4765,9 @@ class APISite(BaseSite):
                     errdata = {
                         'site': self,
                         'oldtitle': oldtitle,
-                        'oldnamespace': self.namespace(page.namespace()),
+                        'oldnamespace': page.namespace,
                         'newtitle': newtitle,
-                        'newnamespace': self.namespace(newlink.namespace),
+                        'newnamespace': newlink.namespace,
                         'user': self.user(),
                     }
                     raise Error(on_error % errdata)
@@ -6290,7 +6325,7 @@ class DataSite(APISite):
                     assert p.site.has_data_repository, \
                         'Site must have a data repository'
                     if (p.site == p.site.data_repository() and
-                            p.namespace() == p.data_repository.item_namespace):
+                            p.namespace == p.data_repository.item_namespace):
                         req['ids'].append(p.title(withNamespace=False))
                     else:
                         req['sites'].append(p.site.dbName())

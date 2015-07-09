@@ -100,11 +100,11 @@ class TestLinkObject(SiteAttributeTestCase):
             for prefix in self.namespaces[num]:
                 l = pywikibot.page.Link(prefix + list(self.titles.keys())[0],
                                         self.enwiki)
-                self.assertEqual(l.namespace, num)
+                self.assertEqual(l.namespace.id, num)
                 # namespace prefixes are case-insensitive
                 m = pywikibot.page.Link(prefix.lower() + list(self.titles.keys())[1],
                                         self.enwiki)
-                self.assertEqual(m.namespace, num)
+                self.assertEqual(m.namespace.id, num)
 
     def testTitles(self):
         """Test that Link() normalizes titles."""
@@ -270,16 +270,17 @@ class TestPageObject(DefaultSiteTestCase):
         self.assertEqual(mainpage.site, self.site)
 
     def testNamespace(self):
-        """Test namespace() method."""
+        """Test namespace callable attribute."""
         mainpage = self.get_mainpage()
         maintalk = mainpage.toggleTalkPage()
 
         if u':' not in mainpage.title():
-            self.assertEqual(mainpage.namespace(), 0)
-        self.assertEqual(maintalk.namespace(), mainpage.namespace() + 1)
+            self.assertEqual(mainpage.namespace.id, 0)
+
+        self.assertEqual(maintalk.namespace, mainpage.namespace.id + 1)
 
         badpage = self.get_missing_article()
-        self.assertEqual(badpage.namespace(), 0)
+        self.assertEqual(badpage.namespace.id, 0)
 
     def testBasePageConstructor(self):
         """Test BasePage constructor."""
@@ -519,6 +520,8 @@ class TestPageDeprecation(DefaultSiteTestCase, DeprecationTestCase):
 
     """Test deprecation of Page attributes."""
 
+    cached = True
+
     def test_creator(self):
         """Test getCreator."""
         mainpage = self.get_mainpage()
@@ -535,6 +538,41 @@ class TestPageDeprecation(DefaultSiteTestCase, DeprecationTestCase):
         self.assertEqual(mainpage.previous_revision_id,
                          mainpage.latest_revision.parent_id)
         self.assertDeprecation()
+
+    def test_namespace_ns0(self):
+        """Test namespace attribute."""
+        page = pywikibot.Page(self.site, 'Foo')
+        ns = page.namespace
+        called_ns = page.namespace()
+        self.assertOneDeprecation()
+
+        self.assertEqual(ns, called_ns)
+
+        self.assertFalse(bool(ns))
+        self.assertOneDeprecation()
+
+    def test_namespace_mainpage(self):
+        """Test namespace attribute."""
+        mainpage = self.get_mainpage()
+        ns = mainpage.namespace
+        called_ns = mainpage.namespace()
+        self.assertOneDeprecation()
+
+        self.assertEqual(ns, called_ns)
+
+        if ns.id == 0:
+            self.assertFalse(bool(ns))
+            self.assertOneDeprecation()
+
+        maintalk = mainpage.toggleTalkPage()
+        ns = maintalk.namespace
+        called_ns = maintalk.namespace()
+        self.assertOneDeprecation()
+
+        self.assertEqual(ns, called_ns)
+
+        self.assertTrue(bool(ns))
+        self.assertOneDeprecation()
 
 
 class TestPageBaseUnicode(DefaultDrySiteTestCase):

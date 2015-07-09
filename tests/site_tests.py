@@ -499,37 +499,37 @@ class TestSiteGenerators(DefaultSiteTestCase):
         for page in fwd:
             self.assertIsInstance(page, pywikibot.Page)
             self.assertTrue(mysite.page_exists(page))
-            self.assertEqual(page.namespace(), 0)
+            self.assertEqual(page.namespace, 0)
         rev = list(mysite.allpages(reverse=True, start="Aa", total=12))
         self.assertLessEqual(len(rev), 12)
         for page in rev:
             self.assertIsInstance(page, pywikibot.Page)
             self.assertTrue(mysite.page_exists(page))
-            self.assertEqual(page.namespace(), 0)
+            self.assertEqual(page.namespace, 0)
             self.assertLessEqual(page.title(), "Aa")
         for page in mysite.allpages(start="Py", total=5):
             self.assertIsInstance(page, pywikibot.Page)
             self.assertTrue(mysite.page_exists(page))
-            self.assertEqual(page.namespace(), 0)
+            self.assertEqual(page.namespace, 0)
             self.assertGreaterEqual(page.title(), "Py")
         for page in mysite.allpages(prefix="Pre", total=5):
             self.assertIsInstance(page, pywikibot.Page)
             self.assertTrue(mysite.page_exists(page))
-            self.assertEqual(page.namespace(), 0)
+            self.assertEqual(page.namespace, 0)
             self.assertTrue(page.title().startswith("Pre"))
         for page in mysite.allpages(namespace=1, total=5):
             self.assertIsInstance(page, pywikibot.Page)
             self.assertTrue(mysite.page_exists(page))
-            self.assertEqual(page.namespace(), 1)
+            self.assertEqual(page.namespace, 1)
         for page in mysite.allpages(filterredir=True, total=5):
             self.assertIsInstance(page, pywikibot.Page)
             self.assertTrue(mysite.page_exists(page))
-            self.assertEqual(page.namespace(), 0)
+            self.assertEqual(page.namespace, 0)
             self.assertTrue(page.isRedirectPage())
         for page in mysite.allpages(filterredir=False, total=5):
             self.assertIsInstance(page, pywikibot.Page)
             self.assertTrue(mysite.page_exists(page))
-            self.assertEqual(page.namespace(), 0)
+            self.assertEqual(page.namespace, 0)
             self.assertFalse(page.isRedirectPage())
 
     @allowed_failure  # T78276
@@ -538,7 +538,7 @@ class TestSiteGenerators(DefaultSiteTestCase):
         for page in mysite.allpages(filterlanglinks=True, total=5):
             self.assertIsInstance(page, pywikibot.Page)
             self.assertTrue(mysite.page_exists(page))
-            self.assertEqual(page.namespace(), 0)
+            self.assertEqual(page.namespace, 0)
             self.assertNotEqual(page.langlinks(), [])
 
     def test_allpages_langlinks_disabled(self):
@@ -546,7 +546,7 @@ class TestSiteGenerators(DefaultSiteTestCase):
         for page in mysite.allpages(filterlanglinks=False, total=5):
             self.assertIsInstance(page, pywikibot.Page)
             self.assertTrue(mysite.page_exists(page))
-            self.assertEqual(page.namespace(), 0)
+            self.assertEqual(page.namespace, 0)
             self.assertEqual(page.langlinks(), [])
 
     def test_allpages_pagesize(self):
@@ -593,15 +593,15 @@ class TestSiteGenerators(DefaultSiteTestCase):
         self.assertTrue(all(link in uniq for link in fwd))
         for page in mysite.alllinks(start="Link", total=5):
             self.assertIsInstance(page, pywikibot.Page)
-            self.assertEqual(page.namespace(), 0)
+            self.assertEqual(page.namespace, 0)
             self.assertGreaterEqual(page.title(), "Link")
         for page in mysite.alllinks(prefix="Fix", total=5):
             self.assertIsInstance(page, pywikibot.Page)
-            self.assertEqual(page.namespace(), 0)
+            self.assertEqual(page.namespace, 0)
             self.assertTrue(page.title().startswith("Fix"))
         for page in mysite.alllinks(namespace=1, total=5):
             self.assertIsInstance(page, pywikibot.Page)
-            self.assertEqual(page.namespace(), 1)
+            self.assertEqual(page.namespace, 1)
         for page in mysite.alllinks(start="From", namespace=4, fromids=True,
                                     total=5):
             self.assertIsInstance(page, pywikibot.Page)
@@ -787,7 +787,7 @@ class TestSiteGenerators(DefaultSiteTestCase):
                             for link in eu))
         for link in mysite.exturlusage(url, namespaces=[2, 3], total=5):
             self.assertIsInstance(link, pywikibot.Page)
-            self.assertIn(link.namespace(), (2, 3))
+            self.assertIn(link.namespace, (2, 3))
 
     def test_lock_page(self):
         """Test the site.lock_page() and site.unlock_page() method."""
@@ -1188,20 +1188,20 @@ class SearchTestCase(DefaultSiteTestCase):
             self.assertLessEqual(len(se), 100)
             self.assertTrue(all(isinstance(hit, pywikibot.Page)
                                 for hit in se))
-            self.assertTrue(all(hit.namespace() == 0 for hit in se))
+            self.assertTrue(all(hit.namespace == 0 for hit in se))
             for hit in mysite.search("common", namespaces=4, total=5):
                 self.assertIsInstance(hit, pywikibot.Page)
-                self.assertEqual(hit.namespace(), 4)
+                self.assertEqual(hit.namespace, 4)
             for hit in mysite.search("word", namespaces=[5, 6, 7], total=5):
                 self.assertIsInstance(hit, pywikibot.Page)
-                self.assertIn(hit.namespace(), [5, 6, 7])
+                self.assertIn(hit.namespace, [5, 6, 7])
             for hit in mysite.search("another", namespaces="8|9|10", total=5):
                 self.assertIsInstance(hit, pywikibot.Page)
-                self.assertIn(hit.namespace(), [8, 9, 10])
+                self.assertIn(hit.namespace, [8, 9, 10])
             for hit in mysite.search("wiki", namespaces=0, total=10,
                                      get_redirects=True):
                 self.assertIsInstance(hit, pywikibot.Page)
-                self.assertEqual(hit.namespace(), 0)
+                self.assertEqual(hit.namespace, 0)
         except pywikibot.data.api.APIError as e:
             if e.code == "gsrsearch-error" and "timed out" in e.info:
                 raise unittest.SkipTest("gsrsearch returned timeout on site: %r" % e)
@@ -1708,7 +1708,7 @@ class SiteRandomTestCase(DefaultSiteTestCase):
         mysite = self.get_site()
         for rndpage in mysite.randompages(total=5, namespaces=[6, 7]):
             self.assertIsInstance(rndpage, pywikibot.Page)
-            self.assertIn(rndpage.namespace(), [6, 7])
+            self.assertIn(rndpage.namespace, [6, 7])
 
 
 class TestSiteTokens(DefaultSiteTestCase):
