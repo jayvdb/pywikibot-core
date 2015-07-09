@@ -1,10 +1,12 @@
 # See tests/README.rst for instructions for using travis with developer builds.
 language: python
 
+# sudo = false enables container-based infrastructure
 sudo: false
 
 python:
-  - '2.7'
+  # equivalent to virtualenv: system_site_packages: true
+  - '2.7_with_system_site_packages'
   - '3.3'
   - '3.4'
   - '2.6'
@@ -19,8 +21,15 @@ addons:
     packages:
       - graphviz
       - liblua5.1-0-dev
+      - python-requests
+      - python-ipaddr
+
+cache:
+  - pip
+  - apt  # not supported for container-based infrastructure
 
 install:
+  - ls /home/travis/virtualenv/
   - if [[ "$SITE_ONLY" == '1' ]]; then export USE_NOSE=1; fi
   - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2==0.8.0; fi
   - pip install six
@@ -28,7 +37,7 @@ install:
   - mkdir ~/.python-eggs
   - chmod 700 ~/.python-eggs
 
-  - pip install requests
+  - pip install -r requirements.txt --allow-external pYsearch --allow-unverified pYsearch
 
   - if [[ "$GITHUB_USER" != "wikimedia" ]]; then
       export PYWIKIBOT2_TEST_WRITE_FAIL=1 ;
