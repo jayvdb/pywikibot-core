@@ -21,6 +21,8 @@
 # mandatory; see README.conversion.txt
 requests
 
+ipaddr >= 2.1.10
+
 # core interwiki_graph.py:
 pydot
 
