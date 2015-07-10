@@ -21,6 +21,10 @@ addons:
       - liblua5.1-0-dev
       - python-ipaddr
 
+cache:
+  - apt
+  - pip
+
 install:
   - if [[ "$SITE_ONLY" == '1' ]]; then export USE_NOSE=1; fi
   - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2==0.8.0; fi
