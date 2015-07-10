@@ -14,11 +14,12 @@ __version__ = '$Id$'
 import re
 import sys
 
+from distutils.version import StrictVersion
 from warnings import warn
 
 from pywikibot.tools import DeprecatedRegex
 
-ipaddress_e = ipaddr_e = None
+ipaddress_e = ipaddr_e = ipaddr_version = None
 
 try:
     from ipaddress import ip_address
@@ -28,10 +29,15 @@ except ImportError as ipaddress_e:
 
 if not ip_address or sys.version_info[0] < 3:
     try:
-        from ipaddr import IPAddress as ip_address
-        ip_address.__T76286__ = False
+        from ipaddr import __version__ as ipaddr_version
     except ImportError as ipaddr_e:
         pass
+    if ipaddr_version:
+        ipaddr_version = StrictVersion(ipaddr_version)
+        if ipaddr_version >= StrictVersion('2.1.10'):
+            from ipaddr import IPAddress as ip_address
+        else:
+            ipaddr_e = ImportError('ipaddr %s is not usable.' % ipaddr_version)
 
 if ip_address and ip_address.__module__ == 'ipaddress':
     if sys.version_info[0] < 3:
