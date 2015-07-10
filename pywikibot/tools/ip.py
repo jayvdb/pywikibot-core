@@ -29,7 +29,6 @@ except ImportError as ipaddress_e:
 if not ip_address or sys.version_info[0] < 3:
     try:
         from ipaddr import IPAddress as ip_address
-        ip_address.__T76286__ = False
     except ImportError as ipaddr_e:
         pass
 

@@ -4,6 +4,7 @@ language: python
 sudo: false
 
 python:
+  - '2.7_with_system_site_packages'  # equivalent to virtualenv: system_site_packages: true
   - '2.7'
   - '3.3'
   - '3.4'
@@ -19,6 +20,7 @@ addons:
     packages:
       - graphviz
       - liblua5.1-0-dev
+      - python-ipaddr
 
 install:
   - if [[ "$SITE_ONLY" == '1' ]]; then export USE_NOSE=1; fi

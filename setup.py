@@ -88,7 +88,7 @@ if sys.version_info[0] == 2:
     # However the Debian package python-ipaddr is also supported:
     # https://pypi.python.org/pypi/ipaddr
     # Other backports are likely broken.
-    dependencies.append('ipaddr')
+    dependencies.append('ipaddr>=2.1.10')
 
     script_deps['data_ingestion.py'] = extra_deps['csv']
 
