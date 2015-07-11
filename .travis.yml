@@ -59,13 +59,12 @@ script:
   - echo "maximum_GET_length = 5000" >> ~/.pywikibot/user-config.py
   - echo "console_encoding = 'utf8'" >> ~/.pywikibot/user-config.py
 
-  - python -c "import setuptools; print(setuptools.__version__)"
-
   - if [[ "$USE_NOSE" == "1" ]]; then
       if [[ "$SITE_ONLY" == "1" ]]; then
         echo "Running site tests only code ${LANGUAGE} on family ${FAMILY}" ;
         python setup.py nosetests --tests tests --verbosity=2 -a "family=$FAMILY,code=$LANGUAGE" ;
       else
+        python -c "import setuptools; print(setuptools.__version__)" ;
         python setup.py nosetests --tests tests --verbosity=2 ;
       fi ;
     else
