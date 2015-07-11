@@ -22,9 +22,8 @@ addons:
 
 cache: pip
 
-before_install:
+before_script:
   - pip install -r dev-requirements.txt
-  - python -c "import setuptools; print(setuptools.__version__)"
 
 script:
   - if [[ "$SITE_ONLY" == '1' ]]; then export USE_NOSE=1; fi
@@ -59,6 +58,7 @@ script:
         python setup.py nosetests --tests tests --verbosity=2 ;
       fi ;
     else
+      python -c "import setuptools; print(setuptools.__version__)" ;
       python setup.py test ;
     fi
 
