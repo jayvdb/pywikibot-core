@@ -20,7 +20,9 @@ addons:
       - graphviz
       - liblua5.1-0-dev
 
-cache: pip
+cache:
+  directories:
+    - $HOME/.cache/pip
 
 install:
   - if [[ "$SITE_ONLY" == '1' ]]; then export USE_NOSE=1; fi
