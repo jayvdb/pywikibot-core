@@ -22,16 +22,14 @@ addons:
 
 cache: pip
 
-pre_install:
-  - if [[ "$SITE_ONLY" == '1' ]]; then export USE_NOSE=1; fi
-  - export GITHUB_USER=`echo $TRAVIS_REPO_SLUG | cut -d '/' -f 1`
-  - mkdir ~/.python-eggs
-  - chmod 700 ~/.python-eggs
-
+before_install:
   - pip install -r dev-requirements.txt
   - python -c "import setuptools; print(setuptools.__version__)"
 
 script:
+  - if [[ "$SITE_ONLY" == '1' ]]; then export USE_NOSE=1; fi
+  - export GITHUB_USER=`echo $TRAVIS_REPO_SLUG | cut -d '/' -f 1`
+
   - if [[ "$GITHUB_USER" != "wikimedia" ]]; then
       export PYWIKIBOT2_TEST_WRITE_FAIL=1 ;
     fi
