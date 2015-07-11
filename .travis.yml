@@ -20,6 +20,8 @@ addons:
       - graphviz
       - liblua5.1-0-dev
 
+cache: pip
+
 install:
   - if [[ "$SITE_ONLY" == '1' ]]; then export USE_NOSE=1; fi
   - export GITHUB_USER=`echo $TRAVIS_REPO_SLUG | cut -d '/' -f 1`
