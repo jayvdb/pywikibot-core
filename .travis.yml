@@ -31,6 +31,7 @@ before_install:
   # requirements.txt to verify that a minimal install works as expected.
   # Instead install requests in the before_script step below.
   - if [[ "$PYSETUP_TEST_EXTRAS" != '1' ]]; then rm requirements.txt ; fi
+  - pip install --upgrade pip
 
   - if [[ "$SITE_ONLY" == '1' ]]; then export USE_NOSE=1; fi
   - export GITHUB_USER=`echo $TRAVIS_REPO_SLUG | cut -d '/' -f 1`
