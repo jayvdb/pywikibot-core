@@ -46,7 +46,7 @@ install:
   - if [[ "$PYSETUP_TEST_EXTRAS" == '1' ]]; then pip install -v -r requirements.txt; fi
 
 before_script:
-  - pip install -v -r dev-requirements.txt
+  - pip install -v -v -v -r dev-requirements.txt
 
 script:
   - if [[ "$PYSETUP_TEST_EXTRAS" != '1' ]]; then pip install requests ; fi
