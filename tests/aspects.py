@@ -1312,6 +1312,7 @@ class DeprecationTestCase(DebugOnlyTestCase, TestCase):
             self.expect_warning_filename = self.expect_warning_filename[:-1]
 
         self._do_test_warning_filename = True
+        self._ignore_unknown_warning_packages = False
 
         self.context_manager = warnings.catch_warnings(record=True)
 
@@ -1352,6 +1353,10 @@ class DeprecationTestCase(DebugOnlyTestCase, TestCase):
 
     def assertDeprecationFile(self, filename):
         for item in self.warning_log:
+            if self._ignore_unknown_warning_packages and
+                    ('pywikibot' not in item.filename):
+                continue
+
             self.assertEqual(item.filename, filename)
 
     def setUp(self):
@@ -1391,4 +1396,5 @@ class AutoDeprecationTestCase(CapturingTestCase, DeprecationTestCase):
 
     def check_file(self, name):
         """Disable filename check on asserted exceptions."""
-        return not name.startswith('assertRaises')
+        return (not name.startswith('assertRaises') and
+                not name.startswith('assertRaisesRegex'))

@@ -50,8 +50,8 @@ class TestSiteUserDeprecatedFunctions(DefaultSiteTestCase, DeprecationTestCase):
 
     def test_token(self):
         """Test ability to get page tokens."""
-        # FIXME: deprecation filename is incorrect
-        # https://travis-ci.org/wikimedia/pywikibot-core/jobs/66667194#L3993
+        # As assertRegex calls the method, unittest is the module
+        # invoking the method instead of this test module.
         self._do_test_warning_filename = False
         mysite = self.get_site()
         mainpage = self.get_mainpage()
