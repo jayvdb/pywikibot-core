@@ -1353,8 +1353,8 @@ class DeprecationTestCase(DebugOnlyTestCase, TestCase):
 
     def assertDeprecationFile(self, filename):
         for item in self.warning_log:
-            if self._ignore_unknown_warning_packages and
-                    ('pywikibot' not in item.filename):
+            if (self._ignore_unknown_warning_packages and
+                    'pywikibot' not in item.filename):
                 continue
 
             self.assertEqual(item.filename, filename)
