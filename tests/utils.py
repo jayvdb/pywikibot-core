@@ -8,6 +8,7 @@
 from __future__ import print_function, unicode_literals
 __version__ = '$Id$'
 #
+import inspect
 import json
 import os
 import re
@@ -15,6 +16,7 @@ import subprocess
 import sys
 import time
 import traceback
+import warnings
 
 from collections import Mapping
 from warnings import warn
@@ -114,6 +116,51 @@ def fixed_generator(iterable):
             yield item
 
     return gen
+
+
+class WarningSourceContextManager(warnings.catch_warnings):
+
+    """
+    Warning context manager that adjusts source of warning."""
+
+    skip_list = ['unittest', 'aspects']
+
+    def __enter__(self):
+        log = super(WarningSourceContextManager, self).__enter__()
+        def detailed_show_warning(*args, **kwargs):
+            entry = warnings.WarningMessage(*args, **kwargs)
+
+            skip_lines = 0
+            entry_line_found = False
+
+            for (_, filename, fileno, _, line, _) in inspect.stack():
+                skip_word_found = False
+                for skip_word in self.skip_list:
+                    if skip_word in filename:
+                        skip_word_found = True
+                        break
+
+                if skip_word_found:
+                    if entry_line_found:
+                        continue
+                    else:
+                        skip_lines += 1
+
+                if (filename, fileno) == (entry.filename, entry.lineno):
+                    if not skip_lines:
+                        break
+                    entry_line_found = True
+
+                if entry_line_found:
+                    if not skip_lines:
+                        (entry.filename, entry.lineno) = (filename, fileno)
+                        break
+                    else:
+                        skip_lines -= 1
+
+            log.append(entry)
+        self._module.showwarning = detailed_show_warning
+        return log
 
 
 class DryParamInfo(dict):

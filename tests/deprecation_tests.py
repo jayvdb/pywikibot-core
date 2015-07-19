@@ -10,9 +10,13 @@ from __future__ import unicode_literals
 __version__ = '$Id$'
 
 from pywikibot.tools import (
+    PYTHON_VERSION,
     deprecated, deprecate_arg, deprecated_args, add_full_name, remove_last_args
 )
 from tests.aspects import unittest, DeprecationTestCase
+
+getargspec_warning = (
+    'inspect.getargspec() is deprecated, use inspect.signature() instead')
 
 
 @add_full_name
@@ -439,9 +443,13 @@ class DeprecatorTestCase(DeprecationTestCase):
 
     def test_function_remove_last_args(self):
         """Test @remove_last_args on functions."""
+        # Note: 3.6 emits a deprecation warning regarding inspect.getargspec
         rv = deprecated_all()
         self.assertEqual(rv, None)
-        self.assertNoDeprecation()
+        if PYTHON_VERSION >= (3, 6, 0):
+            self.assertDeprecation(getargspec_warning)
+        else:
+            self.assertNoDeprecation()
 
         rv = deprecated_all(foo=42)
         self.assertEqual(rv, None)
@@ -481,11 +489,17 @@ class DeprecatorTestCase(DeprecationTestCase):
 
         rv = deprecated_all2(foo=42)
         self.assertEqual(rv, 42)
-        self.assertNoDeprecation()
+        if PYTHON_VERSION >= (3, 6, 0):
+            self.assertDeprecation(getargspec_warning)
+        else:
+            self.assertNoDeprecation()
 
         rv = deprecated_all2(42)
         self.assertEqual(rv, 42)
-        self.assertNoDeprecation()
+        if PYTHON_VERSION >= (3, 6, 0):
+            self.assertDeprecation(getargspec_warning)
+        else:
+            self.assertNoDeprecation()
 
         rv = deprecated_all2(42, bar=47)
         self.assertEqual(rv, 42)
@@ -542,11 +556,17 @@ class DeprecatorTestCase(DeprecationTestCase):
 
         rv = f.deprecated_all2(foo=42)
         self.assertEqual(rv, 42)
-        self.assertNoDeprecation()
+        if PYTHON_VERSION >= (3, 6, 0):
+            self.assertDeprecation(getargspec_warning)
+        else:
+            self.assertNoDeprecation()
 
         rv = f.deprecated_all2(42)
         self.assertEqual(rv, 42)
-        self.assertNoDeprecation()
+        if PYTHON_VERSION >= (3, 6, 0):
+            self.assertDeprecation(getargspec_warning)
+        else:
+            self.assertNoDeprecation()
 
         rv = f.deprecated_all2(42, bar=47)
         self.assertEqual(rv, 42)

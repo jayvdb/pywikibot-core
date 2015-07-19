@@ -209,8 +209,8 @@ class TestNamespaceDictDeprecated(AutoDeprecationTestCase):
 
     net = False
 
-    def test_resolve(self):
-        """Test Namespace.resolve."""
+    def test_resolve_equal(self):
+        """Test Namespace.resolve success."""
         namespaces = Namespace.builtin_namespaces(use_image_name=False)
         main_ns = namespaces[0]
         file_ns = namespaces[6]
@@ -245,6 +245,8 @@ class TestNamespaceDictDeprecated(AutoDeprecationTestCase):
         self.assertEqual(Namespace.resolve(':Image'), [file_ns])
         self.assertEqual(Namespace.resolve(':Image:'), [file_ns])
 
+    def test_resolve_exceptions(self):
+        """Test Namespace.resolve failure."""
         self.assertRaises(TypeError, Namespace.resolve, [True])
         self.assertRaises(TypeError, Namespace.resolve, [False])
         self.assertRaises(TypeError, Namespace.resolve, [None])
