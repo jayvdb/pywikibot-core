@@ -936,20 +936,33 @@ class SiteUserTestCase(DefaultSiteTestCase):
                           start=pywikibot.Timestamp.fromISOformat("2008-02-03T23:59:59Z"),
                           end=pywikibot.Timestamp.fromISOformat("2008-02-03T00:00:01Z"), reverse=True, total=5)
 
-    def testRecentchanges(self):
-        """Test the site.recentchanges() method."""
+
+class TestRecentChanges(DefaultSiteTestCase):
+
+    """Test recentchanges method."""
+
+    def setUpClass(self):
+        """Test up test class."""
         mysite = self.get_site()
-        mainpage = self.get_mainpage()
         try:
             # 1st image on main page
             imagepage = next(iter(mysite.allimages()))
         except StopIteration:
             print("No images on site {0!r}".format(mysite))
             imagepage = None
+        self.imagepage = imagepage
+
+    def test_basic(self):
+        """Test the site.recentchanges() method."""
+        mysite = self.site
         rc = list(mysite.recentchanges(total=10))
         self.assertLessEqual(len(rc), 10)
         self.assertTrue(all(isinstance(change, dict)
                             for change in rc))
+
+    def test_time_range(self):
+        """Test the site.recentchanges() method with start/end."""
+        mysite = self.site
         for change in mysite.recentchanges(start=pywikibot.Timestamp.fromISOformat("2008-10-01T01:02:03Z"),
                                            total=5):
             self.assertIsInstance(change, dict)
@@ -986,6 +999,13 @@ class SiteUserTestCase(DefaultSiteTestCase):
         self.assertRaises(pywikibot.Error, mysite.recentchanges,
                           start=pywikibot.Timestamp.fromISOformat("2008-02-03T23:59:59Z"),
                           end=pywikibot.Timestamp.fromISOformat("2008-02-03T00:00:01Z"), reverse=True, total=5)
+
+    def test_ns_file(self):
+        """Test the site.recentchanges() method with File: and File talk:."""
+        if self.site.code == 'wikidata':
+            raise unittest.SkipTest(
+                'MediaWiki bug frequently occurring on Wikidata. T101502')
+        mysite = self.site
         for change in mysite.recentchanges(namespaces=[6, 7], total=5):
             self.assertIsInstance(change, dict)
             self.assertIn('title', change)
@@ -995,6 +1015,12 @@ class SiteUserTestCase(DefaultSiteTestCase):
             prefix = title[:title.index(":")]
             self.assertIn(self.site.namespaces.lookup_name(prefix).id, [6, 7])
             self.assertIn(change["ns"], [6, 7])
+
+    def test_pagelist(self):
+        """Test the site.recentchanges() with pagelist deprecated MW 1.14."""
+        mysite = self.site
+        mainpage = self.get_mainpage()
+        imagepage = self.imagepage
         if MediaWikiVersion(mysite.version()) <= MediaWikiVersion("1.14"):
             pagelist = [mainpage]
             if imagepage:
@@ -1005,11 +1031,19 @@ class SiteUserTestCase(DefaultSiteTestCase):
                 self.assertIsInstance(change, dict)
                 self.assertIn("title", change)
                 self.assertIn(change["title"], titlelist)
+
+    def test_changetype(self):
+        """Test the site.recentchanges() with changetype."""
+        mysite = self.site
         for typ in ("edit", "new", "log"):
             for change in mysite.recentchanges(changetype=typ, total=5):
                 self.assertIsInstance(change, dict)
                 self.assertIn("type", change)
                 self.assertEqual(change["type"], typ)
+
+    def test_flags(self):
+        """Test the site.recentchanges() with boolean flags."""
+        mysite = self.site
         for change in mysite.recentchanges(showMinor=True, total=5):
             self.assertIsInstance(change, dict)
             self.assertIn("minor", change)
@@ -1040,6 +1074,11 @@ class SiteUserTestCase(DefaultSiteTestCase):
             self.assertIsInstance(change, dict)
             if mysite.has_right('patrol'):
                 self.assertNotIn("patrolled", change)
+
+
+class SearchTestCase(DefaultSiteTestCase):
+
+    """Test search method."""
 
     def testSearch(self):
         """Test the site.search() method."""
