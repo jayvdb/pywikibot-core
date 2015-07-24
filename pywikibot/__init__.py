@@ -92,12 +92,7 @@ __all__ = ('config', 'ui', 'UnicodeMixin', 'translate',
            'WikiBaseError', 'CoordinateGlobeUnknownException',
            'QuitKeyboardInterrupt',
            )
-# flake8 is unable to detect concatenation in the same operation
-# like:
-# ) + textlib_methods
-# pep257 also doesn't support __all__ multiple times in a document
-# so instead use this trick
-globals()['__all__'] = globals()['__all__'] + textlib_methods
+__all__ += textlib_methods
 
 for _name in textlib_methods:
     target = getattr(textlib, _name)
