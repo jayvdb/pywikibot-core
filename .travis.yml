@@ -156,6 +156,7 @@ matrix:
             - graphviz
             - liblua5.1-0-dev
             - python-ipaddr
+            - python-requests
     - python: '2.7'
       env: LANGUAGE=en FAMILY=wpbeta SITE_ONLY=1 OAUTH_DOMAIN="en.wikipedia.beta.wmflabs.org"
     - python: '3.3'
