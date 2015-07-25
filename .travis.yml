@@ -21,6 +21,7 @@ addons:
       - graphviz
       - liblua5.1-0-dev
       - python-pil
+      - python-imaging
 
 before_install:
   # When PYSETUP_TEST_EXTRAS is not enabled, do not allow the
