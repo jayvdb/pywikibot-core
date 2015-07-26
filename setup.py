@@ -167,6 +167,9 @@ if 'PYSETUP_TEST_EXTRAS' in os.environ:
     if 'oursql' in test_deps and os.name == 'nt':
         test_deps.remove('oursql')  # depends on Cython
 
+    if 'unicodedata2' in test_deps and os.name == 'nt':
+        test_deps.remove('unicodedata2')
+
     if 'requests[security]' in test_deps:
         # Bug T105767 on Python 2.7 release 9+
         if sys.version_info[:2] == (2, 7) and sys.version_info[2] >= 9:
