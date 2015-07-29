@@ -1979,16 +1979,21 @@ class APISite(BaseSite):
             'articlepath must end with /$1'
         return self.siteinfo['general']['articlepath'][:-2]
 
-    def assert_valid_iter_params(self, msg_prefix, start, end, reverse):
+    def assert_valid_iter_params(self, msg_prefix, start, end, reverse,
+                                 suffix='', exception=Error):
         """Validate iterating API parameters."""
+        start_name = 'start' + suffix
+        end_name = 'end' + suffix
         if reverse:
             if end < start:
-                raise Error(
-                    "%s: end must be later than start with reverse=True" % msg_prefix)
+                raise exception(
+                    '%s: %s(%r) must be greater than %s(%r) with reverse=True'
+                    % (msg_prefix, end_name, end, start_name, start))
         else:
             if start < end:
-                raise Error(
-                    "%s: start must be later than end with reverse=False" % msg_prefix)
+                raise exception(
+                    '%s: %s(%r) must be greater than %s(%r) with reverse=False'
+                    % (msg_prefix, start_name, start, end_name, end))
 
     def has_right(self, right, sysop=False):
         """Return true if and only if the user has a specific right.
@@ -3278,6 +3283,7 @@ class APISite(BaseSite):
         @type sortby: str
         @param reverse: if True, generate results in reverse order
             (default False)
+        @type reverse: bool
         @param starttime: if provided, only generate pages added after this
             time; not valid unless sortby="timestamp"
         @type starttime: pywikibot.Timestamp
@@ -3316,12 +3322,15 @@ class APISite(BaseSite):
             raise ValueError(
                 "categorymembers: invalid sortby value '%s'"
                 % sortby)
-        if starttime and endtime and starttime > endtime:
-            raise ValueError(
-                "categorymembers: starttime must be before endtime")
-        if startsort and endsort and startsort > endsort:
-            raise ValueError(
-                "categorymembers: startsort must be less than endsort")
+        if starttime and endtime:
+            self.assert_valid_iter_params('categorymembers',
+                                          starttime, endtime, reverse,
+                                          suffix='time', exception=ValueError)
+
+        if startsort and endsort:
+            self.assert_valid_iter_params('categorymembers',
+                                          startsort, endsort, reverse,
+                                          suffix='sort', exception=ValueError)
 
         if isinstance(member_type, basestring):
             member_type = set([member_type])
@@ -3401,21 +3410,22 @@ class APISite(BaseSite):
                                 **cmargs)
         return cmgen
 
+    @deprecated_args(rvdir='reverse')
     def loadrevisions(self, page, getText=False, revids=None,
                       startid=None, endid=None, starttime=None,
-                      endtime=None, rvdir=None, user=None, excludeuser=None,
+                      endtime=None, reverse=None, user=None, excludeuser=None,
                       section=None, sysop=False, step=None, total=None, rollback=False):
         """Retrieve and store revision information.
 
         By default, retrieves the last (current) revision of the page,
         unless any of the optional parameters revids, startid, endid,
-        starttime, endtime, rvdir, user, excludeuser, or limit are
+        starttime, endtime, reverse, user, excludeuser, or limit are
         specified. Unless noted below, all parameters not specified
         default to False.
 
-        If rvdir is False or not specified, startid must be greater than
+        If reverse is False (default), startid must be greater than
         endid if both are specified; likewise, starttime must be greater
-        than endtime. If rvdir is True, these relationships are reversed.
+        than endtime. If reverse is True, these relationships are reversed.
 
         @param page: retrieve revisions of this Page (required unless ids
             is specified)
@@ -3432,8 +3442,9 @@ class APISite(BaseSite):
         @param endid: stop upon retrieving this revid
         @param starttime: retrieve revisions starting at this Timestamp
         @param endtime: stop upon reaching this Timestamp
-        @param rvdir: if false, retrieve newest revisions first (default);
-            if true, retrieve earliest first
+        @param reverse: if False, retrieve newest revisions first (default);
+            if True, retrieve earliest first
+        @type reverse: bool
         @param user: retrieve only revisions authored by this user
         @param excludeuser: retrieve all revisions not authored by this user
         @param sysop: if True, switch to sysop account (if available) to
@@ -3445,11 +3456,16 @@ class APISite(BaseSite):
                   endid is None and
                   starttime is None and
                   endtime is None and
-                  rvdir is None and
+                  reverse is None and
                   user is None and
                   excludeuser is None and
                   step is None and
                   total is None)  # if True, retrieving current revision
+
+        if latest:
+            issue_deprecation_warning(
+                'loadrevisions: latest mode is deprecated; use total=1', 2)
+            reverse = False
 
         # check for invalid argument combinations
         if (startid is not None or endid is not None) and \
@@ -3457,19 +3473,13 @@ class APISite(BaseSite):
             raise ValueError(
                 "loadrevisions: startid/endid combined with starttime/endtime")
         if starttime is not None and endtime is not None:
-            if rvdir and starttime >= endtime:
-                raise ValueError(
-                    "loadrevisions: starttime > endtime with rvdir=True")
-            if (not rvdir) and endtime >= starttime:
-                raise ValueError(
-                    "loadrevisions: endtime > starttime with rvdir=False")
+            self.assert_valid_iter_params('loadrevisions',
+                                          starttime, endtime, reverse,
+                                          suffix='time', exception=ValueError)
         if startid is not None and endid is not None:
-            if rvdir and startid >= endid:
-                raise ValueError(
-                    "loadrevisions: startid > endid with rvdir=True")
-            if (not rvdir) and endid >= startid:
-                raise ValueError(
-                    "loadrevisions: endid > startid with rvdir=False")
+            self.assert_valid_iter_params('loadrevisions',
+                                          startid, endid, reverse,
+                                          suffix='id', exception=ValueError)
 
         if self.has_extension('ProofreadPage'):
             rvargs = {'type_arg': 'info|revisions|proofread'}
@@ -3493,10 +3503,8 @@ class APISite(BaseSite):
                 ids = u"|".join(unicode(r) for r in revids)
             rvargs[u"revids"] = ids
 
-        if rvdir:
+        if reverse:
             rvargs[u"rvdir"] = u"newer"
-        elif rvdir is not None:
-            rvargs[u"rvdir"] = u"older"
         if startid:
             rvargs[u"rvstartid"] = startid
         if endid:
@@ -3618,6 +3626,7 @@ class APISite(BaseSite):
             level; can only be used if protect_type is specified
         @param reverse: if True, iterate in reverse Unicode lexigraphic
             order (default: iterate in forward order)
+        @type reverse: bool
         @param content: if True, load the current content of each iterated page
             (default False)
         @raises KeyError: the namespace identifier was not resolved
@@ -3720,6 +3729,7 @@ class APISite(BaseSite):
         @param prefix: Only yield categories starting with this string.
         @param reverse: if True, iterate in reverse Unicode lexigraphic
             order (default: iterate in forward order)
+        @type reverse: bool
         @param content: if True, load the current content of each iterated page
             (default False); note that this means the contents of the category
             description page, not the pages that are members of the category
@@ -3804,6 +3814,7 @@ class APISite(BaseSite):
         @param minsize: only iterate images of at least this many bytes
         @param maxsize: only iterate images of no more than this many bytes
         @param reverse: if True, iterate in reverse lexigraphic order
+        @type reverse: bool
         @param sha1: only iterate image (it is theoretically possible there
             could be more than one) with this sha1 hash
         @param sha1base36: same as sha1 but in base 36
@@ -3841,21 +3852,16 @@ class APISite(BaseSite):
         @param starttime: start iterating at this Timestamp
         @param endtime: stop iterating at this Timestamp
         @param reverse: if True, iterate oldest blocks first (default: newest)
+        @type reverse: bool
         @param blockids: only iterate blocks with these id numbers
         @param users: only iterate blocks affecting these usernames or IPs
 
         """
         if starttime and endtime:
-            if reverse:
-                if starttime > endtime:
-                    raise Error(
-                        "blocks: "
-                        "starttime must be before endtime with reverse=True")
-            else:
-                if endtime > starttime:
-                    raise Error(
-                        "blocks: "
-                        "endtime must be before starttime with reverse=False")
+            self.assert_valid_iter_params('blocks',
+                                          starttime, endtime, reverse,
+                                          suffix='time')
+
         bkgen = self._generator(api.ListGenerator, type_arg="blocks",
                                 step=step, total=total)
         bkgen.request["bkprop"] = "id|user|by|timestamp|expiry|reason|range|flags"
@@ -3936,6 +3942,7 @@ class APISite(BaseSite):
         @param start: only iterate entries from and after this Timestamp
         @param end: only iterate entries up to and through this Timestamp
         @param reverse: if True, iterate oldest entries first (default: newest)
+        @type reverse: bool
         @raises KeyError: the namespace identifier was not resolved
         @raises TypeError: the namespace identifier has an inappropriate
             type such as bool, or an iterable with more than one namespace
@@ -3970,7 +3977,7 @@ class APISite(BaseSite):
 
     @deprecated_args(returndict=None, nobots=None, rcshow=None, rcprop=None,
                      rctype='changetype', revision=None, repeat=None,
-                     rcstart='start', rcend='end', rcdir=None,
+                     rcstart='start', rcend='end', rcdir='reverse',
                      includeredirects='showRedirects', namespace='namespaces',
                      rcnamespace='namespaces', number='total', rclimit='total')
     def recentchanges(self, start=None, end=None, reverse=False,
@@ -4022,6 +4029,10 @@ class APISite(BaseSite):
         @raises TypeError: a namespace identifier has an inappropriate
             type such as NoneType or bool
         """
+        # Backwards compatibility with compat 'rcdir'
+        if isinstance(reverse, basestring):
+            reverse = True if reverse == 'newest' else False
+
         if start and end:
             self.assert_valid_iter_params('recentchanges', start, end, reverse)
 
@@ -4120,6 +4131,7 @@ class APISite(BaseSite):
         @param start: Iterate contributions starting at this Timestamp
         @param end: Iterate contributions ending at this Timestamp
         @param reverse: Iterate oldest contributions first (default: newest)
+        @type reverse: bool
         @param namespaces: only iterate pages in these namespaces
         @type namespaces: iterable of basestring or Namespace key,
             or a single instance of those types.  May be a '|' separated
@@ -4168,6 +4180,7 @@ class APISite(BaseSite):
         @param start: Iterate revisions starting at this Timestamp
         @param end: Iterate revisions ending at this Timestamp
         @param reverse: Iterate oldest revisions first (default: newest)
+        @type reverse: bool
         @param namespaces: only iterate pages in these namespaces
         @type namespaces: iterable of basestring or Namespace key,
             or a single instance of those types.  May be a '|' separated
@@ -4218,6 +4231,7 @@ class APISite(BaseSite):
         @param start: Iterate revisions starting at this Timestamp
         @param end: Iterate revisions ending at this Timestamp
         @param reverse: Iterate oldest revisions first (default: newest)
+        @type reverse: bool
         @param get_text: If True, retrieve the content of each revision and
             an undelete token
 
@@ -5383,6 +5397,12 @@ class APISite(BaseSite):
         timestamp (unicode), length (int), an empty unicode string, username
         or IP address (str), comment (unicode).
 
+        @param start: Timestamp to start listing from
+        @type start: pywikibot.Timestamp
+        @param end: Timestamp to end listing at
+        @type end: pywikibot.Timestamp
+        @param reverse: if True, start with oldest pages (default: newest)
+        @type reverse: bool
         @param namespaces: only iterate pages in these namespaces
         @type namespaces: iterable of basestring or Namespace key,
             or a single instance of those types.  May be a '|' separated
