@@ -16,6 +16,8 @@ os:
 
 addons:
   apt:
+    sources:
+    - debian-sid
     packages:
       - djvulibre-bin
       - graphviz
