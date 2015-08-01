@@ -1,0 +1,16 @@
+{
+	"@metadata": {
+		"authors": [
+			"Aushulz",
+			"Beta16",
+			"Gianfranco",
+			"Ricordisamoa",
+			"Xqt"
+		]
+	},
+	"archivebot-archive-full": "(ARCHIVIO PIENO)",
+	"archivebot-archive-summary": "Bot: archivio %(count)d {{PLURAL:%(count)d|discussione|discussioni}} da [[%(from)s]].",
+	"archivebot-archiveheader": "{{Avviso archivio}}",
+	"archivebot-older-than": "più vecchio di %(duration)s",
+	"archivebot-page-summary": "Bot: archivio %(count)d {{PLURAL:%(count)d|discussione|discussioni}} (%(why)s) in %(archives)s."
+}

@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"C5st4wr6ch",
+			"Ezagren"
+		]
+	},
+	"protect-category": "Robot: Melindungi seluruh halaman dari kategori %(cat)s",
+	"protect-images": "Bot: Melindungi semua gambar pada halaman % (halaman)",
+	"protect-links": "Bot: Melindungi semua halaman yang terhubung dari % (halaman)",
+	"protect-ref": "Robot: Melindungi semua halaman yang mengarah dari %(page)s",
+	"protect-simple": "Bot: Melindungi daftar berkas."
+}

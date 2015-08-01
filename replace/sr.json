@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"Milicevic01",
+			"Rancher"
+		]
+	},
+	"replace-replacing": "Бот: аутоматски замењен текст %(description)s"
+}

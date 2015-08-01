@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Dim Grits",
+			"Ата"
+		]
+	},
+	"noreferences-add-tag": "Robot: Дадано відсутній тег <references />",
+	"noreferences-fix-tag": "Бот: Виправлення неправильного синтаксису <references />"
+}

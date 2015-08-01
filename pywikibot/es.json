@@ -1,0 +1,20 @@
+{
+	"@metadata": {
+		"authors": [
+			"Armando-Martin",
+			"Benfutbol10",
+			"Macofe",
+			"MarcoAurelio",
+			"Fitoschido"
+		]
+	},
+	"pywikibot-enter-category-name": "Escribe el nombre de la categoría:",
+	"pywikibot-enter-file-links-processing": "¿A qué página de archivo se deben procesar los enlaces?",
+	"pywikibot-enter-finished-browser": "Presiona la tecla Enter cuando termine en el navegador.",
+	"pywikibot-enter-namespace-number": "Escribe un espacio de nombres según su número:",
+	"pywikibot-enter-new-text": "Escribe el texto nuevo:",
+	"pywikibot-enter-page-processing": "¿Qué página se debe procesar?",
+	"pywikibot-enter-xml-filename": "Escribe el nombre de archivo del volcado XML:",
+	"pywikibot-fixes-html": "Robot: convirtiendo/arreglando HTML",
+	"pywikibot-fixes-syntax": "Robot: arreglo de la sintaxis wiki"
+}

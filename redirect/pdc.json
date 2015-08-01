@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Geitost",
+			"Xqt"
+		]
+	},
+	"redirect-broken-redirect-template": "{{verwische|Kaputte Weiderleiding}}",
+	"redirect-fix-double": "Waddefresser: Doppelte Weiderleiding nooch %(to)s gennert",
+	"redirect-remove-broken": "Waddefresser: Kaputte Weiderleiding"
+}

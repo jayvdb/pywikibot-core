@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"John Reid",
+			"Xqt"
+		]
+	},
+	"archivebot-archive-full": "(ARCHIVE FUL)",
+	"archivebot-archive-summary": "Robot: Archivin %(count)d {{PLURAL:%(count)d|thread|threads}} fae [[%(from)s]].",
+	"archivebot-archiveheader": "{{Talk archive}}",
+	"archivebot-older-than": "aulder than",
+	"archivebot-page-summary": "Robot: Archivin %(count)d {{PLURAL:%(count)d|thread|threads}} (%(why)s) til %(archives)s."
+}

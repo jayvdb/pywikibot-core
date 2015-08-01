@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"Elisardojm",
+			"Robin0van0der0vliet"
+		]
+	},
+	"casechecker-replacement-linklist": "%(source)s→%(target)s"
+}

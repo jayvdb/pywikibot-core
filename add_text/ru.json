@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Rubin16",
+			"Volkov",
+			"Dima st bk"
+		]
+	},
+	"add_text-adding": "Бот добавил: %(adding)s"
+}

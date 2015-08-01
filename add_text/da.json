@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"Christian List",
+			"Kaare"
+		]
+	},
+	"add_text-adding": "Robot: Tilføjer %(adding)s"
+}

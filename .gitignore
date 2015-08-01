@@ -1,0 +1,7 @@
+*.bak
+*.pyc
+*.pyo
+*.py~
+*pycache*
+*.json~
+node_modules

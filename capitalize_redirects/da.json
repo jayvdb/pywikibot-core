@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Christian List",
+			"Kaare",
+			"Peter Alberti"
+		]
+	},
+	"capitalize_redirects-create-redirect": "Robot: Opretter omdirigering til [[%(to)s]]"
+}

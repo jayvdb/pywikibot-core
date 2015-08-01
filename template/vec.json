@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Alunardon90",
+			"GatoSelvadego"
+		]
+	},
+	"template-changing": "Robot: Modifega de {{PLURAL:%(num)d|modèl|modełi}}: %(list)s",
+	"template-removing": "Robot: Rimosion de {{PLURAL:%(num)d|modèl|modełi}}: %(list)s",
+	"template-substituting": "Robot: Sostitusion de {{PLURAL:%(num)d|modèl|modełi}}: %(list)s"
+}

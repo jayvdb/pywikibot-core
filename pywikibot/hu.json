@@ -1,0 +1,18 @@
+{
+	"@metadata": {
+		"authors": [
+			"Dj",
+			"R-Joe",
+			"Tacsipacsi"
+		]
+	},
+	"pywikibot-enter-category-name": "Add meg a kategória nevet:",
+	"pywikibot-enter-file-links-processing": "Melyik fájlra mutató hivatkozásokat kell feldolgozni?",
+	"pywikibot-enter-finished-browser": "Nyomd meg az Entert, ha végeztél a böngészővel!",
+	"pywikibot-enter-namespace-number": "Add meg a névteret a számával:",
+	"pywikibot-enter-new-text": "Add meg az új szöveget:",
+	"pywikibot-enter-page-processing": "Melyik lapot kell feldolgozni?",
+	"pywikibot-enter-xml-filename": "Add meg az XML dump fájl nevét:",
+	"pywikibot-fixes-html": "Robot: HTML konvertálása/javítása",
+	"pywikibot-fixes-syntax": "Robot: Wiki jelölőnyelv javítása"
+}

@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Minh Nguyen"
+		]
+	},
+	"redirect-broken-redirect-template": "{{Chờ xóa}}",
+	"redirect-fix-broken-moved": "Bot: Sửa đổi hướng sai; trang đích đã được di chuyển đến %(to)s",
+	"redirect-fix-double": "Bot: Giải quyết đổi hướng kép đến %(to)s",
+	"redirect-fix-loop": "Bot: Sửa vòng lặp đổi hướng đến %(to)s",
+	"redirect-remove-broken": "Bot: [[Wikipedia:Trang đổi hướng|Đổi hướng]] đến trang xóa hoặc không tồn tại",
+	"redirect-remove-loop": "Bot: [[Wikipedia:Trang đổi hướng|Đổi hướng]] qua lại"
+}

@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"Peter Alberti",
+			"MGA73"
+		]
+	},
+	"unlink-unlinking": "Robot: Fjerner henvisning til \"%(title)s\""
+}

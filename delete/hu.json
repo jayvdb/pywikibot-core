@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Dj"
+		]
+	},
+	"delete-from-category": "Bot: %(page)s kategória valamennyi lapjának törlése",
+	"delete-from-file": "Bot: lapok listájának törlése.",
+	"delete-images": "Bot: valamennyi kép törlése a(z) %(page)s lapon",
+	"delete-linked-pages": "Bot: %(page)s lapról hivatkozott valamennyi lap törlése",
+	"delete-referring-pages": "Bot: %(page)s oldalról mutató valamennyi hivatkozás törlése"
+}

@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Cedric31",
+			"Ricordisamoa"
+		]
+	},
+	"archivebot-archive-full": "(ARCHIU PLEN)",
+	"archivebot-archive-summary": "Robòt : Archivatge de %(count)d {{PLURAL:%(count)d|thread|threads}} dempuèi [[%(from)s]].",
+	"archivebot-older-than": "mai ancian que %(duration)s",
+	"archivebot-page-summary": "Robòt : Archivatge de %(count)d {{PLURAL:%(count)d|thread|threads}} (%(why)s) cap a %(archives)s."
+}

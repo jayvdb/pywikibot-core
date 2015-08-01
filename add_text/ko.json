@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"아라",
+			"IRTC1015"
+		]
+	},
+	"add_text-adding": "봇: %(adding)s 추가"
+}

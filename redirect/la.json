@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"MissPetticoats",
+			"UV",
+			"Xqt"
+		]
+	},
+	"redirect-fix-double": "automaton: rectificatio redirectionis duplicis → %(to)s",
+	"redirect-remove-broken": "automaton: redirectio ad paginam quae non est",
+	"redirect-remove-loop": "automaton: redirectio ad eundem titulum"
+}

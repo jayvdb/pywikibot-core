@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Giro720",
+			"Vitorvicentevalente"
+		]
+	},
+	"noreferences-add-tag": "Robô: A adicionar a marca <references />",
+	"noreferences-fix-tag": "Robô: Correção de sintaxe inválida da marca <references />"
+}

@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Fitoschido",
+			"Macofe"
+		]
+	},
+	"reflinks-autogen": "generado automáticamente",
+	"reflinks-comment": "Título generado por robot",
+	"reflinks-msg": "Bot: conversión de referencias sencillas usando nombres para evitar duplicados. Véanse [[%(manual)s|P+F]]"
+}

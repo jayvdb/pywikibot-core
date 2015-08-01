@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Siebrand",
+			"Hansmuller"
+		]
+	},
+	"noreferences-add-tag": "Robot: toevoeging ontbrekende <references /> tag",
+	"noreferences-fix-tag": "Robot: onjuiste syntaxis van de tag <references /> gerepareerd"
+}

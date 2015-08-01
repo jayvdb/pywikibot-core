@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Geraki",
+			"Protnet"
+		]
+	},
+	"pagefromfile-msg": "Ρομπότ: Αυτοματοποιημένη εισαγωγή σελίδων",
+	"pagefromfile-msg_bottom": "προσάρτηση στο κάτω μέρος",
+	"pagefromfile-msg_force": "το υπάρχον κείμενο αντικαταστάθηκε",
+	"pagefromfile-msg_top": "προσάρτηση στην κορυφή"
+}

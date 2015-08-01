@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Metalhead64",
+			"Xqt"
+		]
+	},
+	"template-changing": "Bot: Ändere {{PLURAL:%(num)d|Vorlage|Vorlagen}}: %(list)s",
+	"template-removing": "Bot: Entferne {{PLURAL:%(num)d|Vorlage|Vorlagen}}: %(list)s",
+	"template-substituting": "Bot: Ersetze {{PLURAL:%(num)d|Vorlage|Vorlagen}}: %(list)s"
+}

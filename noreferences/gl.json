@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Toliño",
+			"Banjo"
+		]
+	},
+	"noreferences-add-tag": "Bot: Engado a etiqueta <references />, que faltaba",
+	"noreferences-fix-tag": "Bot: Arranxo da sintaxe da etiqueta <references />"
+}

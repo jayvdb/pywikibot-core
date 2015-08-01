@@ -1,0 +1,17 @@
+{
+	"@metadata": {
+		"authors": [
+			"Boivie",
+			"Jopparn",
+			"Lokal Profil",
+			"Tobulos1"
+		]
+	},
+	"solve_disambiguation-adding-dn-template": "Bot-assisterad förgreningssida: %(from)s - Märkt som i behov av uppmärksamhet från expert",
+	"solve_disambiguation-links-removed": "Länkar direkt till rätt artikel för: %(from)s - Tog bort länk(ar)",
+	"solve_disambiguation-links-resolved": "Bot-assisterad förgreningssida: %(from)s - Bytte länk(ar) till %(to)s",
+	"solve_disambiguation-redirect-adding-dn-template": "Bot-assisterad förgreningssida: %(from)s - Märkt som i behov av uppmärksamhet från expert",
+	"solve_disambiguation-redirect-removed": "Bot-assisterad förgreningssida: %(from)s - Tog bort länk(ar)",
+	"solve_disambiguation-redirect-resolved": "Bot-assisterad förgreningssida: %(from)s - Bytte länk(ar) till %(to)s",
+	"solve_disambiguation-unknown-page": "(okänd)"
+}

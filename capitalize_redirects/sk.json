@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"Teslaton",
+			"Wizzard"
+		]
+	},
+	"capitalize_redirects-create-redirect": "Robot: Pridajte presmerovanie na [[%(to)s]]"
+}

@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"ChrisiPK",
+			"MF-Warburg",
+			"Pyfisch",
+			"Xqt"
+		]
+	},
+	"delete-from-category": "Bot: Lösche alle Seiten in Kategorie %(page)s",
+	"delete-from-file": "Bot: Löschen einer Liste von Seiten.",
+	"delete-images": "Bot: Lösche alle in %(page)s eingebundenen Bilder",
+	"delete-linked-pages": "Bot: Lösche alle in %(page)s verlinkte Seiten",
+	"delete-referring-pages": "Bot: Lösche alle auf %(page)s verlinkende Seiten"
+}

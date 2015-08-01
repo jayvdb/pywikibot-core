@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Rubin16",
+			"Volkov"
+		]
+	},
+	"featured-featured": "бот: избранная статья %(page)s",
+	"featured-former": "бот: бывшая избранная статья %(page)s",
+	"featured-good": "бот: хорошая статья %(page)s",
+	"featured-list": "бот: избранный список %(page)s"
+}
