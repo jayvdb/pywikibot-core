@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Metalhead64"
+		]
+	},
+	"unprotect-category": "Bot: Gebe alle Seiten aus der Kategorie %(cat)s frei",
+	"unprotect-images": "Bot: Gebe alle Bilder auf der Seite %(page)s frei",
+	"unprotect-links": "Bot: Gebe alle Seiten frei, die von %(page)s verlinkt sind",
+	"unprotect-ref": "Bot: Gebe alle Seiten frei, die von %(page)s verweisen",
+	"unprotect-simple": "Bot: Gebe eine Liste mit Dateien frei."
+}

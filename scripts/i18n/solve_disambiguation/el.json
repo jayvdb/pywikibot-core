@@ -1,0 +1,16 @@
+{
+	"@metadata": {
+		"authors": [
+			"Geraki",
+			"Glavkos",
+			"Protnet"
+		]
+	},
+	"solve_disambiguation-adding-dn-template": "Αποσαφήνιση υποβοηθούμενη από ρομπότ: %(from)s - Επισημάνθηκε ως χρήζουσα της προσοχής ειδικού",
+	"solve_disambiguation-links-removed": "Αποσαφήνιση υποβοηθούμενη από ρομπότ: %(from)s - Ο(οι) σύνδεσμος(οι) αφαιρέθηκε(αν).",
+	"solve_disambiguation-links-resolved": "Αποσαφήνιση υποβοηθούμενη από ρομπότ: %(from)s - Αλλαγή συνδέσμου(ων) σε %(to)s",
+	"solve_disambiguation-redirect-adding-dn-template": "Αποσαφήνιση υποβοηθούμενη από ρομπότ: %(from)s - Επισημάνθηκε ως χρήζουσα της προσοχής ειδικού",
+	"solve_disambiguation-redirect-removed": "Αποσαφήνιση υποβοηθούμενη από ρομπότ: %(from)s - Ο(οι) σύνδεσμος(οι) αφαιρέθηκε(αν)",
+	"solve_disambiguation-redirect-resolved": "Αποσαφήνιση υποβοηθούμενη από ρομπότ: %(from)s - Ο(οι) σύνδεσμος(οι) αλλάχτηκε(αν) σε %(to)s",
+	"solve_disambiguation-unknown-page": "(άγνωστο)"
+}

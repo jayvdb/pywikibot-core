@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Pikne"
+		]
+	},
+	"delete-from-category": "Robot: kustutatud kõik leheküljed kategoorias %(page)s",
+	"delete-from-file": "Robot: kustutatud nimekirjas toodud leheküljed",
+	"delete-images": "Robot: kustutatud kõik pildid leheküljel %(page)s",
+	"delete-linked-pages": "Robot: kustutatud kõik asukohas %(page)s lingitud leheküljed",
+	"delete-referring-pages": "Robot: kustutatud kõik asukohas %(page)s viidatud leheküljed"
+}

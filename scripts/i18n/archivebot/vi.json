@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Minh Nguyen"
+		]
+	},
+	"archivebot-archive-full": "(LƯU TRỮ ĐÃ ĐẦY)",
+	"archivebot-archive-summary": "Lưu trữ %(count)d luồng từ [[%(from)s]].",
+	"archivebot-archiveheader": "{{Thảo luận lưu}}",
+	"archivebot-older-than": "cũ hơn %(duration)s",
+	"archivebot-page-summary": "Lưu trữ %(count)d luồng (%(why)s) qua %(archives)s."
+}

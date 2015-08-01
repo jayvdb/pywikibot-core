@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"Theklan",
+			"Xabier Armendaritz"
+		]
+	},
+	"capitalize_redirects-create-redirect": "Robota: «[[%(to)s]]» orriranzko birbideratzea sortzea"
+}

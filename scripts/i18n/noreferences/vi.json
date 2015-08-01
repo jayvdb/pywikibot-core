@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"Minh Nguyen"
+		]
+	},
+	"noreferences-add-tag": "Bot: Thêm thẻ <references /> bị thiếu",
+	"noreferences-fix-tag": "Bot: Sửa cú pháp thẻ <references /> không hợp lệ"
+}

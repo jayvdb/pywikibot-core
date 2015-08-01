@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Macofe"
+		]
+	},
+	"makecat-create": "Bot: creación o actualización de la categoría [[:Category:%(cat)s|]]"
+}

@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"Anskar",
+			"Grondin"
+		]
+	},
+	"add_text-adding": "Robot: afegint %(adding)s"
+}

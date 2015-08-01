@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"Volkov",
+			"Dima st bk"
+		]
+	},
+	"capitalize_redirects-create-redirect": "Бот: создано перенаправление на [[%(to)s]]"
+}

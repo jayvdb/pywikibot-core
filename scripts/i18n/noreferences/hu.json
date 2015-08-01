@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Dj",
+			"Tacsipacsi"
+		]
+	},
+	"noreferences-add-tag": "Bot: hiányzó {{Források}} pótlása",
+	"noreferences-fix-tag": "Bot: A <references /> hibás szintaxtisának javítása"
+}

@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Esbardu",
+			"Xuacu"
+		]
+	},
+	"noreferences-add-tag": "Bot: Amestando la etiqueta <references /> que falta",
+	"noreferences-fix-tag": "Bot: Igua de sintaxis inválida na etiqueta <references />"
+}

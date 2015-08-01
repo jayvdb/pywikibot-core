@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Dbc334",
+			"Irena Plahuta"
+		]
+	},
+	"pywikibot-enter-category-name": "Prosimo, vnesite ime kategorije:",
+	"pywikibot-enter-file-links-processing": "Povezava do katere strani datoteke naj bo obdelana?",
+	"pywikibot-enter-finished-browser": "Ko končate v brskalniku, pritisnite Enter.",
+	"pywikibot-enter-namespace-number": "Prosimo, vnesite številko imenskega prostora.",
+	"pywikibot-enter-new-text": "Prosimo, vnesite novo besedilo:",
+	"pywikibot-enter-page-processing": "Katera stran naj bo obdelana?",
+	"pywikibot-enter-xml-filename": "Prosimo, vstavite XML ime shranjene datoteke."
+}

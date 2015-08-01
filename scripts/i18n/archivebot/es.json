@@ -1,0 +1,18 @@
+{
+	"@metadata": {
+		"authors": [
+			"Armando-Martin",
+			"Fitoschido",
+			"Ricordisamoa",
+			"TheBITLINK",
+			"Vivaelcelta",
+			"Macofe",
+			"Xqt"
+		]
+	},
+	"archivebot-archive-full": "(ARCHIVO LLENO)",
+	"archivebot-archive-summary": "Bot: Archivo de %(count)d {{PLURAL:%(count)d|hilo|hilos}} de [[%(from)s]].",
+	"archivebot-archiveheader": "{{Archivo discusión}}",
+	"archivebot-older-than": "más antiguo que %(duration)s",
+	"archivebot-page-summary": "Bot: archivo de %(count)d {{PLURAL:%(count)d|hilo|hilos}} (%(why)s) en %(archives)s."
+}

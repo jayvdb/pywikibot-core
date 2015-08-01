@@ -1,0 +1,20 @@
+{
+	"@metadata": {
+		"authors": [
+			"Anakmalaysia",
+			"Kurniasan"
+		]
+	},
+	"category-adding": "Bot: Menambah kategori [[:Category:%(newcat)s|%(newcat)s]]",
+	"category-also-in": "(juga dalam %(alsocat)s)",
+	"category-changing": "Bot: Menukar %(oldcat)s kepada %(newcat)s",
+	"category-listifying": "Bot: Menyenaraikan daripada %(fromcat)s (%(num)d entri)",
+	"category-removing": "Bot: Mengeluarkan daripada %(oldcat)s",
+	"category-renamed": "Robot: Berpindah dari %(oldcat)s. Pengarang: %(authors)s",
+	"category-replacing": "Bot: Mengganti kategori %(oldcat)s dengan %(newcat)s",
+	"category-section-title": "Sejarah versi bekas %(oldcat)s",
+	"category-strip-cfd-templates": "Bot: Menyingkirkan templat CFD untuk tindakan yang selesai",
+	"category-version-history": "Robot: Menyimpan sejarah versi bekas %(oldcat)s",
+	"category-was-disbanded": "Bot: Kategori telah dibubarkan",
+	"category-was-moved": "Bot: Kategori telah dipindahkan ke [[:Category:%(newcat)s|%(title)s]]"
+}

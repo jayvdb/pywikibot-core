@@ -1,0 +1,16 @@
+{
+	"@metadata": {
+		"authors": [
+			"BroOk",
+			"Grondin",
+			"SMP",
+			"Vriullop"
+		]
+	},
+	"redirect-broken-redirect-template": "{{db-r1}}",
+	"redirect-fix-broken-moved": "Bot: Reparació de les redireccions trencades per moure-les a %(to)s",
+	"redirect-fix-double": "Bot: reparació de les redireccions dobles a %(to)s",
+	"redirect-fix-loop": "Bot: arreglant redirecció en bucle per %(to)s",
+	"redirect-remove-broken": "Bot: la pàgina a la qual redirecciona no existeix",
+	"redirect-remove-loop": "Robot: el destí de la redirecció crea un bucle de redirecció"
+}

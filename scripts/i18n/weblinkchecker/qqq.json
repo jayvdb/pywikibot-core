@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Xqt"
+		]
+	},
+	"weblinkchecker-archive_msg": "weblinkchecker report message for web archives",
+	"weblinkchecker-badurl": "weblinkchecker report message if the link in the article is not a valid URL",
+	"weblinkchecker-caption": "The weblinkchecker report's caption",
+	"weblinkchecker-report": "The weblinkchecker report",
+	"weblinkchecker-summary": "Edit summary for weblinkchecker report"
+}

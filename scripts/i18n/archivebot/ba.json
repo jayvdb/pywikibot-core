@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Haqmar",
+			"Sagan"
+		]
+	},
+	"archivebot-archive-full": "(АРХИВ ТУЛҒАН)",
+	"archivebot-archive-summary": "Робот: %(count)d {{PLURAL:%(count)d|тема}} архивланды. Алынған урын: [[%(from)s]].",
+	"archivebot-older-than": "ошоға ҡарағанда иҫкерәк:",
+	"archivebot-page-summary": "Робот: %(count)d {{PLURAL:%(count)d|тема}} (%(why)s) %(archives)s архивына ҡуйылды."
+}
