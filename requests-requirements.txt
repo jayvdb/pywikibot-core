@@ -2,7 +2,7 @@ requests
 
 # Dependency of pyOpenSSL. Use specific version to avoid expected
 # DeprecationWarning
-cryptography<=0.8.2 ; python_version < '2.7'
+#cryptography<=0.8.2 ; python_version < '2.7'
 
 # requests security extra
 # Bug T105767 on Python 2.7 release 9+

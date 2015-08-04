@@ -105,7 +105,7 @@ if sys.version_info[0] == 2:
         # requests security extra includes pyOpenSSL. cryptography is the
         # dependency of pyOpenSSL. 0.8.2 is the newest and compatible version
         # for Python 2.6, which won't raise unexpected DeprecationWarning.
-        extra_deps['security'].append('cryptography<=0.8.2')
+        #extra_deps['security'].append('cryptography<=0.8.2')
 
         script_deps['replicate_wiki.py'] = ['argparse']
         dependencies.append('future')  # provides collections backports
