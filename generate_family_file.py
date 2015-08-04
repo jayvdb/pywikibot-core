@@ -185,6 +185,11 @@ class Family(family.Family):
                 f.write("            '%(lang)s': u'%(ver)s',\n"
                         % {'lang': w.lang, 'ver': w.version})
         f.write("        }[code]\n")
+        f.write("\n")
+
+        f.write("    def protocol(self, code):\n")
+        f.write("        return '%(protocol)s'\n"
+                % {'protocol': urlparse(self.base_url).scheme})
 
 
 if __name__ == "__main__":
