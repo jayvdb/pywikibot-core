@@ -525,6 +525,9 @@ def execute(command, data_in=None, timeout=0, error=None):
     # str() on Python 2.
     env = os.environ.copy()
 
+    if PYTHON_VERSION < (2, 6, 6):
+        env = dict((str(key), str(val)) for key, val in env.items())
+
     # Prevent output by test package; e.g. 'max_retries reduced from x to y'
     env[str('PYWIKIBOT_TEST_QUIET')] = str('1')
 
