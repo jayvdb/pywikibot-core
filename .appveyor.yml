@@ -36,8 +36,8 @@ install:
   - ps: if (-not(Test-Path($env:PYTHON))) { iex $wc.DownloadString($env:APPVEYOR_PYTHON_URL + 'install.ps1') }
   - pip install --user --upgrade pip
   - pip install virtualenv
-  - virtualenv env
-  - env\Scripts\activate.bat
+  #- virtualenv env
+  #- env\Scripts\activate.bat
   - pip install -r dev-requirements.txt
   - pip install -r requests-requirements.txt
 
