@@ -33,6 +33,7 @@ from pywikibot.comms import threadedhttp
 from pywikibot.site import Namespace
 from pywikibot.data.api import CachedRequest
 from pywikibot.data.api import Request as _original_Request
+from pywikibot.tools import PYTHON_VERSION
 
 from tests import _pwb_py
 from tests import unittest  # noqa
