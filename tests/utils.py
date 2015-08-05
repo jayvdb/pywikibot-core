@@ -33,6 +33,7 @@ from pywikibot.comms import threadedhttp
 from pywikibot.site import Namespace
 from pywikibot.data.api import CachedRequest
 from pywikibot.data.api import Request as _original_Request
+from pywikibot.tools import PYTHON_VERSION
 
 from tests import _pwb_py
 from tests import unittest  # noqa
@@ -524,6 +525,12 @@ def execute(command, data_in=None, timeout=0, error=None):
     # Any environment variables added on Windows must be of type
     # str() on Python 2.
     env = os.environ.copy()
+
+    # Python issue 6906
+    if PYTHON_VERSION < (2, 6, 6):
+        for var in ('TK_LIBRARY', 'TCL_LIBRARY', 'TIX_LIBRARY'):
+            if var in env:
+                env[var] = env[var].encode('mbcs')
 
     # Prevent output by test package; e.g. 'max_retries reduced from x to y'
     env[str('PYWIKIBOT_TEST_QUIET')] = str('1')
