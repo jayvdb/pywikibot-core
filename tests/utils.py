@@ -551,21 +551,21 @@ def execute(command, data_in=None, timeout=0, error=None):
 
     try:
         p = subprocess.Popen(command, env=env, **options)
-    except TypeError:
+    except TypeError as e:
         # Generate a more informative error
         if sys.platform == 'win32' and sys.version_info[0] < 3:
             unicode_env = [(k, v) for k, v in os.environ.items()
                            if not isinstance(k, str) or
                            not isinstance(v, str)]
             if unicode_env:
-                raise TypeError('os.environ must contain only str: %r'
-                                % unicode_env)
+                raise TypeError('%s: os.environ contains unicode: %r'
+                                % (e, unicode_env))
             child_unicode_env = [(k, v) for k, v in env.items()
                                  if not isinstance(k, str) or
                                  not isinstance(v, str)]
             if child_unicode_env:
-                raise TypeError('os.environ must contain only str: %r'
-                                % child_unicode_env)
+                raise TypeError('%s: child env contains unicode: %r'
+                                % (e, child_unicode_env))
         raise
 
     if data_in is not None:
