@@ -100,6 +100,9 @@ if PYTHON_VERSION < (2, 7, 3):
         import unittest2
         sys.modules['unittest'] = unittest2
 
+    dependency_links.append(
+        'git+https://github.com/jayvdb/unicodedata2@issue_2#egg=unicodedata2-7.0.0')
+
 if sys.version_info[0] == 2:
     if PY26:
         # requests security extra includes pyOpenSSL. cryptography is the
@@ -109,8 +112,6 @@ if sys.version_info[0] == 2:
 
         script_deps['replicate_wiki.py'] = ['argparse']
         dependencies.append('future>=0.15.0')  # provides collections backports
-        dependency_links.append(
-            'git+https://github.com/jayvdb/unicodedata2@issue_2#egg=unicodedata2-7.0.0')
 
         dependencies += extra_deps['unicode7']  # T102461 workaround
 
