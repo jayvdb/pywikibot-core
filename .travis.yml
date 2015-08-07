@@ -104,6 +104,8 @@ matrix:
       env: LANGUAGE=en FAMILY=musicbrainz SITE_ONLY=1
     - python: '3.4'
       env: LANGUAGE=test FAMILY=wikidata SITE_ONLY=1
+    - python: '2.7.8'
+      env: LANGUAGE=test FAMILY=test SITE_ONLY=1
     - python: '3.4'
       env: LANGUAGE=ar FAMILY=wiktionary PYWIKIBOT2_TEST_NO_RC=1
     - python: '2.6'
