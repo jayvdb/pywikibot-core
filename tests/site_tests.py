@@ -33,7 +33,7 @@ from tests.aspects import (
     DefaultWikidataClientTestCase,
     AlteredDefaultSiteTestCase,
 )
-from tests.utils import allowed_failure, allowed_failure_if
+from tests.utils import allowed_failure, allowed_failure_if, entered_loop
 from tests.basepage_tests import BasePageLoadRevisionsCachingTestBase
 
 if sys.version_info[0] > 2:
@@ -1765,7 +1765,7 @@ class TestSiteAPILimits(TestCase):
         self.assertEqual(len(mypage._revisions), 12)
 
 
-class TestSiteInfo(WikimediaDefaultSiteTestCase):
+class TestSiteInfo(DefaultSiteTestCase):
 
     """Test cases for Site metadata and capabilities."""
 
@@ -1780,28 +1780,32 @@ class TestSiteInfo(WikimediaDefaultSiteTestCase):
         self.assertTrue(-12 * 60 <= mysite.siteinfo['timeoffset'] <= +14 * 60)
         self.assertEqual(mysite.siteinfo['timeoffset'] % 15, 0)
         self.assertRegex(mysite.siteinfo['timezone'], "([A-Z]{3,4}|[A-Z][a-z]+/[A-Z][a-z]+)")
-        self.assertIsInstance(
-            datetime.strptime(mysite.siteinfo['time'], '%Y-%m-%dT%H:%M:%SZ'),
-            datetime)
+        self.assertIsInstance(datetime.strptime(mysite.siteinfo['time'], "%Y-%m-%dT%H:%M:%SZ"), datetime)
         self.assertGreater(mysite.siteinfo['maxuploadsize'], 0)
         self.assertIn(mysite.siteinfo['case'], ["first-letter", "case-sensitive"])
         self.assertEqual(mysite.case(), mysite.siteinfo['case'])
         self.assertEqual(re.findall("\$1", mysite.siteinfo['articlepath']), ["$1"])
 
-        def entered_loop(iterable):
-            for iterable_item in iterable:
-                return True
-            return False
-
+        self.assertIsInstance(mysite.siteinfo.get('fileextensions'), list)
+        self.assertIn('fileextensions', mysite.siteinfo)
+        self.assertIn({'ext': 'png'}, mysite.siteinfo['fileextensions'])
         self.assertIsInstance(mysite.siteinfo.get('restrictions'), dict)
         self.assertIn('restrictions', mysite.siteinfo)
+
+    def test_v1_23_restrictions(self):
+        server_version = MediaWikiVersion(self.site.version())
+        if server_version < MediaWikiVersion('1.23'):
+            raise unittest.SkipTest('v1.23+ test')
+        mysite = self.site
         # the following line only works in 1.23+
         self.assertTrue(mysite.siteinfo.is_recognised('restrictions'))
         del mysite.siteinfo._cache['restrictions']
         self.assertIsInstance(mysite.siteinfo.get('restrictions', cache=False), dict)
         self.assertNotIn('restrictions', mysite.siteinfo)
 
+    def test_not_exists(self):
         not_exists = 'this-property-does-not-exist'
+        mysite = self.site
         self.assertRaises(KeyError, mysite.siteinfo.__getitem__, not_exists)
         self.assertNotIn(not_exists, mysite.siteinfo)
         self.assertEqual(len(mysite.siteinfo.get(not_exists)), 0)
