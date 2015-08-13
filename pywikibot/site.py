@@ -1637,6 +1637,7 @@ class APISite(BaseSite):
         BaseSite.__init__(self, code, fam, user, sysop)
         self._msgcache = {}
         self._loginstatus = LoginStatus.NOT_ATTEMPTED
+        self._login_count = 0
         self._siteinfo = Siteinfo(self)
         self._paraminfo = api.ParamInfo(self)
         self.tokens = TokenWallet(self)
@@ -1791,6 +1792,11 @@ class APISite(BaseSite):
 
     def login(self, sysop=False):
         """Log the user in if not already logged in."""
+        self._login_count += 1
+        pywikibot.debug('%s: login(%r): count %d; status %d'
+                        % (self, sysop, self._login_count, self._loginstatus),
+                        _logger)
+
         # TODO: this should include an assert that loginstatus
         #       is not already IN_PROGRESS, however the
         #       login status may be left 'IN_PROGRESS' because
