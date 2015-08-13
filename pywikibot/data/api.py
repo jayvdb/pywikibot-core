@@ -1996,12 +1996,7 @@ class Request(MutableMapping):
                     (status >= 0 and
                         self.site._userinfo['name'] != self.site._username[status])):
                     # user is no longer logged in (session expired?)
-                    # reset userinfo, then make user log in again
-                    del self.site._userinfo
-                    self.site._loginstatus = -1
-                    if status < 0:
-                        status = 0  # default to non-sysop login
-                    self.site.login(status)
+                    self.site.login(sysop=self.site._loginstatus == 2, force=True)
                     # retry the previous query
                     continue
             self._handle_warnings(result)
@@ -2013,6 +2008,7 @@ class Request(MutableMapping):
                 result['error']['help'] = result['error'].pop("*")
             code = result['error'].setdefault('code', 'Unknown')
             info = result['error'].setdefault('info', None)
+
             if code == "maxlag":
                 lag = lagpattern.search(info)
                 if lag:
@@ -2026,6 +2022,14 @@ class Request(MutableMapping):
                 # data instead of raising an exception.
                 return {'help': {'mime': 'text/plain',
                                  'help': result['error']['help']}}
+
+            pywikibot.warning('API error %s: %s' % (code, info))
+
+            # The user session may have been terminated
+            if (code == 'assertuserfailed' or
+                    (code == 'mustbeposted' and self.action == 'purge')):
+                self.site.login(sysop=self.site._loginstatus == 2, force=True)
+                continue
 
             if code.startswith(u'internal_api_error_'):
                 class_name = code[len(u'internal_api_error_'):]
