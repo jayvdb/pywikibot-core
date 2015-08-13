@@ -1637,6 +1637,7 @@ class APISite(BaseSite):
         BaseSite.__init__(self, code, fam, user, sysop)
         self._msgcache = {}
         self._loginstatus = LoginStatus.NOT_ATTEMPTED
+        self._login_count = 0
         self._siteinfo = Siteinfo(self)
         self._paraminfo = api.ParamInfo(self)
         self.tokens = TokenWallet(self)
@@ -1789,8 +1790,20 @@ class APISite(BaseSite):
         """
         return self.logged_in(sysop) and self.user()
 
-    def login(self, sysop=False):
-        """Log the user in if not already logged in."""
+    def login(self, sysop=False, force=False):
+        """
+        Log the user in if not already logged in.
+
+        @param sysop: if True, log in as sysop user instead of the normal user
+        @type sysop: bool
+        @param force: ignore cached login status
+        @type force: bool
+        """
+        self._login_count += 1
+        pywikibot.debug('%s: login(%r): count %d; status %d'
+                        % (self, sysop, self._login_count, self._loginstatus),
+                        _logger)
+
         # TODO: this should include an assert that loginstatus
         #       is not already IN_PROGRESS, however the
         #       login status may be left 'IN_PROGRESS' because
@@ -1805,9 +1818,7 @@ class APISite(BaseSite):
             )
         # There are several ways that the site may already be
         # logged in, and we do not need to hit the server again.
-        # logged_in() is False if _userinfo exists, which means this
-        # will have no effect for the invocation from api.py
-        if self.logged_in(sysop):
+        if not force and self.logged_in(sysop):
             self._loginstatus = (LoginStatus.AS_SYSOP
                                  if sysop else LoginStatus.AS_USER)
             return
