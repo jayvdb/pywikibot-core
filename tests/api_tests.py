@@ -812,9 +812,8 @@ class TestCachedRequest(DefaultSiteTestCase):
         data3 = req3.submit()
         self.assertEqual(data1, data2)
         self.assertEqual(data2, data3)
-        self.assertIsNotNone(req2._cachetime)
-        self.assertIsNotNone(req3._cachetime)
-        self.assertEqual(req2._cachetime, req3._cachetime)
+        self.assertTrue(req2._raw_request.data.from_cache)
+        self.assertTrue(req3._raw_request.data.from_cache)
 
     def test_internals(self):
         mysite = self.get_site()
@@ -827,23 +826,17 @@ class TestCachedRequest(DefaultSiteTestCase):
                   }
         req = api.CachedRequest(datetime.timedelta(minutes=10),
                                 site=mysite, **params)
-        rv = req._load_cache()
-        self.assertFalse(rv)
-        self.assertIsNone(req._data)
-        self.assertIsNone(req._cachetime)
+        data1 = req.submit()
 
-        data = req.submit()
+        self.assertIsNotNone(data1)
+        self.assertFalse(req._raw_request.data.from_cache)
 
-        self.assertIsNotNone(req._data)
-        self.assertIsNone(req._cachetime)
+        data2 = req.submit()
 
-        rv = req._load_cache()
+        self.assertIsNotNone(data2)
+        self.assertTrue(req._raw_request.data.from_cache)
 
-        self.assertTrue(rv)
-        self.assertIsNotNone(req._data)
-        self.assertIsNotNone(req._cachetime)
-        self.assertGreater(req._cachetime, now)
-        self.assertEqual(req._data, data)
+        self.assertEqual(data1, data2)
 
 
 class TestLazyLoginBase(TestCase):

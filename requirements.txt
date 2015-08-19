@@ -20,6 +20,8 @@
 
 # mandatory; see README.conversion.txt
 requests
+cachecontrol
+lockfile
 
 # Dependency of pyOpenSSL. Use specific version to avoid expected
 # DeprecationWarning

@@ -10,6 +10,8 @@ user-*.py
 /data*
 logs*
 *apicache*
+webcache/
+tests/.webcache
 *pycache*
 /cache/*
 .idea

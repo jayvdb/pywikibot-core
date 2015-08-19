@@ -23,6 +23,7 @@ __version__ = '$Id$'
 __docformat__ = 'epytext'
 
 import atexit
+import os
 import sys
 
 from distutils.version import StrictVersion
@@ -30,6 +31,8 @@ from string import Formatter
 from warnings import warn
 
 import requests
+from cachecontrol import CacheControl
+from cachecontrol.caches import FileCache
 
 try:
     import requests_oauthlib
@@ -48,7 +51,7 @@ from pywikibot.exceptions import (
     FatalServerError, Server504Error, Server414Error
 )
 from pywikibot.comms import threadedhttp
-from pywikibot.tools import deprecate_arg, issue_deprecation_warning, PY2
+from pywikibot.tools import deprecated, deprecate_arg, PY2
 import pywikibot.version
 
 # The error message for failed SSL certificate verification
@@ -64,7 +67,11 @@ if (isinstance(pywikibot.config2.socket_timeout, tuple) and
                       'two.')
     pywikibot.config2.socket_timeout = min(pywikibot.config2.socket_timeout)
 
-session = requests.Session()
+requests_session = requests.Session()
+webcache_dir = os.path.join(pywikibot.config2.base_dir, 'webcache')
+cached_session = CacheControl(requests_session, cache=FileCache(webcache_dir))
+# The session variable here is what is used
+session = cached_session
 
 cookie_jar = cookielib.LWPCookieJar(
     config.datafilepath('pywikibot.lwp'))
@@ -197,6 +204,7 @@ def user_agent(site=None, format_string=None):
 
 
 @deprecate_arg('ssl', None)
+@deprecated('comms.http.fetch or data.api.Request')
 def request(site=None, uri=None, method='GET', body=None, headers=None,
             **kwargs):
     """
@@ -222,9 +230,6 @@ def request(site=None, uri=None, method='GET', body=None, headers=None,
     """
     assert(site or uri)
     if not site:
-        # +1 because of @deprecate_arg
-        issue_deprecation_warning(
-            'Invoking http.request without argument site', 'http.fetch()', 3)
         r = fetch(uri, method, body, headers, **kwargs)
         return r.content
 

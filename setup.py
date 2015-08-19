@@ -33,8 +33,6 @@ def python_is_supported():
 if not python_is_supported():
     raise RuntimeError(versions_required_message % sys.version)
 
-test_deps = []
-
 dependencies = ['requests']
 
 # the irc module has no Python 2.6 support since 10.0
@@ -52,6 +50,7 @@ extra_deps = {
     'rcstream': ['socketIO-client<0.6.1'],
     'security': ['requests[security]'],
     'mwoauth': ['mwoauth>=0.2.4'],
+    'cache': ['cachecontrol', 'lockfile'],
 }
 
 if PY2:
@@ -137,6 +136,9 @@ if sys.version_info[0] == 2:
 
     # mwlib is not available for py3
     script_deps['patrol'] = ['mwlib']
+
+
+test_deps = extra_deps['cache']
 
 # Some of the ui_tests depend on accessing the console window's menu
 # to set the console font and copy and paste, achieved using pywinauto

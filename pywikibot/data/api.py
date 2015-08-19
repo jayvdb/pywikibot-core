@@ -1408,7 +1408,7 @@ class Request(MutableMapping):
             parameters = {}
         self._params = {}
         if "action" not in parameters:
-            raise ValueError("'action' specification missing from Request.")
+            raise ValueError("'action' specification missing from Request parameters %r." % parameters)
         self.action = parameters['action']
         self.update(parameters)
         self._warning_handler = None
@@ -1463,6 +1463,8 @@ class Request(MutableMapping):
                 self.action == 'login' and config.use_SSL_onlogin)) and
                 self.site.family.name in config.available_ssl_project):
             self.site = EnableSSLSiteWrapper(self.site)
+
+        self._raw_request = None
 
     @classmethod
     def create_simple(cls, site, **kwargs):
@@ -1900,7 +1902,9 @@ class Request(MutableMapping):
             else:
                 pywikibot.log(
                     "Submitting unthrottled action '{0}'.".format(self.action))
-            uri = self.site.scriptpath() + "/api.php"
+
+            uri = self.site.base_url(self.site.scriptpath() + '/api.php')
+
             try:
                 if self.mime:
                     (headers, body) = Request._build_mime_request(
@@ -1917,9 +1921,14 @@ class Request(MutableMapping):
                     else:
                         body = paramstring
 
-                rawdata = http.request(
-                    site=self.site, uri=uri, method='GET' if use_get else 'POST',
-                    body=body, headers=headers)
+                headers['user-agent'] = http.user_agent(self.site)
+
+                self._raw_request = http.fetch(
+                    uri=uri, method='GET' if use_get else 'POST',
+                    body=body, headers=headers,
+                    disable_ssl_certificate_validation=self.site.ignore_certificate_error())
+
+                rawdata = self._raw_request.content
             except Server504Error:
                 pywikibot.log(u"Caught HTTP 504 error; retrying")
                 self.wait()
@@ -2141,130 +2150,12 @@ class CachedRequest(Request):
         if not isinstance(expiry, datetime.timedelta):
             expiry = datetime.timedelta(expiry)
         self.expiry = min(expiry, datetime.timedelta(config.API_config_expiry))
-        self._data = None
-        self._cachetime = None
+        self['maxage'] = int(expiry.total_seconds())
 
     @classmethod
     def create_simple(cls, site, **kwargs):
         """Unsupported as it requires at least two parameters."""
         raise NotImplementedError('CachedRequest cannot be created simply.')
-
-    @classmethod
-    def _get_cache_dir(cls):
-        """Return the base directory path for cache entries.
-
-        The directory will be created if it does not already exist.
-
-        @return: basestring
-        """
-        path = os.path.join(pywikibot.config2.base_dir, 'apicache')
-        cls._make_dir(path)
-        return path
-
-    @staticmethod
-    def _make_dir(dir):
-        """Create directory if it does not exist already.
-
-        The directory name (dir) is returned unmodified.
-
-        @param dir: directory path
-        @type dir: basestring
-
-        @return: basestring
-        """
-        try:
-            os.makedirs(dir)
-        except OSError:
-            # directory already exists
-            pass
-        return dir
-
-    def _uniquedescriptionstr(self):
-        """Return unique description for the cache entry.
-
-        If this is modified, please also update
-        scripts/maintenance/cache.py to support
-        the new key and all previous keys.
-
-        @rtype: unicode
-        """
-        login_status = self.site._loginstatus
-
-        if login_status > pywikibot.site.LoginStatus.NOT_LOGGED_IN and \
-                hasattr(self.site, '_userinfo') and \
-                'name' in self.site._userinfo:
-            # This uses the format of Page.__repr__, without performing
-            # config.console_encoding as done by Page.__repr__.
-            # The returned value cant be encoded to anything other than
-            # ascii otherwise it creates an exception when _create_file_name()
-            # tries to encode it as utf-8.
-            user_key = u'User(User:%s)' % self.site._userinfo['name']
-        else:
-            user_key = pywikibot.site.LoginStatus(
-                max(login_status, pywikibot.site.LoginStatus.NOT_LOGGED_IN))
-            user_key = repr(user_key)
-
-        request_key = repr(sorted(list(self._encoded_items().items())))
-        return repr(self.site) + user_key + request_key
-
-    def _create_file_name(self):
-        """
-        Return a unique ascii identifier for the cache entry.
-
-        @rtype: str (hexademical; i.e. characters 0-9 and a-f only)
-        """
-        return hashlib.sha256(
-            self._uniquedescriptionstr().encode('utf-8')
-        ).hexdigest()
-
-    def _cachefile_path(self):
-        return os.path.join(CachedRequest._get_cache_dir(),
-                            self._create_file_name())
-
-    def _expired(self, dt):
-        return dt + self.expiry < datetime.datetime.now()
-
-    def _load_cache(self):
-        """Load cache entry for request, if available.
-
-        @return: Whether the request was loaded from the cache
-        @rtype: bool
-        """
-        self._add_defaults()
-        try:
-            filename = self._cachefile_path()
-            with open(filename, 'rb') as f:
-                uniquedescr, self._data, self._cachetime = pickle.load(f)
-            assert(uniquedescr == self._uniquedescriptionstr())
-            if self._expired(self._cachetime):
-                self._data = None
-                return False
-            pywikibot.debug(u"%s: cache hit (%s) for API request: %s"
-                            % (self.__class__.__name__, filename, uniquedescr),
-                            _logger)
-            return True
-        except IOError as e:
-            # file not found
-            return False
-        except Exception as e:
-            pywikibot.output("Could not load cache: %r" % e)
-            return False
-
-    def _write_cache(self, data):
-        """Write data to self._cachefile_path()."""
-        data = [self._uniquedescriptionstr(), data, datetime.datetime.now()]
-        with open(self._cachefile_path(), 'wb') as f:
-            pickle.dump(data, f, protocol=config.pickle_protocol)
-
-    def submit(self):
-        """Submit cached request."""
-        cached_available = self._load_cache()
-        if not cached_available:
-            self._data = super(CachedRequest, self).submit()
-            self._write_cache(self._data)
-        else:
-            self._handle_warnings(self._data)
-        return self._data
 
 
 class APIGenerator(object):

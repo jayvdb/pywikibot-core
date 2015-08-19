@@ -39,6 +39,10 @@ import warnings
 
 from contextlib import contextmanager
 
+from cachecontrol import CacheControl
+from cachecontrol.caches import FileCache
+from cachecontrol.heuristics import ExpiresAfter
+
 import pywikibot
 
 import pywikibot.config2 as config
@@ -52,7 +56,7 @@ from pywikibot.data.api import Request as _original_Request
 
 import tests
 
-from tests import unittest, patch_request, unpatch_request
+from tests import unittest, _cache_dir
 from tests.utils import (
     add_metaclass, execute_pwb, DrySite, DryRequest,
     WarningSourceSkipContextManager,
@@ -367,7 +371,9 @@ class ForceCacheMixin(TestCaseBase):
 
     def setUp(self):
         """Set up test."""
-        patch_request()
+        http.session = CacheControl(http.requests_session,
+                                    cache=FileCache(_cache_dir,
+                                                    forever=True))
 
         super(ForceCacheMixin, self).setUp()
 
@@ -375,7 +381,7 @@ class ForceCacheMixin(TestCaseBase):
         """Tear down test."""
         super(ForceCacheMixin, self).tearDown()
 
-        unpatch_request()
+        http.session = http.cached_session
 
 
 class SiteNotPermitted(pywikibot.site.BaseSite):

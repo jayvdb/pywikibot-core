@@ -13,9 +13,6 @@ import os
 import sys
 import warnings
 
-__all__ = ('requests', '_cache_dir', 'TestRequest',
-           'patch_request', 'unpatch_request')
-
 # Verify that the unit tests have a base working environment:
 # - requests is mandatory
 # - future is needed as a fallback for python 2.6,
@@ -36,12 +33,9 @@ else:
 
 from pywikibot import config
 from pywikibot import i18n
-import pywikibot.data.api
-from pywikibot.data.api import Request as _original_Request
-from pywikibot.data.api import CachedRequest
 
 _tests_dir = os.path.split(__file__)[0]
-_cache_dir = os.path.join(_tests_dir, 'apicache')
+_cache_dir = os.path.join(_tests_dir, '.webcache')
 _data_dir = os.path.join(_tests_dir, 'data')
 _images_dir = os.path.join(_data_dir, 'images')
 
@@ -188,10 +182,6 @@ def load_tests(loader=unittest.loader.defaultTestLoader,
     return collector(loader)
 
 
-CachedRequest._get_cache_dir = classmethod(
-    lambda cls, *args: cls._make_dir(_cache_dir))
-
-
 # Travis-CI builds are set to retry twice, which aims to reduce the number
 # of 'red' builds caused by intermittant server problems, while also avoiding
 # the builds taking a long time due to retries.
@@ -207,72 +197,3 @@ cache_misses = 0
 cache_hits = 0
 
 warnings.filterwarnings("always")
-
-
-class TestRequest(CachedRequest):
-
-    """Add caching to every Request except logins."""
-
-    def __init__(self, *args, **kwargs):
-        """Constructor."""
-        super(TestRequest, self).__init__(0, *args, **kwargs)
-
-    @classmethod
-    def create_simple(cls, **kwargs):
-        """Circumvent CachedRequest implementation."""
-        site = kwargs.pop('site')
-        return cls(site=site, parameters=kwargs)
-
-    def _expired(self, dt):
-        """Never invalidate cached data."""
-        return False
-
-    def _load_cache(self):
-        """Return whether the cache can be used."""
-        if not super(TestRequest, self)._load_cache():
-            global cache_misses
-            cache_misses += 1
-            return False
-
-        # tokens need careful management in the cache
-        # and cant be aggressively cached.
-        # FIXME: remove once 'badtoken' is reliably handled in api.py
-        if 'intoken' in self._uniquedescriptionstr():
-            self._data = None
-            return False
-
-        if 'lgpassword' in self._uniquedescriptionstr():
-            self._data = None
-            return False
-
-        global cache_hits
-        cache_hits += 1
-
-        return True
-
-    def _write_cache(self, data):
-        """Write data except login details."""
-        if 'intoken' in self._uniquedescriptionstr():
-            return
-
-        if 'lgpassword' in self._uniquedescriptionstr():
-            return
-
-        return super(TestRequest, self)._write_cache(data)
-
-
-original_expired = None
-
-
-def patch_request():
-    """Patch Request classes with TestRequest."""
-    global original_expired
-    pywikibot.data.api.Request = TestRequest
-    original_expired = pywikibot.data.api.CachedRequest._expired
-    pywikibot.data.api.CachedRequest._expired = lambda *args, **kwargs: False
-
-
-def unpatch_request():
-    """Un-patch Request classes with TestRequest."""
-    pywikibot.data.api.Request = _original_Request
-    pywikibot.data.api.CachedRequest._expired = original_expired

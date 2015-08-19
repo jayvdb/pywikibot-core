@@ -31,8 +31,7 @@ import pywikibot
 from pywikibot import config
 from pywikibot.comms import threadedhttp
 from pywikibot.site import Namespace
-from pywikibot.data.api import CachedRequest
-from pywikibot.data.api import Request as _original_Request
+from pywikibot.data.api import Request
 from pywikibot.tools import PYTHON_VERSION
 
 from tests import _pwb_py
@@ -282,26 +281,9 @@ class DummySiteinfo():
         return False
 
 
-class DryRequest(CachedRequest):
+class DryRequest(Request):
 
     """Dummy class to use instead of L{pywikibot.data.api.Request}."""
-
-    def __init__(self, *args, **kwargs):
-        """Constructor."""
-        _original_Request.__init__(self, *args, **kwargs)
-
-    @classmethod
-    def create_simple(cls, **kwargs):
-        """Skip CachedRequest implementation."""
-        return _original_Request.create_simple(**kwargs)
-
-    def _expired(self, dt):
-        """Never invalidate cached data."""
-        return False
-
-    def _write_cache(self, data):
-        """Never write data."""
-        return
 
     def submit(self):
         """Prevented method."""
