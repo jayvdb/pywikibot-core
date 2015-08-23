@@ -105,6 +105,14 @@ class APIError(Error):
 
     def __str__(self):
         """Return a string representation."""
+        if self.other:
+            return '{0}: {1} [{2}]'.format(
+                self.code,
+                self.info,
+                '; '.join(
+                    '{0}:{1}'.format(key, val)
+                    for key, val in self.other.items()))
+
         return "%(code)s: %(info)s" % self.__dict__
 
 
@@ -2007,6 +2015,12 @@ class Request(MutableMapping):
             self._handle_warnings(result)
             if "error" not in result:
                 return result
+
+            error = result['error']
+            if 'requestid' in result:
+                error['requestid'] = result['requestid']
+            if 'servedby' in result:
+                error['servedby'] = result['servedby']
 
             if "*" in result["error"]:
                 # help text returned
