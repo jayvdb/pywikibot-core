@@ -30,6 +30,11 @@ setup.py
 
     python setup.py test
 
+::
+
+    python setup.py nosetests --tests tests
+
+
 Module unittest
 ~~~~~~~~~~~~~~~
 
@@ -69,6 +74,13 @@ pwb
 ::
 
     python pwb.py tests/site_tests.py -v
+
+env
+~~~
+
+::
+
+    PYWIKIBOT_TEST_MODULES=site python setup.py test
 
 
 Travis CI
