@@ -2008,6 +2008,11 @@ class Request(MutableMapping):
             if "error" not in result:
                 return result
 
+            if 'requestid' in result:
+                result['error']['requestid'] = result['requestid']
+            if 'servedby' in result:
+                result['error']['servedby'] = result['servedby']
+
             if "*" in result["error"]:
                 # help text returned
                 result['error']['help'] = result['error'].pop("*")
