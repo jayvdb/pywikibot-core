@@ -21,7 +21,7 @@ Running tests
 All tests
 ---------
 
-The entire suite of tests may be run in three ways from the root directory:
+The entire suite of tests may be run in the following ways from the root directory:
 
 setup.py
 ~~~~~~~~
@@ -48,6 +48,13 @@ nose
 ::
 
     nosetests -v
+
+tox
+~~~
+
+::
+
+    tox
 
 Specific tests
 --------------
@@ -144,10 +151,26 @@ configuration in .appveyor.yml .  To do this:
 3. create a project in ci.appveyor.com
 4. go to https://ci.appveyor.com/project/<username>/pywikibot-core/settings
    and enter the custom configuration .yml filename: .appveyor.yml
-4. push changes into the forked git repository
-5. watch the build at https://ci.appveyor.com/<username>/pywikibot-core/history
+5. push changes into the forked git repository
+6. watch the build at https://ci.appveyor.com/<username>/pywikibot-core/history
 
 The 'user' tests are not yet enabled on appveyor builds.
+
+CircleCI
+========
+
+After changes are published into a github repository, tests may be run on
+CircleCI Ubuntu servers.
+
+1. create a github and circleci account
+2. fork the main github repository
+3. create a project in circleci.com
+4. go to https://circleci.com/gh/<username>/pywikibot-core/edit#env-vars
+   and add TOXENV=py27,py34 to workaround CircleCI bug in py26
+5. push changes into the forked git repository
+6. watch the build at https://circleci.com/gh/<username>/pywikibot-core
+
+This approach does not include 'user' tests.
 
 Environment variables
 =====================
