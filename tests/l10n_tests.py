@@ -22,6 +22,10 @@ PACKAGES = (
     'archivebot-archiveheader',  # archive header template
 )
 
+if not i18n.messages_available():
+    raise unittest.SkipTest("i18n messages package '%s' not available."
+                            % i18n._messages_package_name)
+
 
 class TestValidTemplateMeta(MetaTestCaseClass):
 
@@ -56,10 +60,6 @@ class TestValidTemplateMeta(MetaTestCaseClass):
             return test_template
 
         # create test methods for package messages processed by unittest
-        if not i18n.messages_available():
-            raise unittest.SkipTest("i18n messages package '%s' not available."
-                                    % i18n._messages_package_name)
-
         site = pywikibot.Site(dct['code'], dct['family'])
         codes = site.family.languages_by_size
         del site
