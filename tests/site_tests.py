@@ -1559,9 +1559,9 @@ class TestSiteSysopWrite(TestCase):
         self.assertTrue(len(revs) > 2)
 
 
-class SiteUserTestCase2(DefaultSiteTestCase):
+class SiteUsersTestCaseAsUser(DefaultSiteTestCase):
 
-    """More tests that rely on a user account."""
+    """Test the site.users() method with logged in user."""
 
     user = True
 
@@ -1576,6 +1576,14 @@ class SiteUserTestCase2(DefaultSiteTestCase):
             self.assertIsInstance(user, dict)
             self.assertTrue(user["name"]
                             in ["Jimbo Wales", "Brion VIBBER", "Tim Starling"])
+
+
+class SitePatrolTestCase(DefaultSiteTestCase):
+
+    """Test patrol() action."""
+
+    user = True
+    write = True
 
     def testPatrol(self):
         """Test the site.patrol() method."""

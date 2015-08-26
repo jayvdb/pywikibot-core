@@ -542,7 +542,6 @@ class SiteWriteMixin(TestCaseBase):
         super(SiteWriteMixin, cls).setUpClass()
 
         site = cls.get_site()
-        assert 'test' in (site.family.name, site.code)
 
         if cls.write == -1:
             env_var = 'PYWIKIBOT2_TEST_WRITE_FAIL'
@@ -558,8 +557,10 @@ class SiteWriteMixin(TestCaseBase):
         if issubclass(cls, ForceCacheMixin):
             raise Exception(
                 '%s can not be a subclass of both '
-                'SiteEditTestCase and ForceCacheMixin'
+                'SiteWriteMixin and ForceCacheMixin'
                 % cls.__name__)
+
+        assert 'test' in (site.family.name, site.code)
 
 
 class RequireUserMixin(TestCaseBase):
