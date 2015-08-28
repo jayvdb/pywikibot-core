@@ -117,10 +117,10 @@ class HttpRequest(UnicodeMixin):
     def header_encoding(self):
         """Return charset given by the response header."""
         if not hasattr(self, '_header_encoding'):
-            pos = self.response_headers['content-type'].find('charset=')
+            pos = self.response_headers['Content-Type'].find('charset=')
             if pos >= 0:
                 pos += len('charset=')
-                encoding = self.response_headers['content-type'][pos:]
+                encoding = self.response_headers['Content-Type'][pos:]
                 self._header_encoding = encoding
             else:
                 self._header_encoding = None
