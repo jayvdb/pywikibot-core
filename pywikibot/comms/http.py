@@ -295,8 +295,7 @@ def _http_process(session, http_request):
         # HTTPS request can succeed even if the certificate is invalid and
         # verify=True, when a request with verify=False happened before
         response = session.request(method, uri, data=body, headers=headers,
-                                   auth=auth, timeout=timeout,
-                                   verify=not ignore_validation)
+                                   auth=auth, timeout=timeout)
     except Exception as e:
         http_request.data = e
     else:
