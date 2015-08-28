@@ -41,7 +41,8 @@ if sys.version_info[0] > 2:
     from urllib.parse import quote, urlparse
 else:
     import cookielib
-    from urllib2 import quote, urlparse
+    from urllib2 import quote
+    from urlparse import urlparse
 
 from pywikibot import config
 from pywikibot.exceptions import (
