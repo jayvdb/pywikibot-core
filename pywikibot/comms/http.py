@@ -38,10 +38,10 @@ except ImportError as e:
 
 if sys.version_info[0] > 2:
     from http import cookiejar as cookielib
-    from urllib.parse import quote
+    from urllib.parse import quote, urlparse
 else:
     import cookielib
-    from urllib2 import quote
+    from urllib2 import quote, urlparse
 
 from pywikibot import config
 from pywikibot.exceptions import (
@@ -79,7 +79,8 @@ session.cookies = cookie_jar
 
 # Prepare flush on quit
 def _flush():
-    session.close()
+    if hasattr(session, 'close'):
+        session.close()
     message = 'Closing network session.'
     if hasattr(sys, 'last_type'):
         # we quit because of an exception
@@ -255,7 +256,7 @@ def get_authentication(uri):
     @return: authentication token
     @rtype: None or tuple of two str
     """
-    parsed_uri = requests.utils.urlparse(uri)
+    parsed_uri = urlparse(uri)
     netloc_parts = parsed_uri.netloc.split('.')
     netlocs = [parsed_uri.netloc] + ['.'.join(['*'] + netloc_parts[i + 1:])
                                      for i in range(len(netloc_parts))]
