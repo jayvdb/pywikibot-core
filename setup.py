@@ -132,6 +132,7 @@ if sys.version_info[0] == 2:
         # <https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning>
         # for more details.
         # dependencies += extra_deps['security']
+        pass
 
     script_deps['data_ingestion.py'] = extra_deps['csv']
 
