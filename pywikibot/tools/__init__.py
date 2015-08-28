@@ -138,11 +138,11 @@ class ComparableMixin(object):
 
     def __lt__(self, other):
         """Compare if other is less than self."""
-        return other >= self._cmpkey()
+        return other > self._cmpkey()
 
     def __le__(self, other):
         """Compare if other is less equals self."""
-        return other > self._cmpkey()
+        return other >= self._cmpkey()
 
     def __eq__(self, other):
         """Compare if other is equal to self."""
@@ -150,11 +150,11 @@ class ComparableMixin(object):
 
     def __ge__(self, other):
         """Compare if other is greater equals self."""
-        return other < self._cmpkey()
+        return other <= self._cmpkey()
 
     def __gt__(self, other):
         """Compare if other is greater than self."""
-        return other <= self._cmpkey()
+        return other < self._cmpkey()
 
     def __ne__(self, other):
         """Compare if other is not equal to self."""
