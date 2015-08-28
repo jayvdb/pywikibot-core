@@ -44,6 +44,15 @@ else:
     from urllib2 import quote
     from urlparse import urlparse
 
+try:
+    from requests.exceptions import SSLError
+except ImportError:
+
+    class SSLError():
+    
+        pass
+
+
 from pywikibot import config
 from pywikibot.exceptions import (
     FatalServerError, Server504Error, Server414Error
@@ -314,7 +323,7 @@ def error_handling_callback(request):
     @type request: L{threadedhttp.HttpRequest}
     """
     # TODO: do some error correcting stuff
-    if isinstance(request.data, requests.exceptions.SSLError):
+    if isinstance(request.data, SSLError):
         if SSL_CERT_VERIFY_FAILED_MSG in str(request.data):
             raise FatalServerError(str(request.data))
 
