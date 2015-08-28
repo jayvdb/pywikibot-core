@@ -75,7 +75,7 @@ else:
     pywikibot.debug(u"Loaded cookies from file.", _logger)
 
 session = requests.Session()
-session.cookies = cookie_jar
+session.cookies = requests.utils.dict_from_cookiejar(cookie_jar)
 
 
 # Prepare flush on quit
@@ -272,6 +272,8 @@ def get_authentication(uri):
 
 
 def _http_process(session, http_request):
+    global cookie_jar
+
     method = http_request.method
     uri = http_request.uri
     body = http_request.body
@@ -296,6 +298,8 @@ def _http_process(session, http_request):
         # verify=True, when a request with verify=False happened before
         response = session.request(method, uri, data=body, headers=headers,
                                    auth=auth, timeout=timeout)
+
+        cookie_jar = requests.utils.cookiejar_from_dict(session.cookies)
     except Exception as e:
         http_request.data = e
     else:
