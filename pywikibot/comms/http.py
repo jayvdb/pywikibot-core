@@ -308,8 +308,16 @@ def _http_process(session, http_request):
         # Note that the connections are pooled which mean that a future
         # HTTPS request can succeed even if the certificate is invalid and
         # verify=True, when a request with verify=False happened before
+        kwargs = {
+            'auth': auth,
+            'timeout': timeout,
+            'verify': not ignore_validation,
+        }
+        if not hasattr(session, 'verify'):
+            del kwargs['verify']
+
         response = session.request(method, uri, data=body, headers=headers,
-                                   auth=auth, timeout=timeout)
+                                   **kwargs)
 
         if isinstance(session.cookies, dict):
             cookie_jar = requests.utils.cookiejar_from_dict(session.cookies)
