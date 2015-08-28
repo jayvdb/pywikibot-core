@@ -131,7 +131,7 @@ if sys.version_info[0] == 2:
         # them up and the warnings will stop. See
         # <https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning>
         # for more details.
-        dependencies += extra_deps['security']
+        # dependencies += extra_deps['security']
 
     script_deps['data_ingestion.py'] = extra_deps['csv']
 
