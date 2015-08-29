@@ -1654,9 +1654,10 @@ class APISite(BaseSite):
         self.tokens = TokenWallet(self)
 
     @classmethod
-    def fromDBName(cls, dbname):
+    def fromDBName(cls, dbname, site=None):
         # TODO this only works for some WMF sites
-        site = pywikibot.Site('meta', 'meta')
+        if not site:
+            site = pywikibot.Site('meta', 'meta')
         req = site._request(expiry=datetime.timedelta(days=10),
                             parameters={'action': 'sitematrix'})
         data = req.submit()

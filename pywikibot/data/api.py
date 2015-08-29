@@ -1687,7 +1687,9 @@ class Request(MutableMapping):
                     'rawcontinue' not in self._params and
                     MediaWikiVersion(self.site.version()) >= MediaWikiVersion('1.25wmf5')):
                 self._params['rawcontinue'] = ['']
-        if "maxlag" not in self._params and config.maxlag:
+        else:
+            meta = None
+        if 'maxlag' not in self._params and config.maxlag and not meta:
             self._params["maxlag"] = [str(config.maxlag)]
         if "format" not in self._params:
             self._params["format"] = ["json"]
