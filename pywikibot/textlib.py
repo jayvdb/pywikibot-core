@@ -1247,7 +1247,7 @@ def compileLinkR(withoutBracketed=False, onlyBracketed=False):
 # Functions dealing with templates
 # --------------------------------
 
-def extract_templates_and_params(text, remove_disabled_parts=None):
+def extract_templates_and_params(text, remove_disabled_parts=None, strip=None):
     """Return a list of templates found in text.
 
     Return value is a list of tuples. There is one tuple for each use of a
@@ -1286,6 +1286,7 @@ def extract_templates_and_params(text, remove_disabled_parts=None):
     if use_mwparserfromhell:
         if remove_disabled_parts is None:
             remove_disabled_parts = False
+        assert strip is not True
 
     if remove_disabled_parts:
         text = removeDisabledParts(text)
@@ -1293,7 +1294,7 @@ def extract_templates_and_params(text, remove_disabled_parts=None):
     if use_mwparserfromhell:
         return extract_templates_and_params_mwpfh(text)
     else:
-        return extract_templates_and_params_regex(text, False)
+        return extract_templates_and_params_regex(text, False, strip)
 
 
 def extract_templates_and_params_mwpfh(text):
@@ -1322,7 +1323,8 @@ def extract_templates_and_params_mwpfh(text):
     return result
 
 
-def extract_templates_and_params_regex(text, remove_disabled_parts=True):
+def extract_templates_and_params_regex(text, remove_disabled_parts=True,
+                                       strip=True):
     """
     Extract templates with params using a regex with additional processing.
 
@@ -1466,10 +1468,12 @@ def extract_templates_and_params_regex(text, remove_disabled_parts=True):
                 for param in markedParams:
                     if "=" in param:
                         param_name, param_val = param.split("=", 1)
+                        implicit_parameter = False
                     else:
                         param_name = unicode(numbered_param)
                         param_val = param
                         numbered_param += 1
+                        implicit_parameter = True
                     count = len(inside)
                     for m2 in Rmarker1.finditer(param_val):
                         param_val = param_val.replace(m2.group(),
@@ -1483,7 +1487,11 @@ def extract_templates_and_params_regex(text, remove_disabled_parts=True):
                     for m2 in Rmarker4.finditer(param_val):
                         param_val = param_val.replace(m2.group(),
                                                       values[int(m2.group(1))])
-                    params[param_name.strip()] = param_val.strip()
+                    if strip:
+                        param_name = param_name.strip()
+                        if not implicit_parameter:
+                            param_val = param_val.strip()
+                    params[param_name] = param_val
 
             # Special case for {{a|}} which has an undetected parameter
             if not params and '|' in m.group(0):
