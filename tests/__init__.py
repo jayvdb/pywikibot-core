@@ -133,9 +133,6 @@ disabled_tests = {
     'textlib': [
         'test_interwiki_format',  # example; very slow test
     ],
-    'site_detect': [
-        'test_IWM',  # very slow and tests include unnecessary sites
-    ],
 }
 
 
