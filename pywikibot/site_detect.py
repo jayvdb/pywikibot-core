@@ -15,15 +15,18 @@ import re
 
 from distutils.version import LooseVersion as V
 
+import pywikibot
+
 from pywikibot.comms.http import fetch
+from pywikibot.exceptions import ServerError
 from pywikibot.tools import PY2, PYTHON_VERSION
 
 if not PY2:
     from html.parser import HTMLParser
-    from urllib.parse import urljoin
+    from urllib.parse import urljoin, urlparse
 else:
     from HTMLParser import HTMLParser
-    from urlparse import urljoin
+    from urlparse import urljoin, urlparse
 
 
 class MWSite(object):
@@ -41,19 +44,37 @@ class MWSite(object):
         self.fromurl = fromurl
         if fromurl.endswith("$1"):
             fromurl = fromurl[:-2]
-        data = fetch(fromurl).content
+        r = fetch(fromurl)
+        if r.status == 503:
+            raise ServerError('Service Unavailable')
 
-        wp = WikiHTMLPageParser()
+        if fromurl != r.data.url:
+            print('{0} redirected to {1}'.format(fromurl, r.data.url))
+            fromurl = r.data.url
+
+        self.server = None
+
+        data = r.content
+
+        wp = WikiHTMLPageParser(fromurl)
         wp.feed(data)
-        try:
-            self.version = wp.generator.replace("MediaWiki ", "")
-        except Exception:
-            self.version = "0.0"
 
-        if V(self.version) < V("1.17.0"):
+        self.version = wp.version
+
+        if wp.api_url:
+            api_url = urlparse(wp.api_url)
+            self.server = '{0}://{1}'.format(api_url.scheme, api_url.netloc)
+            self.scriptpath = api_url.path
+            try:
+                self._parse_post_117()
+            except Exception as e:
+                pywikibot.warning('MW 1.17+ detection failed: {0!r}'.format(e))
+
+        if not self.server or not self.version:
             self._parse_pre_117(data)
-        else:
-            self._parse_post_117(wp, fromurl)
+
+        if not self.version or V(self.version) < V('1.14'):
+            raise Exception('Unsupported version: %r' % self.version)
 
     @property
     def langs(self):
@@ -93,12 +114,11 @@ class MWSite(object):
             except Exception:
                 pass
 
-    def _parse_post_117(self, wp, fromurl):
-        apipath = wp.edituri.split("?")[0]
-        fullurl = urljoin(fromurl, apipath)
-        response = fetch(fullurl + '?action=query&meta=siteinfo&format=json')
+    def _parse_post_117(self):
+        response = fetch(self.api + '?action=query&meta=siteinfo&format=json')
         info = json.loads(response.content)['query']['general']
-        self.server = urljoin(fromurl, info['server'])
+        self.server = urljoin(self.fromurl, info['server'])
+        self.version = info['generator']
         for item in ['scriptpath', 'articlepath', 'lang']:
             setattr(self, item, info[item])
 
@@ -122,18 +142,65 @@ class WikiHTMLPageParser(HTMLParser):
 
     """Wiki HTML page parser."""
 
-    def __init__(self):
+    def __init__(self, url):
         if PYTHON_VERSION < (3, 4):
             HTMLParser.__init__(self)
         else:
             super().__init__(convert_charrefs=True)
+        self.url = urlparse(url)
         self.generator = None
+        self.version = None
+        self.api_url = None
+
+    def set_version(self, value):
+        if self.version:
+            if V(value) < V(self.version):
+                return
+
+        self.version = value
+
+    def set_api_url(self, value):
+        parsed_url = urlparse(value)
+        if not parsed_url.scheme or not parsed_url.netloc:
+            value = '{0}://{1}{2}'.format(
+                parsed_url.scheme or self.url.scheme,
+                parsed_url.netloc or self.url.netloc,
+                parsed_url.path)
+
+        if self.api_url:
+            assert self.api_url == value, '{0} != {1}'.format(self.api_url, value)
+        else:
+            self.api_url = value
+
+        print('set_api_url', self.api_url)
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
         if tag == "meta":
             if attrs.get('name') == 'generator':
                 self.generator = attrs["content"]
-        if tag == "link":
-            if attrs.get('rel') == 'EditURI':
-                self.edituri = attrs["href"]
+                self.version = self.generator[10:]
+        elif tag == 'link':
+            relation = attrs.get('rel')
+            if relation == 'EditURI':
+                self.set_api_url(attrs['href'].split('?', 1)[0][:-8])
+            elif relation == 'stylesheet' and 'href' in attrs:
+                try:
+                    pos = attrs.get('href').index('/load.php')
+                except ValueError:
+                    pass
+                else:
+                    self.set_api_url(attrs['href'][:pos])
+                    self.set_version('1.17.0')
+            elif relation == 'search' and 'href' in attrs:
+                url = attrs['href']
+                if url.endswith('opensearch_desc.php'):
+                    self.set_api_url(url[:-20])
+        elif tag == 'script' and 'src' in attrs:
+            try:
+                pos = attrs['src'].index('/load.php')
+            except ValueError:
+                pass
+            else:
+                self.set_api_url(attrs['src'][:pos])
+                self.set_version('1.17.0')
