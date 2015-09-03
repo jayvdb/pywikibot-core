@@ -84,6 +84,7 @@ class FamilyFileGenerator(object):
             print(e, "; continuing...")
 
         if len([lang for lang in self.langs if lang['url'] == w.iwpath]) == 0:
+            print('Interwiki matrix doesnt include %s; manually adding' % w.iwpath)
             self.langs.append({u'language': w.lang,
                                u'local': u'',
                                u'prefix': w.lang,

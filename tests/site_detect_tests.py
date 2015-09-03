@@ -140,6 +140,7 @@ class InterWikiMapDetection(TestWikiSiteDetection):
                     else:
                         try:
                             self.assertIsInstance(version, MediaWikiVersion)
+                            self.assertIsNotNone(site.articlepath)
                             self.passes[url] = site
                         except AssertionError as error:
                             print('failed to parse version of ' + url)
