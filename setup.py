@@ -60,6 +60,7 @@ if PY2:
         'csv': ['unicodecsv'],
         'MySQL': ['oursql'],
         'unicode7': ['unicodedata2>=7.0.0-2'],
+        'enum': ['enum34'],
     })
 
 script_deps = {
