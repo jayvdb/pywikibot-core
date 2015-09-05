@@ -102,6 +102,9 @@ if PYTHON_VERSION < (2, 7, 3):
         import unittest2
         sys.modules['unittest'] = unittest2
 
+if PYTHON_VERSION < (3, 4):
+    dependencies.append('enum34')
+
 if sys.version_info[0] == 2:
     if PY26:
         # requests security extra includes pyOpenSSL. cryptography is the

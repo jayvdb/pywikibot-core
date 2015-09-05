@@ -32,6 +32,8 @@ pyasn1 ; python_full_version < '2.7.9'
 
 future>=0.15.0 ; python_version < '2.7'
 
+enum34 ; python_version < '3.4'
+
 ipaddr>=2.1.10 ; python_version < '3'
 
 unicodedata2>=7.0.0-2 ; python_version < '3'

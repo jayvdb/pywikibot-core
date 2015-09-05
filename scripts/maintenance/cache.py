@@ -41,7 +41,7 @@ print("%s" % entry._uniquedescriptionstr())
     newer_than(entry, interval)
 """
 #
-# (C) Pywikibot team, 2014
+# (C) Pywikibot team, 2014-2015
 #
 # Distributed under the terms of the MIT license.
 #
@@ -53,11 +53,13 @@ import os
 import datetime
 import pickle
 import hashlib
-import pywikibot
-from pywikibot.data import api
 
-from pywikibot.site import APISite, DataSite, LoginStatus  # noqa
-from pywikibot.page import User  # noqa
+import pywikibot
+
+from pywikibot.enums import LoginStatus  # noqa: unused
+from pywikibot.data import api
+from pywikibot.site import APISite, DataSite  # noqa: unused
+from pywikibot.page import User  # noqa: unused
 
 
 class ParseError(Exception):
@@ -120,6 +122,7 @@ class CacheEntry(api.CachedRequest):
         login_status = None
 
         start = end + 1
+
         if self.key[start:start + 5] == 'User(':
             # The addition of user to the cache key used:
             #   repr(User)
@@ -131,26 +134,31 @@ class CacheEntry(api.CachedRequest):
             else:
                 start += 5
 
-            end = self.key.index(')', start + 5)
+            end = self.key.index(')', start)
             if not end:
                 raise ParseError('End of User() keyword not found: %s'
                                  % self.key)
             username = self.key[start:end]
-        elif self.key[start:start + 12] == 'LoginStatus(':
-            end = self.key.index(')', start + 12)
-            if not end:
-                raise ParseError('End of LoginStatus() keyword not found: %s'
-                                 % self.key)
-            login_status = self.key[start:end + 1]
-        # If the key does not contain User(..) or LoginStatus(..),
-        # it must be the old key format which only contains Site and params
-        elif self.key[start:start + 3] != "[('":
-            raise ParseError('Keyword after Site not recognised: %s...'
-                             % self.key)
+        else:
+            try:
+                (login_status, login_status_repr) = LoginStatus._parse_repr(
+                    self.key[start:])
+            except ValueError as e:
+                raise ParseError('Invalid LoginStatus: {0}'.format(e))
+            except RuntimeError:
+                # If the key does not contain User(..) or a LoginStatus,
+                # it must be the old key format which only contains Site
+                # before the params.
+                pass
+            else:
+                end = start + len(login_status_repr) - 1
 
         start = end + 1
 
         params = self.key[start:]
+
+        if not params.startswith('[(') and params.endswith(')]'):
+            raise ParseError('Params not recognised: {0}'.format(params))
 
         self._parsed_key = (site, username, login_status, params)
         return self._parsed_key
@@ -165,8 +173,7 @@ class CacheEntry(api.CachedRequest):
             raise ParseError('No Site')
         self.site = eval(site)
         if login_status:
-            self.site._loginstatus = eval('LoginStatus.%s'
-                                          % login_status[12:-1])
+            self.site._loginstatus = login_status
         if username:
             self.site._username = [username, username]
         if not params:
