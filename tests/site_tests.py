@@ -222,9 +222,10 @@ class TestSiteObject(DefaultSiteTestCase):
         self.assertEqual(mysite.sitename(),
                          "%s:%s" % (self.family,
                                     self.code))
-        self.assertEqual(repr(mysite),
-                         'Site("%s", "%s")'
-                         % (self.code, self.family))
+        self.assertTrue(
+            repr(mysite).endswith(
+                'Site("%s", "%s")'.format(
+                    self.code, self.family)))
         self.assertIsInstance(mysite.linktrail(), basestring)
         self.assertIsInstance(mysite.redirect(), basestring)
         try:
@@ -2693,6 +2694,7 @@ class TestObsoleteSite(TestCase):
     def test_removed_site(self):
         """Test Wikimedia offline site."""
         site = pywikibot.Site('ru-sib', 'wikipedia')
+        self.assertIsInstance(site, pywikibot.site.RemovedSite)
         self.assertEqual(site.code, 'ru-sib')
         self.assertIsInstance(site.obsolete, bool)
         self.assertTrue(site.obsolete)

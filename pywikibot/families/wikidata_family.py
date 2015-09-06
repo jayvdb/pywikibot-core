@@ -31,6 +31,10 @@ class Family(family.WikimediaFamily):
             '_default': ((u'/doc', ), ['wikidata']),
         }
 
+    def interface(self, code):
+        """Return 'DataSite'."""
+        return 'DataSite'
+
     def shared_data_repository(self, code, transcluded=False):
         """
         Indicate Wikidata is both a repository and its own client.
