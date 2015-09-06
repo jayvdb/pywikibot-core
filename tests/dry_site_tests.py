@@ -12,7 +12,7 @@ __version__ = '$Id$'
 
 import pywikibot
 from pywikibot.tools import deprecated
-from pywikibot.site import must_be, need_version
+from pywikibot.site import must_be, need_version, LoginStatus
 from pywikibot.comms.http import user_agent
 from pywikibot.exceptions import UnknownSite
 
@@ -33,6 +33,8 @@ class TestDrySite(DefaultDrySiteTestCase):
     def test_logged_in(self):
         """Test logged_in() method."""
         x = self.get_site()
+
+        x._loginstatus = LoginStatus.AS_USER
 
         x._userinfo = {'name': None, 'groups': []}
         x._username = ['normal_user', 'sysop_user']

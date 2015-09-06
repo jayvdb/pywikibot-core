@@ -1695,6 +1695,7 @@ class APISite(BaseSite):
         BaseSite.__init__(self, code, fam, user, sysop)
         self._msgcache = {}
         self._loginstatus = LoginStatus.NOT_ATTEMPTED
+        self._login_count = 0
         self._siteinfo = Siteinfo(self)
         self._paraminfo = api.ParamInfo(self)
         self.tokens = TokenWallet(self)
@@ -1830,6 +1831,9 @@ class APISite(BaseSite):
 
         @return: bool
         """
+        if self._loginstatus not in [LoginStatus.AS_USER, LoginStatus.AS_SYSOP]:
+            return False
+
         if not hasattr(self, "_userinfo"):
             return False
 
@@ -1868,7 +1872,18 @@ class APISite(BaseSite):
         return auth_token is not None and len(auth_token) == 4
 
     def login(self, sysop=False):
-        """Log the user in if not already logged in."""
+        """
+        Log the user in if not already logged in.
+
+        @param sysop: if True, log in as sysop user instead of the normal user
+        @type sysop: bool
+        """
+        self._login_count += 1
+        pywikibot.debug('%s: login(%r): count %d; status %d'
+                        % (self, sysop,
+                           self._login_count, self._loginstatus),
+                        _logger)
+
         # TODO: this should include an assert that loginstatus
         #       is not already IN_PROGRESS, however the
         #       login status may be left 'IN_PROGRESS' because
@@ -1947,6 +1962,7 @@ class APISite(BaseSite):
             pywikibot.warning('Using OAuth suppresses logout function')
         uirequest = self._simple_request(action='logout')
         uirequest.submit()
+        del self._userinfo
         self._loginstatus = LoginStatus.NOT_LOGGED_IN
         self.getuserinfo(force=True)
 
