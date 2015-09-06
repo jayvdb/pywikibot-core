@@ -49,6 +49,7 @@ from pywikibot.site import BaseSite
 from pywikibot.family import WikimediaFamily
 from pywikibot.comms import http
 from pywikibot.data.api import Request as _original_Request
+from pywikibot.tools import PY2
 
 import tests
 
@@ -57,6 +58,9 @@ from tests.utils import (
     add_metaclass, execute_pwb, DrySite, DryRequest,
     WarningSourceSkipContextManager,
 )
+
+if not PY2:
+    basestring = (str, )
 
 
 class TestCaseBase(unittest.TestCase):
@@ -102,6 +106,21 @@ class TestCaseBase(unittest.TestCase):
         print(' expected failure ', end='')
         sys.stdout.flush()
         result.addSuccess(self)
+
+    def assertMethod(self, method, *args):
+        """Generic method assertion."""
+        if not method(*args):
+            self.assertTrue(False, '{0!r} ({1!r}) fails'.format(method, args))
+
+    def assertStringMethod(self, method, *args):
+        """
+        Generic string method assertion.
+
+        All args must be already converted to a string.
+        """
+        for arg in args:
+            self.assertIsInstance(arg, basestring)
+        self.assertMethod(method, *args)
 
     def assertPageInNamespaces(self, page, namespaces):
         """
