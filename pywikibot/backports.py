@@ -58,7 +58,7 @@ Agreement.
 #
 # Distributed under the terms of the PSF license.
 #
-from __future__ import unicode_literals
+from __future__ import absolute_import, unicode_literals
 
 import logging
 import warnings

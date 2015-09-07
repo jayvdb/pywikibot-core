@@ -35,12 +35,10 @@ import pkgutil
 
 from collections import defaultdict
 
-from pywikibot import Error
-from .plural import plural_rules
-
 import pywikibot
 
-from . import config2 as config
+from pywikibot import Error, __url__, config
+from pywikibot.plural import plural_rules
 
 if sys.version_info[0] > 2:
     basestring = (str, )
@@ -478,8 +476,8 @@ def twtranslate(code, twtitle, parameters=None, fallback=True):
         raise TranslationError(
             'Unable to load messages package %s for bundle %s'
             '\nIt can happen due to lack of i18n submodule or files. '
-            'Read https://mediawiki.org/wiki/PWB/i18n'
-            % (_messages_package_name, twtitle))
+            'Read %s/i18n'
+            % (_messages_package_name, twtitle, __url__))
 
     code_needed = False
     # If a site is given instead of a code, use its language
