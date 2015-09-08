@@ -39,7 +39,7 @@ before_install:
     fi
 
 before_script:
-  - pip install -r dev-requirements.txt
+  - pip install -r dev-requirements.txt nose-randomly
 
 script:
   # Install security packages for requests to support HTTPS in site_detect
@@ -91,9 +91,9 @@ script:
       nosetests --version ;
       if [[ "$SITE_ONLY" == "1" ]]; then
         echo "Running site tests only code ${LANGUAGE} on family ${FAMILY}" ;
-        python setup.py nosetests --tests tests --verbosity=2 -a "family=$FAMILY,code=$LANGUAGE" ;
+        python setup.py nosetests --tests tests --verbosity=2 -a "family=$FAMILY,code=$LANGUAGE" --with-randomly;
       else
-        python setup.py nosetests --tests tests --verbosity=2 ;
+        python setup.py nosetests --tests tests --verbosity=2 --with-randomly ;
       fi ;
     else
       python setup.py test ;
