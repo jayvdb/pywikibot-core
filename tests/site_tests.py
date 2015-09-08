@@ -1829,7 +1829,7 @@ class TestDeprecatedEditTokenFunctions(TokenTestBase,
     user = True
     token_type = 'edit'
 
-    def test_token(self):
+    def test_atoken(self):
         """Test ability to get page tokens using site.tokens."""
         token = self.token
         mysite = self.get_site()
@@ -1839,7 +1839,7 @@ class TestDeprecatedEditTokenFunctions(TokenTestBase,
         self.assertOneDeprecationParts('pywikibot.site.APISite.token',
                                        "the 'tokens' property")
 
-    def test_getToken(self):
+    def test_bgetToken(self):
         """Test ability to get page tokens using site.getToken."""
         self.mysite = self.site
         self.assertEqual(self.mysite.getToken(), self.mysite.tokens['edit'])
