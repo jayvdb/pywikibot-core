@@ -134,7 +134,7 @@ matrix:
     - python: '3.4'
       env: LANGUAGE=test FAMILY=wikipedia SITE_ONLY=1 OAUTH_DOMAIN="test.wikipedia.org"
     - python: '3.4'
-      env: LANGUAGE=test FAMILY=wikidata SITE_ONLY=1
+      env: LANGUAGE=test FAMILY=wikidata
     - python: '3.4'
       env: LANGUAGE=ar FAMILY=wiktionary PYWIKIBOT2_TEST_NO_RC=1
     - python: '2.6'
