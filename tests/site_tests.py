@@ -49,6 +49,7 @@ class TokenTestBase(TestCaseBase):
 
     def setUp(self):
         """Skip test if user does not have token and clear site wallet."""
+        super(TokenTestBase, self).setUp()
         mysite = self.get_site()
         ttype = self.token_type
         try:
@@ -63,7 +64,6 @@ class TokenTestBase(TestCaseBase):
         self.token = token
         self._orig_wallet = self.site.tokens
         self.site.tokens = pywikibot.site.TokenWallet(self.site)
-        super(TokenTestBase, self).setUp()
 
     def tearDown(self):
         """Restore site tokens."""
@@ -1835,7 +1835,6 @@ class TestDeprecatedEditTokenFunctions(TokenTestBase,
         mysite = self.get_site()
         mainpage = self.get_mainpage()
         ttype = "edit"
-        print(repr(self.site), type(self.site), id(self.site), self.site.tokens._tokens)
         self.assertEqual(token, mysite.token(mainpage, ttype))
         self.assertOneDeprecationParts('pywikibot.site.APISite.token',
                                        "the 'tokens' property")
@@ -1843,7 +1842,6 @@ class TestDeprecatedEditTokenFunctions(TokenTestBase,
     def test_bgetToken(self):
         """Test ability to get page tokens using site.getToken."""
         self.mysite = self.site
-        print(repr(self.site), type(self.site), id(self.site), self.site.tokens._tokens)
         self.assertEqual(self.mysite.getToken(), self.mysite.tokens['edit'])
         self.assertOneDeprecationParts('pywikibot.site.APISite.getToken',
                                        "the 'tokens' property")
