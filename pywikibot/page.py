@@ -3287,12 +3287,13 @@ class WikibasePage(BasePage):
             if not identification:
                 raise pywikibot.NoPage(self)
 
-            data = self.repo.loadcontent(identification, *args)
-            item_index = list(data.keys())[0]
-            if lazy_loading_id or item_index != '-1':
-                self.id = item_index
+            data = self.repo.get_entity(identification, props=args)
+            if 'id' in data:
+                self.id = data['id']
+            elif lazy_loading_id:
+                self.id = '-1'
 
-            self._content = data[item_index]
+            self._content = data
         if 'lastrevid' in self._content:
             self.latest_revision_id = self._content['lastrevid']
         else:
