@@ -1856,6 +1856,10 @@ class APISite(BaseSite):
 
     def _request(self, **kwargs):
         """Create a request by forwarding all parameters directly."""
+        if 'expiry' in kwargs and kwargs['expiry'] is None:
+            kwargs = kwargs.copy()
+            del kwargs['expiry']
+
         return self._request_class(kwargs)(site=self, **kwargs)
 
     def _simple_request(self, **kwargs):
@@ -6349,7 +6353,7 @@ class DataSite(APISite):
             # not implemented yet
             raise NotImplementedError
 
-    def loadcontent(self, identification, *props):
+    def loadcontent(self, identification, _expiry=None, *props):
         """
         Fetch the current content of a Wikibase item.
 
@@ -6362,16 +6366,26 @@ class DataSite(APISite):
         @type identification: dict
         @param props: the optional properties to fetch.
         """
-        params = merge_unique_dicts(identification, action='wbgetentities',
+        # Backwards compatibility for pre _expiry
+        if _expiry and not isinstance(_expiry, datetime.datetime):
+            props = [_expiry] + [prop for prop in props]
+            _expiry = None
+
+        params = merge_unique_dicts(identification,
                                     # TODO: When props is empty it results in
                                     # an empty string ('&props=') but it should
                                     # result in a missing entry.
+                                    action='wbgetentities',
                                     props=props if props else False)
-        req = self._simple_request(**params)
+        req = self._request(expiry=_expiry, parameters=params)
         data = req.submit()
         if 'success' not in data:
             raise api.APIError(data['errors'])
-        return data['entities']
+        if isinstance(data['entities'], list):
+            qid = data['entities'][0]['title']
+            return {qid: data['entities'][0]}
+        else:
+            return data['entities']
 
     def preloaditempages(self, pagelist, groupsize=50):
         """Yield ItemPages with content prefilled.
@@ -6408,6 +6422,7 @@ class DataSite(APISite):
                 item._content = data['entities'][qid]
                 yield item
 
+    @deprecated('PropertyPage.type')
     def getPropertyType(self, prop):
         """
         Obtain the type of a property.
@@ -6415,24 +6430,22 @@ class DataSite(APISite):
         This is used specifically because we can cache
         the value for a much longer time (near infinite).
         """
-        params = dict(
-            action='wbgetentities',
-            ids=prop.getID(),
-            props='datatype',
-        )
         expiry = datetime.timedelta(days=365 * 100)
         # Store it for 100 years
-        req = self._request(expiry=expiry, parameters=params)
-        data = req.submit()
 
+        data = self.loadcontent(
+            {'ids': prop.getID()},
+            expiry,
+            'datatype'
+        )
         # the IDs returned from the API can be upper or lowercase, depending
         # on the version. See for more information:
         # https://bugzilla.wikimedia.org/show_bug.cgi?id=53894
         # https://lists.wikimedia.org/pipermail/wikidata-tech/2013-September/000296.html
         try:
-            dtype = data['entities'][prop.getID()]['datatype']
+            dtype = data[prop.getID()]['datatype']
         except KeyError:
-            dtype = data['entities'][prop.getID().lower()]['datatype']
+            dtype = data[prop.getID().lower()]['datatype']
 
         return dtype
 
