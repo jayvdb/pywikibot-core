@@ -2490,7 +2490,8 @@ class QueryGenerator(_RequestWrapper):
             self.continue_update = self._continue
             # Explicitly enable the simplified continuation
             parameters['continue'] = True
-        self.request = self.request_class(**kwargs)
+        del kwargs['site']
+        self.request = self.site._request(**kwargs)
 
         # This forces all paraminfo for all query modules to be bulk loaded.
         limited_modules = (
