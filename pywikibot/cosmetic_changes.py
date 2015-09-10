@@ -76,22 +76,10 @@ except ImportError:
 
 import pywikibot
 
-from pywikibot import config, textlib, pagegenerators
-from pywikibot.page import url2unicode
+from pywikibot import config, textlib
 from pywikibot.tools import deprecate_arg, first_lower, first_upper
 from pywikibot.tools import MediaWikiVersion
 
-
-warning = """
-ATTENTION: You can run this script as a stand-alone for testing purposes.
-However, the changes that are made are only minor, and other users
-might get angry if you fill the version histories and watchlists with such
-irrelevant changes. Some wikis prohibit stand-alone running."""
-
-docuReplacements = {
-    '&params;': pagegenerators.parameterHelp,
-    '&warning;': warning,
-}
 
 # This is from interwiki.py;
 # move it to family file and implement global instances
@@ -519,6 +507,7 @@ class CosmeticChangesToolkit:
                                              titleLength)
 
                     # Convert URL-encoded characters to unicode
+                    from pywikibot.page import url2unicode
                     titleWithSection = url2unicode(titleWithSection,
                                                    encodings=self.site)
 
@@ -621,7 +610,8 @@ class CosmeticChangesToolkit:
         ]
         if self.template:
             ignore += [58]
-        text = pywikibot.html2unicode(text, ignore=ignore)
+        from pywikibot.page import html2unicode
+        text = html2unicode(text, ignore=ignore)
         return text
 
     def removeUselessSpaces(self, text):

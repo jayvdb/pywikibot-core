@@ -48,6 +48,7 @@ import pywikibot
 
 from pywikibot import config
 from pywikibot.comms import http
+from pywikibot.cosmetic_changes import CosmeticChangesToolkit, CANCEL_MATCH
 from pywikibot.family import Family
 from pywikibot.site import Namespace
 from pywikibot.exceptions import (
@@ -1145,7 +1146,6 @@ class BasePage(UnicodeMixin, ComparableMixin):
             return
 
         # cc depends on page directly and via several other imports
-        from pywikibot.cosmetic_changes import CosmeticChangesToolkit  # noqa
         old = self.text
         pywikibot.log(u'Cosmetic changes for %s-%s enabled.'
                       % (family, self.site.lang))
@@ -1153,7 +1153,7 @@ class BasePage(UnicodeMixin, ComparableMixin):
                                            redirect=self.isRedirectPage(),
                                            namespace=self.namespace(),
                                            pageTitle=self.title(),
-                                           ignore=3)  # CANCEL_MATCH
+                                           ignore=CANCEL_MATCH)
         self.text = ccToolkit.change(old)
         if comment and \
            old.strip().replace('\r\n',
