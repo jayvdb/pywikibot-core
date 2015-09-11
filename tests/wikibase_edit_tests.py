@@ -1,7 +1,7 @@
 # -*- coding: utf-8  -*-
 """Tests for editing Wikibase items."""
 #
-# (C) Pywikibot team, 2014
+# (C) Pywikibot team, 2014-2015
 #
 # Distributed under the terms of the MIT license.
 #
@@ -11,7 +11,10 @@ __version__ = '$Id$'
 #
 
 import time
+
 import pywikibot
+
+from pywikibot.page import ItemPage
 
 from tests.aspects import unittest, WikibaseTestCase
 
@@ -154,8 +157,19 @@ class TestWikibaseWriteGeneral(WikibaseTestCase):
         self.assertEqual(item._defined_by(), dict())
         item.editEntity(data)
 
+
+class TestWikibaseWriteRedirect(WikibaseTestCase):
+
+    """Run general wikibase write tests."""
+
+    family = 'wikidata'
+    code = 'test'
+
+    user = True
+    write = True
+
     def test_set_redirect_target(self):
-        """Test set_redirect_target method."""
+        """Test set_redirect_target method on existing redirect."""
         testsite = self.get_repo()
         item = pywikibot.ItemPage(testsite, 'Q1107')
         target_id = 'Q68'
@@ -169,6 +183,32 @@ class TestWikibaseWriteGeneral(WikibaseTestCase):
         new_item = pywikibot.ItemPage(testsite, item.getID())
         self.assertTrue(new_item.isRedirectPage())
         self.assertEqual(new_item.getRedirectTarget(), target_item)
+
+    def test_create_redirect_immediate(self):
+        """Test converting a non-empty item into a redirect."""
+        target = ItemPage(self.repo, 'Q1593')
+
+        redirect = ItemPage(self.repo)
+        redirect.editEntity({})
+
+        redirect.set_redirect_target(target, save=True, force=True)
+        self.assertTrue(redirect.isRedirectPage())
+        self.assertEqual(redirect.getRedirectTarget(), target)
+
+    @unittest.expectedFailure  # T112243
+    def test_edit_redirect(self):
+        """Test Itempage.editEntity with a redirect."""
+        redirect = ItemPage(self.repo, 'Q1107')
+        self.assertTrue(redirect.isRedirectPage())
+        old_id = redirect.id
+
+        # trying to convert a redirect to a normal item fails here.
+        redirect.editEntity({}, clear=True)
+        self.assertFalse(redirect.isRedirectPage())
+        self.assertEqual(redirect.id, old_id)
+        redirect.get(force=True)
+        self.assertFalse(redirect.isRedirectPage())
+        self.assertEqual(redirect.id, old_id)
 
 
 if __name__ == '__main__':
