@@ -1,7 +1,7 @@
 # -*- coding: utf-8  -*-
 """Tests for editing Wikibase items."""
 #
-# (C) Pywikibot team, 2014
+# (C) Pywikibot team, 2014-2015
 #
 # Distributed under the terms of the MIT license.
 #
@@ -11,7 +11,10 @@ __version__ = '$Id$'
 #
 
 import time
+
 import pywikibot
+
+from pywikibot.page import ItemPage
 
 from tests.aspects import unittest, WikibaseTestCase
 
@@ -153,6 +156,46 @@ class TestWikibaseWriteGeneral(WikibaseTestCase):
         item = pywikibot.ItemPage(repo)
         self.assertEqual(item._defined_by(), dict())
         item.editEntity(data)
+
+
+class TestWikibaseWriteRedirect(WikibaseTestCase):
+
+    """Run general wikibase write tests."""
+
+    family = 'wikidata'
+    code = 'test'
+
+    user = True
+    write = True
+
+    def test_create_redirect(self):
+        """Test converting a non-empty item into a redirect."""
+        target = ItemPage(self.repo, 'Q1593')
+
+        redirect = ItemPage(self.repo)
+        redirect.editEntity({})
+
+        redirect.set_redirect_target(target, save=True, force=True)
+
+    @unittest.expectedFailure  # T112243
+    def test_edit_redirect(self):
+        """Test Itempage.editEntity with a redirect."""
+        target = ItemPage(self.repo, 'Q1593')
+
+        # create an empty item
+        redirect = ItemPage(self.repo)
+        redirect.editEntity({})
+
+        new_id = redirect.id
+
+        # make it a redirect
+        redirect.set_redirect_target(target, save=True, force=True)
+
+        # try to convert it back to a normal item
+        # fails here
+        redirect.editEntity({})
+        self.assertFalse(redirect.isRedirectPage())
+        self.assertEqual(redirect.id, new_id)
 
 
 if __name__ == '__main__':

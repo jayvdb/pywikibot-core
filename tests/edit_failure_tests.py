@@ -8,7 +8,7 @@ unless something has broken badly.
 These tests use special code 'write = -1' for edit failures.
 """
 #
-# (C) Pywikibot team, 2014
+# (C) Pywikibot team, 2014-2015
 #
 # Distributed under the terms of the MIT license.
 #
@@ -17,7 +17,9 @@ from __future__ import unicode_literals
 __version__ = '$Id$'
 
 import pywikibot
-from pywikibot import (
+
+from pywikibot.data.api import APIError
+from pywikibot.exceptions import (
     Error,
     NoPage,
     LockedPage,
@@ -26,6 +28,8 @@ from pywikibot import (
     NoCreateError,
     PageCreatedConflict,
 )
+from pywikibot.page import Claim, ItemPage
+
 from tests.aspects import unittest, TestCase, WikibaseTestCase
 
 
@@ -128,6 +132,48 @@ class TestWikibaseSaveTest(WikibaseTestCase):
         repo = self.get_repo()
         item = pywikibot.ItemPage(repo, 'Q6')
         self.assertRaises(pywikibot.PageNotSaved, item.save)
+
+
+class TestWikibaseRedirectFailure(WikibaseTestCase):
+
+    """Run general wikibase write tests."""
+
+    family = 'wikidata'
+    code = 'test'
+
+    user = True
+    write = True
+
+    def test_non_empty_create_redirect(self):
+        """Test converting a non-empty item into a redirect."""
+        target = ItemPage(self.repo, 'Q1593')
+
+        redirect = ItemPage(self.repo, 'Q1592')
+        self.assertFalse(target.isRedirectPage())
+
+        self.assertRaisesRegexp(
+            APIError,
+            'The redirect can only be created on top of an empty entity',
+            redirect.set_redirect_target,
+            target, save=True, force=True)
+
+    def test_add_claim_using_redirect(self):
+        """Test using a redirect in addClaim."""
+        item = ItemPage(self.repo, 'Q68')
+        item.get()
+        if 'P115' in item.claims:
+            item.removeClaims(item.claims['P115'])
+
+        target = ItemPage(self.repo, 'Q1603')
+        self.assertTrue(target.isRedirectPage())
+
+        claim = Claim(self.repo, 'P115', datatype='wikibase-item')
+        claim.setTarget(target)
+
+        self.assertRaisesRegexp(
+            APIError,
+            'modification-failed: [[Q1603|Q1603]] not found',
+            item.addClaim, claim)
 
 
 if __name__ == '__main__':

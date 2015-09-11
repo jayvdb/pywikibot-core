@@ -3252,7 +3252,7 @@ class WikibasePage(BasePage):
         """
         if not hasattr(self, '_content'):
             try:
-                self.get()
+                self.get(get_redirect=True)
                 return True
             except pywikibot.NoPage:
                 return False
@@ -3712,11 +3712,21 @@ class ItemPage(WikibasePage):
                              redirect, do not raise an exception.
         @type get_redirect: bool
         @param args: values of props
+
+        @raises IsRedirectPage: item is a redirect and get_redirect was False
         """
         data = super(ItemPage, self).get(force=force, *args, **kwargs)
 
-        if self.isRedirectPage() and not get_redirect:
-            raise pywikibot.IsRedirectPage(self)
+        if self.isRedirectPage():
+            if get_redirect:
+                # Undo the attribute set in the super method.
+                delattr(self, 'labels')
+                delattr(self, 'descriptions')
+                delattr(self, 'aliases')
+                delattr(self, 'claims')
+                return
+            else:
+                raise pywikibot.IsRedirectPage(self)
 
         # sitelinks
         self.sitelinks = {}
@@ -3749,8 +3759,13 @@ class ItemPage(WikibasePage):
         @param diffto: JSON containing claim data
         @type diffto: dict
 
-        @return: dict
+        @rtype: dict
+        @raises NotImplementedError: item is a redirect
         """
+        if self.isRedirectPage():
+            raise NotImplementedError(
+                'ItemPage.toJSON does not support redirects')
+
         data = super(ItemPage, self).toJSON(diffto=diffto)
 
         self._diff_to('sitelinks', 'site', 'title', diffto, data)
