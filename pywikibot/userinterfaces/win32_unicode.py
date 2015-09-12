@@ -131,7 +131,7 @@ if sys.platform == "win32":
             ReadConsoleW = WINFUNCTYPE(BOOL, HANDLE, LPVOID, DWORD, POINTER(DWORD),
                                        LPVOID)(("ReadConsoleW", windll.kernel32))
 
-            class UnicodeInput:
+            class UnicodeInput(object):
 
                 """Unicode terminal input class."""
 
@@ -163,7 +163,7 @@ if sys.platform == "win32":
             WriteConsoleW = WINFUNCTYPE(BOOL, HANDLE, LPWSTR, DWORD, POINTER(DWORD),
                                         LPVOID)(("WriteConsoleW", windll.kernel32))
 
-            class UnicodeOutput:
+            class UnicodeOutput(object):
 
                 """Unicode terminal output class."""
 

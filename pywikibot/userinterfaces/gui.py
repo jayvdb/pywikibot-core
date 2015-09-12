@@ -397,7 +397,7 @@ class EditBoxWindow(Tkinter.Frame):
 
 
 # the following class isn't used anywhere in the framework: ####
-class ListBoxWindow:
+class ListBoxWindow(object):
 
     """List box window."""
 
@@ -444,7 +444,7 @@ class ListBoxWindow:
         return self.list
 
 
-class Tkdialog:
+class Tkdialog(object):
 
     """The dialog window for image info."""
 

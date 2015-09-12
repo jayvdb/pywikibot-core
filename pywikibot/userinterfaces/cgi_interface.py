@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 import sys
 
 
-class UI:
+class UI(object):
 
     """CGI user interface."""
 
