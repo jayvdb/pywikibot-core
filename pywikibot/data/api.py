@@ -28,12 +28,21 @@ import time
 from warnings import warn
 
 import pywikibot
+
 from pywikibot import config, login
-from pywikibot.tools import MediaWikiVersion, deprecated, itergroup, ip, PY2
-from pywikibot.exceptions import (
-    Server504Error, Server414Error, FatalServerError, NoUsername, Error
-)
+
 from pywikibot.comms import http
+from pywikibot.exceptions import (
+    Server504Error, Server414Error, FatalServerError,
+    SiteRelatedError,
+    LoginError,
+    OAuthAuthenticationError,
+    Error,
+)
+from pywikibot.tools import (
+    MediaWikiVersion, itergroup, ip, PY2,
+    deprecated, issue_deprecation_warning,
+)
 
 if not PY2:
     # Subclassing necessary to fix a possible bug of the email package
@@ -87,23 +96,31 @@ _logger = "data.api"
 lagpattern = re.compile(r"Waiting for [\d.]+: (?P<lag>\d+) seconds? lagged")
 
 
-class APIError(Error):
+class APIError(SiteRelatedError):
 
     """The wiki site returned an error message."""
 
-    def __init__(self, code, info, **kwargs):
+    def __init__(self, code, info, site=None, **kwargs):
         """Save error dict returned by MW API."""
         self.code = code
         self.info = info
         self.other = kwargs
-        self.unicode = unicode(self.__str__())
+        self.unicode = unicode(self)
+        message = self.unicode
+
+        if site:
+            super(APIError, self).__init__(site, message)
+        else:
+            issue_deprecation_warning(
+                'APIError without a site', instead=None, depth=2)
+            super(APIError, self).__init__(message=message)
 
     def __repr__(self):
         """Return internal representation."""
         return '{name}("{code}", "{info}", {other})'.format(
             name=self.__class__.__name__, **self.__dict__)
 
-    def __str__(self):
+    def __unicode__(self):
         """Return a string representation."""
         if self.other:
             return '{0}: {1} [{2}]'.format(
@@ -120,7 +137,7 @@ class UploadWarning(APIError):
 
     """Upload failed with a warning message (passed as the argument)."""
 
-    def __init__(self, code, message, file_key=None, offset=0):
+    def __init__(self, code, message, file_key=None, offset=0, site=None):
         """
         Create a new UploadWarning instance.
 
@@ -131,7 +148,7 @@ class UploadWarning(APIError):
             there is no offset.
         @type offset: int or bool
         """
-        super(UploadWarning, self).__init__(code, message)
+        super(UploadWarning, self).__init__(code, message, site)
         self.file_key = file_key
         self.offset = offset
 
@@ -150,6 +167,16 @@ class APIMWException(APIError):
         self.mediawiki_exception_class_name = mediawiki_exception_class_name
         code = 'internal_api_error_' + mediawiki_exception_class_name
         super(APIMWException, self).__init__(code, info, **kwargs)
+
+
+class APILoginError(APIError, LoginError):
+
+    """Login error during an API request."""
+
+
+class APIOAuthInvalidAuthorisation(APIError, OAuthAuthenticationError):
+
+    """OAuth failure during an API request."""
 
 
 class ParamInfo(Container):
@@ -2150,10 +2177,12 @@ class Request(MutableMapping):
                             self.site.user(),
                             ', '.join('{0}: {1}'.format(*e)
                                       for e in user_tokens.items())))
+
             if 'mwoauth-invalid-authorization' in code:
-                raise NoUsername('Failed OAuth authentication for %s: %s'
-                                 % (self.site, info))
-            # raise error
+                raise APIOAuthInvalidAuthorisation(site=self.site, **error)
+            elif code == 'readapidenied':
+                raise APILoginError(site=self.site, **error)
+
             try:
                 # Due to bug T66958, Page's repr may return non ASCII bytes
                 # Get as bytes in PY2 and decode with the console encoding as

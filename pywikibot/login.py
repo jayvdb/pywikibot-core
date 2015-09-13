@@ -27,10 +27,16 @@ import pywikibot
 
 from pywikibot import config
 from pywikibot.tools import deprecated_args, normalize_username
-from pywikibot.exceptions import NoUsername
+from pywikibot.exceptions import (
+    LoginError,
+    RightsElevationFailed,
+    UsernameNotSpecified,
+    _SysopnameNotSpecified,
+    InvalidUsername,
+)
 
 
-class OAuthImpossible(ImportError):
+class OAuthImpossible(ImportError, LoginError):
 
     """OAuth authentication is not possible on your system."""
 
@@ -79,7 +85,7 @@ class LoginManager(object):
             The sysop username is loaded from config.sysopnames.
         @type sysop: bool
 
-        @raises NoUsername: No username is configured for the requested site.
+        @raises UsernameNotSpecified: No username for the requested site.
         """
         if site is not None:
             self.site = site
@@ -93,26 +99,15 @@ class LoginManager(object):
                 self.username = family_sysopnames.get(self.site.code, None)
                 self.username = self.username or family_sysopnames['*']
             except KeyError:
-                raise NoUsername(u"""\
-ERROR: Sysop username for %(fam_name)s:%(wiki_code)s is undefined.
-If you have a sysop account for that site, please add a line to user-config.py:
-
-sysopnames['%(fam_name)s']['%(wiki_code)s'] = 'myUsername'"""
-                                 % {'fam_name': self.site.family.name,
-                                    'wiki_code': self.site.code})
+                raise UsernameNotSpecified(self.site)
         else:
             try:
                 family_usernames = config.usernames[self.site.family.name]
                 self.username = family_usernames.get(self.site.code, None)
                 self.username = self.username or family_usernames['*']
             except:
-                raise NoUsername(u"""\
-ERROR: Username for %(fam_name)s:%(wiki_code)s is undefined.
-If you have an account for that site, please add a line to user-config.py:
+                raise _SysopnameNotSpecified(self.site)
 
-usernames['%(fam_name)s']['%(wiki_code)s'] = 'myUsername'"""
-                                 % {'fam_name': self.site.family.name,
-                                    'wiki_code': self.site.code})
         self.password = password
         if getattr(config, 'password_file', ''):
             self.readPassword()
@@ -121,12 +116,12 @@ usernames['%(fam_name)s']['%(wiki_code)s'] = 'myUsername'"""
         """
         Check that the username exists on the site.
 
-        @raises NoUsername: Username doesnt exist in user list.
+        @raises InvalidUsername: Username doesnt exist in user list.
         """
         try:
             data = self.site.allusers(start=self.username, total=1)
             user = next(iter(data))
-        except pywikibot.data.api.APIError as e:
+        except pywikibot.data.api.APILoginError as e:
             if e.code == 'readapidenied':
                 pywikibot.warning('Could not check user %s exists on %s'
                                   % (self.username, self.site))
@@ -136,8 +131,8 @@ usernames['%(fam_name)s']['%(wiki_code)s'] = 'myUsername'"""
 
         if user['name'] != self.username:
             # Report the same error as server error code NotExists
-            raise NoUsername('Username \'%s\' is invalid on %s'
-                             % (self.username, self.site))
+            raise InvalidUsername('Username \'%s\' is invalid on %s'
+                                  % (self.username, self.site))
 
     def botAllowed(self):
         """
@@ -257,7 +252,7 @@ usernames['%(fam_name)s']['%(wiki_code)s'] = 'myUsername'"""
         @param retry: infinitely retry if the API returns an unknown error
         @type retry: bool
 
-        @raises NoUsername: Username is not recognised by the site.
+        @raises : Username is not recognised by the site.
         """
         if not self.password:
             # First check that the username exists,
@@ -278,10 +273,10 @@ usernames['%(fam_name)s']['%(wiki_code)s'] = 'myUsername'"""
         except pywikibot.data.api.APIError as e:
             pywikibot.error(u"Login failed (%s)." % e.code)
             if e.code == 'NotExists':
-                raise NoUsername(u"Username '%s' does not exist on %s"
+                raise InvalidUsername(u"Username '%s' does not exist on %s"
                                  % (self.username, self.site))
             elif e.code == 'Illegal':
-                raise NoUsername(u"Username '%s' is invalid on %s"
+                raise InvalidUsername(u"Username '%s' is invalid on %s"
                                  % (self.username, self.site))
             # TODO: investigate other unhandled API codes (bug 73539)
             if retry:
@@ -332,7 +327,7 @@ class OauthLoginManager(LoginManager):
             The sysop username is loaded from config.sysopnames.
         @type sysop: bool
 
-        @raises NoUsername: No username is configured for the requested site.
+        @raises : No username is configured for the requested site.
         @raise OAuthImpossible: mwoauth isn't installed
         """
         if isinstance(mwoauth, ImportError):

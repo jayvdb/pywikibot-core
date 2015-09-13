@@ -60,7 +60,8 @@ from pywikibot.exceptions import (
     UnknownSite,
     UnknownExtension,
     FamilyMaintenanceWarning,
-    NoUsername,
+    LoginError,
+    RightsElevationFailed,
     SpamfilterError,
     NoCreateError,
     UserBlocked,
@@ -1972,15 +1973,15 @@ class APISite(BaseSite):
             pass
         if self.is_oauth_token_available():
             if sysop:
-                raise NoUsername('No sysop is permitted with OAuth')
+                raise RightsElevationFailed('No sysop is permitted with OAuth')
             elif self.userinfo['name'] != self._username[sysop]:
-                raise NoUsername('Logged in on %(site)s via OAuth as %(wrong)s, '
+                raise LoginError('Logged in on %(site)s via OAuth as %(wrong)s, '
                                  'but expect as %(right)s'
                                  % {'site': self,
                                     'wrong': self.userinfo['name'],
                                     'right': self._username[sysop]})
             else:
-                raise NoUsername('Logging in on %s via OAuth failed' % self)
+                raise LoginFailure('Logging in on %s via OAuth failed' % self)
         loginMan = api.LoginManager(site=self, sysop=sysop,
                                     user=self._username[sysop])
         if loginMan.login(retry=True):
@@ -2879,7 +2880,7 @@ class APISite(BaseSite):
         sysop_protected = "edit" in rest and rest['edit'][0] == 'sysop'
         try:
             api.LoginManager(site=self, sysop=sysop_protected)
-        except NoUsername:
+        except LoginError:
             return False
         return True
 
@@ -4461,7 +4462,7 @@ class APISite(BaseSite):
         if "deletedhistory" not in self.userinfo['rights']:
             try:
                 self.login(True)
-            except NoUsername:
+            except RightsElevationFailed:
                 pass
             if "deletedhistory" not in self.userinfo['rights']:
                 raise Error(
@@ -4472,7 +4473,7 @@ class APISite(BaseSite):
             if "undelete" not in self.userinfo['rights']:
                 try:
                     self.login(True)
-                except NoUsername:
+                except RightsElevationFailed:
                     pass
                 if "undelete" not in self.userinfo['rights']:
                     raise Error(

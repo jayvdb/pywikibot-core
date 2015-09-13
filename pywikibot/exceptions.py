@@ -3,10 +3,7 @@
 Exception and warning classes used throughout the framework.
 
 Error: Base class, all exceptions should the subclass of this class.
-  - NoUsername: Username is not in user-config.py, or it is invalid.
-  - UserBlocked: Username or IP has been blocked
   - AutoblockUser: requested action on a virtual autoblock user not valid
-  - UserRightsError: insufficient rights for requested action
   - BadTitle: Server responded with BadTitle
   - InvalidTitle: Invalid page title
   - CaptchaError: Captcha is asked and config.solve_captcha == False
@@ -14,6 +11,13 @@ Error: Base class, all exceptions should the subclass of this class.
   - PageNotFound: Page not found (deprecated)
   - i18n.TranslationError: i18n/l10n message not available
   - UnknownExtension: Extension is not defined for this site
+
+---NotLoggedIn: A login was not possible
+  - NoUsername: Username is not in user-config.py, or it is invalid.
+      - LoginFailed: Login was not successful
+  - OAuthLoginFailure: OAuth login failure
+      - login.OAuthImpossible: OAuth dependencies failed
+      - data.api.OAuthInvalidAuthorisation: OAuth authorisation failed
 
 SiteDefinitionError: Site loading problem
   - UnknownSite: Site does not exist in Family
@@ -66,7 +70,7 @@ UserWarning: warnings targetted at users
   - FamilyMaintenanceWarning: missing information in family definition
 """
 #
-# (C) Pywikibot team, 2008
+# (C) Pywikibot team, 2008-2015
 #
 # Distributed under the terms of the MIT license.
 #
@@ -76,9 +80,14 @@ __version__ = '$Id$'
 
 import sys
 
-from pywikibot.tools import UnicodeMixin, _NotImplementedWarning
+from pywikibot.tools import (
+    PY2,
+    UnicodeMixin,
+    _NotImplementedWarning,
+    issue_deprecation_warning,
+)
 
-if sys.version_info[0] > 2:
+if not PY2:
     unicode = str
 
 
@@ -111,13 +120,57 @@ class Error(UnicodeMixin, Exception):  # noqa
     def __init__(self, arg):
         """Constructor."""
         self.unicode = arg
+        super(Error, self).__init__(arg)
 
     def __unicode__(self):
         """Return a unicode string representation."""
         return self.unicode
 
 
-class PageRelatedError(Error):
+class SiteRelatedError(Error):
+
+    """
+    Abstract Exception, used when the exception concerns a particular Site.
+
+    This class should be used when the Exception concerns a particular
+    Site, and when a generic message can be written once for all.
+    """
+
+    def __init__(self, site=None, message=None):
+        """
+        Constructor.
+
+        @param page: Site that caused the exception
+        @type page: Site object
+        """
+        if message:
+            try:
+                self.message = message
+            except AttributeError:
+                pass
+
+        if not site:
+            issue_deprecation_warning(
+                'SiteRelatedError(site=None)', instead=None, depth=2)
+            self.site = self.family = self.site_code = 'unknown'
+        else:
+            self.site = site
+            self.family = self.site.family
+            self.site_code = self.site.code
+
+        if hasattr(self, 'message'):
+            if '%(' in self.message and ')s' in self.message:
+                super(SiteRelatedError, self).__init__(
+                    self.message % self.__dict__)
+            elif '%s' in self.message:
+                super(SiteRelatedError, self).__init__(self.message % site)
+            else:
+                super(SiteRelatedError, self).__init__(self.message)
+        else:
+            super(SiteRelatedError, self).__init__()
+
+
+class PageRelatedError(SiteRelatedError):
 
     """
     Abstract Exception, used when the exception concerns a particular Page.
@@ -146,12 +199,11 @@ class PageRelatedError(Error):
 
         self.page = page
         self.title = page.title(asLink=True)
-        self.site = page.site
 
-        if '%(' in self.message and ')s' in self.message:
-            super(PageRelatedError, self).__init__(self.message % self.__dict__)
-        else:
-            super(PageRelatedError, self).__init__(self.message % page)
+        if '%s' in self.message:
+            self.message = self.message % page
+
+        super(PageRelatedError, self).__init__(page.site)
 
     def getPage(self):
         """Return the page related to the exception."""
@@ -195,11 +247,68 @@ class OtherPageSaveError(PageSaveRelatedError):
         return unicode(self.reason)
 
 
-class NoUsername(Error):
+class UserRightsError(Error):
+
+    """Insufficient user rights to perform an action."""
+
+    pass
+
+
+class LoginError(Error):
+
+    """Unable to login."""
+
+
+class NoUsername(LoginError):
+
+    """Backwards compatible exception."""
+
+
+class LoginNotPossible(NoUsername, LoginError):
+
+    """Login is not possible."""
+
+
+class UsernameNotSpecified(LoginNotPossible, SiteRelatedError):
 
     """Username is not in user-config.py."""
 
-    pass
+    message = """
+ERROR: Username for %(site)s is undefined.
+If you have an account for that site, please add a line to user-config.py:
+
+usernames['%(family)s']['%(site_code)s'] = 'myUsername'"""
+
+
+class _SysopnameNotSpecified(UsernameNotSpecified):
+
+    """Sysopname is not in user-config.py."""
+
+    message = """
+ERROR: Sysop username for %(site)s is undefined.
+If you have a sysop account for that site, please add a line to user-config.py:
+
+sysopnames['%(family)s']['%(site_code)s'] = 'myUsername'"""
+
+
+class InvalidUsername(LoginNotPossible):
+
+    """Username is not recognised."""
+
+
+class LoginFailed(NoUsername, LoginError):
+
+    """Login attempt failed."""
+
+
+class RightsElevationFailed(LoginFailed, UserRightsError):
+
+    """Attempt to increase user rights failed."""
+
+
+class OAuthAuthenticationError(LoginError):
+
+    """OAuth authentication error."""
 
 
 class NoPage(PageRelatedError):  # noqa
@@ -449,14 +558,14 @@ class BadTitle(Error):
     pass
 
 
-class UserBlocked(Error):  # noqa
+class UserBlocked(UserRightsError):  # noqa
 
     """Your username or IP has been blocked"""
 
     pass
 
 
-class CaptchaError(Error):
+class CaptchaError(LoginError):
 
     """Captcha is asked and config.solve_captcha == False."""
 
@@ -471,13 +580,6 @@ class AutoblockUser(Error):
     an action is requested on a virtual autoblock user that's not available
     for him (i.e. roughly everything except unblock).
     """
-
-    pass
-
-
-class UserRightsError(Error):
-
-    """Insufficient user rights to perform an action."""
 
     pass
 

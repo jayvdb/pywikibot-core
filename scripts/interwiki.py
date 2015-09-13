@@ -360,6 +360,10 @@ import pywikibot
 
 from pywikibot import config, i18n, pagegenerators, textlib, interwiki_graph, titletranslate
 from pywikibot.bot import ListOption, StandardOption
+from pywikibot.exceptions import (
+    LoginError,
+    UserRightsError,
+)
 from pywikibot.tools import first_upper
 
 if sys.version_info[0] > 2:
@@ -1706,7 +1710,7 @@ u'WARNING: %s is in namespace %i, but %s is in namespace %i. Follow it anyway?'
                                 updatedSites.append(site)
                         except SaveError:
                             notUpdatedSites.append(site)
-                        except pywikibot.NoUsername:
+                        except (LoginError, UserRightsError):
                             pass
                         except GiveUpOnPage:
                             break

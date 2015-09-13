@@ -83,8 +83,11 @@ __version__ = '$Id$'
 
 import sys
 import datetime
+
 import pywikibot
+
 from pywikibot import i18n, xmlreader, Bot
+from pywikibot.exceptions import UserRightsError
 
 if sys.version_info[0] > 2:
     basestring = (str, )
@@ -461,10 +464,10 @@ class RedirectRobot(Bot):
                                 % (targetPage, movedTarget, redir_page)):
                             try:
                                 redir_page.save(reason)
-                            except pywikibot.NoUsername:
-                                pywikibot.output(u"Page [[%s]] not saved; "
-                                                 u"sysop privileges required."
-                                                 % redir_page.title())
+                            except UserRightsError as e:
+                                pywikibot.output(
+                                    'Page [[%s]] not saved due to permissions'
+                                    % redir_page.title())
                             except pywikibot.LockedPage:
                                 pywikibot.output(u'%s is locked.'
                                                  % redir_page.title())

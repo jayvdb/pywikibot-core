@@ -131,6 +131,7 @@ from pywikibot import i18n, textlib
 from pywikibot.bot import (
     MultipleSitesBot, IntegerOption, StandardOption, ContextOption,
 )
+from pywikibot.exceptions import UsernameNotSpecified
 from pywikibot.tools import (
     deprecated_args, deprecated, ModuleDeprecationWrapper
 )
@@ -475,9 +476,9 @@ class CategoryMoveRobot(object):
             repo = self.site.data_repository()
             if self.wikibase and repo.username() is None:
                 # The bot can't move categories nor update the Wikibase repo
-                raise pywikibot.NoUsername(u"The 'wikibase' option is turned on"
-                                           u" and %s has no registered username."
-                                           % repo)
+                raise UsernameNotSpecified(
+                    "The 'wikibase' option is turned on "
+                    'and %s has no registered username.', site=repo)
 
         template_vars = {'oldcat': self.oldcat.title(withNamespace=False)}
         if self.newcat:
