@@ -21,10 +21,11 @@ import tempfile
 
 from pywikibot import config
 
+from pywikibot import ItemPage, PropertyPage, Claim
+
 from pywikibot.comms import http
 from pywikibot.exceptions import ServerError
 from pywikibot.logging import warning
-from pywikibot.page import ItemPage, PropertyPage, Claim
 
 
 def listify(x):
