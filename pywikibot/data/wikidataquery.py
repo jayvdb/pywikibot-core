@@ -21,8 +21,6 @@ import tempfile
 
 from pywikibot import config
 
-from pywikibot import ItemPage, PropertyPage, Claim
-
 from pywikibot.comms import http
 from pywikibot.exceptions import ServerError
 from pywikibot.logging import warning
@@ -220,7 +218,8 @@ class Query():
 
         @return: the int ID of the item
         """
-        if isinstance(item, ItemPage) or isinstance(item, PropertyPage):
+        from pywikibot.page import WikibasePage
+        if isinstance(item, WikibasePage):
             return item.getID(numeric=True)
         else:
             return int(item)
@@ -326,6 +325,7 @@ class Tree(Query):
         """
         # check sensible things coming in, as we lose info once we do
         # type conversion
+        from pywikibot.page import ItemPage, PropertyPage
         if not self.isOrContainsOnlyTypes(item, [int, ItemPage]):
             raise TypeError("The item paramter must contain or be integer IDs "
                             "or page.ItemPages")
@@ -449,6 +449,7 @@ def fromClaim(claim):
     @type claim: L{pywikibot.page.Claim}
     @rtype: L{Query}
     """
+    from pywikibot.page import Claim
     if not isinstance(claim, Claim):
         raise TypeError("claim must be a page.Claim")
 
