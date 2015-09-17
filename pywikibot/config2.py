@@ -42,12 +42,12 @@ from __future__ import absolute_import, unicode_literals
 __version__ = '$Id$'
 #
 
-import collections
 import os
 import stat
 import sys
 import re
 
+from functools import partial
 from warnings import warn
 
 if sys.platform == 'win32':
@@ -58,6 +58,14 @@ if sys.platform == 'win32':
 
 from pywikibot import __url__
 from pywikibot.logging import error, output, warning
+from pywikibot.tools.collections import (
+    InverseSet,
+    LimitedKeysDefaultDict,
+    StarListDict as FamilyCodeMapping,
+    StarNestedDict,
+)
+
+FamilyCodeUsernameMapping = partial(StarNestedDict, levels=2)
 
 # This frozen set should contain all imported modules/variables, so it must
 # occur directly after the imports. At that point globals() only contains the
@@ -74,6 +82,7 @@ class _ConfigurationDeprecationWarning(UserWarning):
     """Feature that is no longer supported."""
 
     pass
+
 
 # IMPORTANT:
 # Do not change any of the variables in this file. Instead, make
@@ -121,9 +130,9 @@ mylang = 'language'
 # If you have a unique syop account for all languages of a family,
 # you can use '*'
 # sysopnames['myownwiki']['*'] = 'mySingleUsername'
-usernames = collections.defaultdict(dict)
-sysopnames = collections.defaultdict(dict)
-disambiguation_comment = collections.defaultdict(dict)
+usernames = FamilyCodeUsernameMapping()
+sysopnames = FamilyCodeUsernameMapping()
+disambiguation_comment = FamilyCodeUsernameMapping()
 
 # User agent format.
 # For the meaning and more help in customization see:
@@ -724,7 +733,12 @@ socket_timeout = 30
 
 # This is an experimental feature; handle with care and consider re-checking
 # each bot edit if enabling this!
-cosmetic_changes = False
+# cosmetic_changes may be False to disable, True to enable on all sites
+# or a dict consisting of family names mapped to codes where it is enabled.
+# When a dict is used here, only cosmetic_changes_deny_script is also used,
+# and cosmetic_changes_mylang_only, cosmetic_changes_enable
+# and cosmetic_changes_disable are all ignored.
+cosmetic_changes = FamilyCodeMapping()
 
 # If cosmetic changes are switched on, and you also have several accounts at
 # projects where you're not familiar with the local conventions, you probably
@@ -735,7 +749,7 @@ cosmetic_changes = False
 cosmetic_changes_mylang_only = True
 
 # The dictionary cosmetic_changes_enable should contain a tuple of languages
-# for each site where you wish to enable in addition to your own langlanguage
+# for each site where you wish to enable in addition to your own language
 # (if cosmetic_changes_mylang_only is set)
 # Please set your dictionary by adding such lines to your user-config.py:
 # cosmetic_changes_enable['wikipedia'] = ('de', 'en', 'fr')
@@ -912,12 +926,7 @@ for _key in _gl:
 _uc = {}
 for _key, _val in _glv.items():
     if isinstance(_val, dict):
-        if isinstance(_val, collections.defaultdict):
-            _uc[_key] = collections.defaultdict(dict)
-        else:
-            _uc[_key] = {}
-        if len(_val) > 0:
-            _uc[_key].update(_val)
+        _uc[_key] = _val.copy()
     else:
         _uc[_key] = _val
 
@@ -985,6 +994,8 @@ def _check_user_config_types(user_config, default_values, skipped):
             try:
                 if name == 'socket_timeout':
                     value = _assert_types(name, value, (int, float, tuple))
+                elif name == 'cosmetic_changes':
+                    value = _assert_types(name, value, (bool, dict))
                 else:
                     value = _assert_default_type(name, value,
                                                  default_values[name])
@@ -1003,6 +1014,8 @@ _check_user_config_types(_uc, _glv, _imports)
 _modified = [_key for _key in _gl
              if _uc[_key] != globals()[_key] or
              _key in ('usernames', 'sysopnames', 'disambiguation_comment')]
+
+_configured_families = set(usernames.keys()) | set(sysopnames.keys())
 
 if ('user_agent_format' in _modified):
     _right_user_agent_format = re.sub(r'{httplib2(:|})', r'{http_backend\1',
@@ -1075,6 +1088,41 @@ if (not ignore_file_security_warnings and
           " won't run with this setting. Choose a more restrictive"
           " permission or set 'ignore_file_security_warnings' to true.")
     sys.exit(1)
+
+
+def reduce_cc(families, code, enable, disable):
+    """Reduce the various config variables to a single dict."""
+    if code:
+        new = {}
+        for name in families:
+            if name in enable:
+                new[name] = set(
+                    code for code in enable[name] + [code]
+                    if name not in disable or code not in disable[name]
+                )
+            elif name not in disable or code not in disable[name]:
+                new[name] = (code, )
+
+        return new
+
+    new = LimitedKeysDefaultDict(InverseSet)
+    new._valid_keys = families
+    for name in disable:
+        new[name] = InverseSet(disable[name])
+
+    return new
+
+
+# Simplify cosmetic_changes config
+if cosmetic_changes is True:
+    cosmetic_changes = reduce_cc(
+        _configured_families,
+        mylang if cosmetic_changes_mylang_only else None,
+        cosmetic_changes_enable,
+        cosmetic_changes_disable
+    )
+elif isinstance(cosmetic_changes, FamilyCodeMapping):
+    cosmetic_changes.valid_keys = _configured_families
 
 #
 # When called as main program, list all configuration variables

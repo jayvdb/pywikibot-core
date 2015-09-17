@@ -1131,18 +1131,17 @@ class BasePage(UnicodeMixin, ComparableMixin):
            pywikibot.calledModuleName() in config.cosmetic_changes_deny_script:
             return
         family = self.site.family.name
-        if config.cosmetic_changes_mylang_only:
-            cc = ((family == config.family and
-                   self.site.lang == config.mylang) or
-                  family in list(config.cosmetic_changes_enable.keys()) and
-                  self.site.lang in config.cosmetic_changes_enable[family])
-        else:
-            cc = True
-        cc = (cc and not
-              (family in list(config.cosmetic_changes_disable.keys()) and
-               self.site.lang in config.cosmetic_changes_disable[family]))
-        if not cc:
+        cc_families = config.cosmetic_changes
+        if not cc_families:
             return
+
+        try:
+            cc_family_codes = cc_families[family]
+        except KeyError:
+            return
+        else:
+            if self.site.code not in cc_family_codes:
+                return
 
         # cc depends on page directly and via several other imports
         from pywikibot.cosmetic_changes import CosmeticChangesToolkit  # noqa

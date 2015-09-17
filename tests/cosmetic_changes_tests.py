@@ -9,9 +9,93 @@ from __future__ import absolute_import, unicode_literals
 
 __version__ = '$Id$'
 
+from pywikibot.config2 import reduce_cc
 from pywikibot.cosmetic_changes import CosmeticChangesToolkit
 
 from tests.aspects import unittest, TestCase
+
+
+class TestCosmeticChangesConfigReduce(TestCase):
+
+    """Test cosmetic changes config reduction."""
+
+    net = False
+
+    families = ('wikipedia', 'wikisource')
+
+    def test_enable_all(self):
+        """Test enabling cosmetic changes on all sites."""
+        rv = reduce_cc(self.families, None, {}, {})
+
+        self.assertTrue(rv['wikipedia'])
+        self.assertTrue(rv['wikisource'])
+        self.assertRaises(KeyError, rv.__getitem__, 'wiktionary')
+
+        self.assertIn('en', rv['wikipedia'])
+        self.assertIn('de', rv['wikipedia'])
+        self.assertIn('en', rv['wikisource'])
+        self.assertIn('de', rv['wikisource'])
+
+    def test_disable(self):
+        """Test disabling cosmetic changes on only one sites."""
+        rv = reduce_cc(self.families, None, {}, {'wikipedia': ['en']})
+
+        self.assertTrue(rv['wikipedia'])
+        self.assertTrue(rv['wikisource'])
+        self.assertRaises(KeyError, rv.__getitem__, 'wiktionary')
+
+        self.assertNotIn('en', rv['wikipedia'])
+        self.assertIn('de', rv['wikipedia'])
+        self.assertIn('en', rv['wikisource'])
+        self.assertIn('de', rv['wikisource'])
+
+    def test_code_only(self):
+        """Test enabling cosmetic changes with code only on known families."""
+        rv = reduce_cc(self.families, 'en', {}, {})
+
+        self.assertIn('wikipedia', rv)
+        self.assertIn('wikisource', rv)
+
+        self.assertNotIn('wiktionary', rv)
+
+        self.assertIn('en', rv['wikipedia'])
+        self.assertNotIn('de', rv['wikipedia'])
+        self.assertIn('en', rv['wikisource'])
+        self.assertNotIn('de', rv['wikisource'])
+
+    def test_code_plus_enable(self):
+        """Test enabling cosmetic changes with list of enabled codes."""
+        rv = reduce_cc(self.families, 'en', {'wikipedia': ['de']}, {})
+
+        self.assertIn('wikipedia', rv)
+        self.assertIn('wikisource', rv)
+
+        self.assertNotIn('wiktionary', rv)
+
+        self.assertIn('en', rv['wikipedia'])
+        self.assertIn('de', rv['wikipedia'])
+        self.assertNotIn('ru', rv['wikipedia'])
+        self.assertIn('en', rv['wikisource'])
+        self.assertNotIn('de', rv['wikisource'])
+        self.assertNotIn('ru', rv['wikisource'])
+
+    def test_enable_with_disable(self):
+        """Test enabling cosmetic changes using enable and disable data."""
+        rv = reduce_cc(self.families, 'en',
+                       {'wikipedia': ['de']},
+                       {'wikipedia': ['en']})
+
+        self.assertIn('wikipedia', rv)
+        self.assertIn('wikisource', rv)
+
+        self.assertNotIn('wiktionary', rv)
+
+        self.assertNotIn('en', rv['wikipedia'])
+        self.assertIn('de', rv['wikipedia'])
+        self.assertNotIn('ru', rv['wikipedia'])
+        self.assertIn('en', rv['wikisource'])
+        self.assertNotIn('de', rv['wikisource'])
+        self.assertNotIn('ru', rv['wikisource'])
 
 
 class TestCosmeticChanges(TestCase):
