@@ -19,10 +19,12 @@ import hashlib
 import time
 import tempfile
 
-import pywikibot
-from pywikibot.comms import http
-from pywikibot.page import ItemPage, PropertyPage, Claim
 from pywikibot import config
+
+from pywikibot.comms import http
+from pywikibot.exceptions import ServerError
+from pywikibot.logging import warning
+from pywikibot.page import ItemPage, PropertyPage, Claim
 
 
 def listify(x):
@@ -534,8 +536,8 @@ class WikidataQuery():
                     try:
                         data = pickle.load(f)
                     except pickle.UnpicklingError:
-                        pywikibot.warning(u"Couldn't read cached data from %s"
-                                          % cacheFile)
+                        warning('Could not read cached data from {0}'.format(
+                            cacheFile))
                         data = None
 
                 return data
@@ -566,7 +568,7 @@ class WikidataQuery():
             try:
                 pickle.dump(data, f, protocol=config.pickle_protocol)
             except IOError:
-                pywikibot.warning(u"Failed to write cache file %s" % cacheFile)
+                warning('Failed to write cache file {0}'.format(cacheFile))
 
     def getDataFromHost(self, queryStr):
         """
@@ -579,21 +581,21 @@ class WikidataQuery():
         try:
             resp = http.fetch(url)
         except:
-            pywikibot.warning(u"Failed to retrieve %s" % url)
+            warning('Failed to retrieve {0}'.format(url))
             raise
 
         data = resp.content
         if not data:
-            pywikibot.warning('No data received for %s' % url)
-            raise pywikibot.ServerError('No data received for %s' % url)
+            warning('No data received for {0}'.format(url))
+            raise ServerError('No data received for {0}'.format(url))
 
         try:
             data = json.loads(data)
         except ValueError:
-            pywikibot.warning(
+            warning(
                 'Data received for %s but no JSON could be decoded: %r'
                 % (url, data))
-            raise pywikibot.ServerError(
+            raise ServerError(
                 'Data received for %s but no JSON could be decoded: %r'
                 % (url, data))
 
