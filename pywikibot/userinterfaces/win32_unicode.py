@@ -21,8 +21,11 @@
 #
 ################################################
 from __future__ import absolute_import, print_function, unicode_literals
-from io import UnsupportedOperation
+
 import sys
+
+from io import IOBase, UnsupportedOperation
+
 stdin = sys.stdin
 stdout = sys.stdout
 stderr = sys.stderr
@@ -131,7 +134,7 @@ if sys.platform == "win32":
             ReadConsoleW = WINFUNCTYPE(BOOL, HANDLE, LPVOID, DWORD, POINTER(DWORD),
                                        LPVOID)(("ReadConsoleW", windll.kernel32))
 
-            class UnicodeInput:
+            class UnicodeInput(IOBase):
 
                 """Unicode terminal input class."""
 
@@ -163,7 +166,7 @@ if sys.platform == "win32":
             WriteConsoleW = WINFUNCTYPE(BOOL, HANDLE, LPWSTR, DWORD, POINTER(DWORD),
                                         LPVOID)(("WriteConsoleW", windll.kernel32))
 
-            class UnicodeOutput:
+            class UnicodeOutput(IOBase):
 
                 """Unicode terminal output class."""
 
