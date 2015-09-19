@@ -90,10 +90,11 @@ from pywikibot.bot_choice import (  # noqa: unused imports
     ChoiceException, QuitKeyboardInterrupt,
 )
 from pywikibot.logging import CRITICAL, ERROR, INFO, WARNING  # noqa: unused
+from pywikibot.logging import debug  # noqa: unused; imported from __init__
 from pywikibot.logging import DEBUG, INPUT, STDOUT, VERBOSE
 from pywikibot.logging import (
     add_init_routine,
-    debug, error, exception, log, output, stdout, warning,
+    error, exception, log, output, stdout, warning,
 )
 from pywikibot.logging import critical  # noqa: unused
 from pywikibot.tools import deprecated, deprecated_args, PY2, PYTHON_VERSION
@@ -271,8 +272,6 @@ def init_handlers(strm=None):
         warnings_logger.addHandler(file_handler)
 
     _handlers_initialized = True
-
-    pywikibot.tools.debug = debug
 
     writelogheader()
 
