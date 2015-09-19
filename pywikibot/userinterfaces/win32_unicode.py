@@ -22,7 +22,7 @@
 ################################################
 from __future__ import absolute_import, print_function, unicode_literals
 
-from io import UnsupportedOperation
+from io import IOBase, UnsupportedOperation
 
 import codecs
 import sys
@@ -60,7 +60,7 @@ if sys.platform == "win32":
         ReadConsoleW = WriteConsoleW = None
 
 
-class UnicodeInput:
+class UnicodeInput(IOBase):
 
     """Unicode terminal input class."""
 
@@ -86,7 +86,7 @@ class UnicodeInput:
             return data
 
 
-class UnicodeOutput:
+class UnicodeOutput(IOBase):
 
     """Unicode terminal output class."""
 
