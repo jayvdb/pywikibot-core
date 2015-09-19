@@ -21,12 +21,18 @@
 #
 ################################################
 from __future__ import absolute_import, print_function, unicode_literals
+
 from io import UnsupportedOperation
+
+import codecs
 import sys
-stdin = sys.stdin
-stdout = sys.stdout
-stderr = sys.stderr
-argv = sys.argv
+
+from ctypes import byref, c_int, create_unicode_buffer
+
+try:
+    from ctypes.wintypes import LPVOID
+except ImportError:
+    from ctypes import c_void_p as LPVOID
 
 if sys.version_info[0] > 2:
     unicode = str
@@ -34,33 +40,167 @@ if sys.version_info[0] > 2:
 else:
     PY3 = False
 
+stdin = sys.stdin
+stdout = sys.stdout
+stderr = sys.stderr
+argv = sys.argv
+
+original_stderr = sys.stderr
+
 if sys.platform == "win32":
-    import codecs
     from ctypes import WINFUNCTYPE, windll, POINTER
-    from ctypes import byref, c_int, create_unicode_buffer
     from ctypes.wintypes import BOOL, HANDLE, DWORD, LPWSTR, LPCWSTR
+
     try:
-        from ctypes.wintypes import LPVOID
-    except ImportError:
-        from ctypes import c_void_p as LPVOID
+        ReadConsoleW = WINFUNCTYPE(BOOL, HANDLE, LPVOID, DWORD, POINTER(DWORD),
+                                   LPVOID)(("ReadConsoleW", windll.kernel32))
+        WriteConsoleW = WINFUNCTYPE(BOOL, HANDLE, LPWSTR, DWORD, POINTER(DWORD),
+                                    LPVOID)(("WriteConsoleW", windll.kernel32))
+    except Exception:
+        ReadConsoleW = WriteConsoleW = None
 
-    original_stderr = sys.stderr
 
-    # If any exception occurs in this code, we'll probably try to print it on stderr,
-    # which makes for frustrating debugging if stderr is directed to our wrapper.
-    # So be paranoid about catching errors and reporting them to original_stderr,
-    # so that we can at least see them.
-    def _complain(message):
-        print(isinstance(message, str) and message or repr(message), file=original_stderr)
+class UnicodeInput:
 
+    """Unicode terminal input class."""
+
+    def __init__(self, hConsole, name, bufsize=1024):
+        """Initialize the input stream."""
+        self._hConsole = hConsole
+        self.bufsize = bufsize
+        self.buffer = create_unicode_buffer(bufsize)
+        self.name = name
+        self.encoding = 'utf-8'
+
+    def readline(self):
+        """Read one line from the input."""
+        maxnum = DWORD(self.bufsize - 1)
+        numrecv = DWORD(0)
+        result = ReadConsoleW(self._hConsole, self.buffer, maxnum, byref(numrecv), None)
+        if not result:
+            raise Exception("stdin failure")
+        data = self.buffer.value[:numrecv.value]
+        if not PY3:
+            return data.encode(self.encoding)
+        else:
+            return data
+
+
+class UnicodeOutput:
+
+    """Unicode terminal output class."""
+
+    def __init__(self, hConsole, stream, fileno, name):
+        """Initialize the output stream."""
+        self._hConsole = hConsole
+        self._stream = stream
+        self._fileno = fileno
+        self.closed = False
+        self.softspace = False
+        self.mode = 'w'
+        self.encoding = 'utf-8'
+        self.name = name
+        self.flush()
+
+    def isatty(self):
+        """Return whether it's a tty."""
+        return False
+
+    def close(self):
+        """Set the stream to be closed."""
+        # don't really close the handle, that would only cause problems
+        self.closed = True
+
+    def fileno(self):
+        """Return the fileno."""
+        return self._fileno
+
+    def flush(self):
+        """Flush the stream."""
+        if self._hConsole is None:
+            try:
+                self._stream.flush()
+            except Exception as e:
+                _complain("%s.flush: %r from %r"
+                          % (self.name, e, self._stream))
+                raise
+
+    def write(self, text):
+        """Write the text to the output."""
+        try:
+            if self._hConsole is None:
+                if isinstance(text, unicode):
+                    text = text.encode('utf-8')
+                self._stream.write(text)
+            else:
+                if not isinstance(text, unicode):
+                    text = bytes(text).decode('utf-8')
+                remaining = len(text)
+                while remaining > 0:
+                    n = DWORD(0)
+                    # There is a shorter-than-documented limitation on the
+                    # length of the string passed to WriteConsoleW (see
+                    # <https://tahoe-lafs.org/trac/tahoe-lafs/ticket/1232>.
+                    retval = WriteConsoleW(self._hConsole, text,
+                                           min(remaining, 10000),
+                                           byref(n), None)
+                    if retval == 0 or n.value == 0:
+                        raise IOError("WriteConsoleW returned %r, n.value = %r"
+                                      % (retval, n.value))
+                    remaining -= n.value
+                    if remaining == 0:
+                        break
+                    text = text[n.value:]
+        except Exception as e:
+            _complain("%s.write: %r" % (self.name, e))
+            raise
+
+    def writelines(self, lines):
+        """Write a list of lines by using write."""
+        try:
+            for line in lines:
+                self.write(line)
+        except Exception as e:
+            _complain("%s.writelines: %r" % (self.name, e))
+            raise
+
+
+def old_fileno(std_name):
+    """Return the fileno or None if that doesn't work."""
+    # some environments like IDLE don't support the fileno operation
+    # handle those like std streams which don't have fileno at all
+    std = getattr(sys, 'std{0}'.format(std_name))
+    if hasattr(std, 'fileno'):
+        try:
+            return std.fileno()
+        except UnsupportedOperation:
+            pass
+
+
+# If any exception occurs in this code, we'll probably try to print it on stderr,
+# which makes for frustrating debugging if stderr is directed to our wrapper.
+# So be paranoid about catching errors and reporting them to original_stderr,
+# so that we can at least see them.
+def _complain(message):
+    print(isinstance(message, str) and message or repr(message), file=original_stderr)
+
+
+def register_cp65001():
+    """Register codecs cp65001 as utf-8."""
     # Work around <http://bugs.python.org/issue6058>.
     codecs.register(lambda name: name == 'cp65001' and codecs.lookup('utf-8') or None)
 
+
+def get_unicode_console():
+    """Get a Unicode console."""
     # Make Unicode console output work independently of the current code page.
     # This also fixes <http://bugs.python.org/issue1602>.
     # Credit to Michael Kaplan <http://blogs.msdn.com/b/michkap/archive/2010/04/07/9989346.aspx>
     # and TZOmegaTZIOY
     # <https://stackoverflow.com/questions/878972/windows-cmd-encoding-change-causes-python-crash/1432462#1432462>.
+
+    global stdin, stdout, stderr, argv
+
     try:
         # <https://msdn.microsoft.com/en-us/library/ms683231(VS.85).aspx>
         # HANDLE WINAPI GetStdHandle(DWORD nStdHandle);
@@ -90,17 +230,6 @@ if sys.platform == "win32":
             return ((GetFileType(handle) & ~FILE_TYPE_REMOTE) != FILE_TYPE_CHAR or
                     GetConsoleMode(handle, byref(DWORD())) == 0)
 
-        def old_fileno(std_name):
-            """Return the fileno or None if that doesn't work."""
-            # some environments like IDLE don't support the fileno operation
-            # handle those like std streams which don't have fileno at all
-            std = getattr(sys, 'std{0}'.format(std_name))
-            if hasattr(std, 'fileno'):
-                try:
-                    return std.fileno()
-                except UnsupportedOperation:
-                    pass
-
         old_stdin_fileno = old_fileno('in')
         old_stdout_fileno = old_fileno('out')
         old_stderr_fileno = old_fileno('err')
@@ -127,120 +256,7 @@ if sys.platform == "win32":
             if not_a_console(hStderr):
                 real_stderr = False
 
-        if real_stdin:
-            ReadConsoleW = WINFUNCTYPE(BOOL, HANDLE, LPVOID, DWORD, POINTER(DWORD),
-                                       LPVOID)(("ReadConsoleW", windll.kernel32))
-
-            class UnicodeInput:
-
-                """Unicode terminal input class."""
-
-                def __init__(self, hConsole, name, bufsize=1024):
-                    """Initialize the input stream."""
-                    self._hConsole = hConsole
-                    self.bufsize = bufsize
-                    self.buffer = create_unicode_buffer(bufsize)
-                    self.name = name
-                    self.encoding = 'utf-8'
-
-                def readline(self):
-                    """Read one line from the input."""
-                    maxnum = DWORD(self.bufsize - 1)
-                    numrecv = DWORD(0)
-                    result = ReadConsoleW(self._hConsole, self.buffer, maxnum, byref(numrecv), None)
-                    if not result:
-                        raise Exception("stdin failure")
-                    data = self.buffer.value[:numrecv.value]
-                    if not PY3:
-                        return data.encode(self.encoding)
-                    else:
-                        return data
-
         if real_stdout or real_stderr:
-            # BOOL WINAPI WriteConsoleW(HANDLE hOutput, LPWSTR lpBuffer, DWORD nChars,
-            #                           LPDWORD lpCharsWritten, LPVOID lpReserved);
-
-            WriteConsoleW = WINFUNCTYPE(BOOL, HANDLE, LPWSTR, DWORD, POINTER(DWORD),
-                                        LPVOID)(("WriteConsoleW", windll.kernel32))
-
-            class UnicodeOutput:
-
-                """Unicode terminal output class."""
-
-                def __init__(self, hConsole, stream, fileno, name):
-                    """Initialize the output stream."""
-                    self._hConsole = hConsole
-                    self._stream = stream
-                    self._fileno = fileno
-                    self.closed = False
-                    self.softspace = False
-                    self.mode = 'w'
-                    self.encoding = 'utf-8'
-                    self.name = name
-                    self.flush()
-
-                def isatty(self):
-                    """Return whether it's a tty."""
-                    return False
-
-                def close(self):
-                    """Set the stream to be closed."""
-                    # don't really close the handle, that would only cause problems
-                    self.closed = True
-
-                def fileno(self):
-                    """Return the fileno."""
-                    return self._fileno
-
-                def flush(self):
-                    """Flush the stream."""
-                    if self._hConsole is None:
-                        try:
-                            self._stream.flush()
-                        except Exception as e:
-                            _complain("%s.flush: %r from %r"
-                                      % (self.name, e, self._stream))
-                            raise
-
-                def write(self, text):
-                    """Write the text to the output."""
-                    try:
-                        if self._hConsole is None:
-                            if isinstance(text, unicode):
-                                text = text.encode('utf-8')
-                            self._stream.write(text)
-                        else:
-                            if not isinstance(text, unicode):
-                                text = bytes(text).decode('utf-8')
-                            remaining = len(text)
-                            while remaining > 0:
-                                n = DWORD(0)
-                                # There is a shorter-than-documented limitation on the
-                                # length of the string passed to WriteConsoleW (see
-                                # <https://tahoe-lafs.org/trac/tahoe-lafs/ticket/1232>.
-                                retval = WriteConsoleW(self._hConsole, text,
-                                                       min(remaining, 10000),
-                                                       byref(n), None)
-                                if retval == 0 or n.value == 0:
-                                    raise IOError("WriteConsoleW returned %r, n.value = %r"
-                                                  % (retval, n.value))
-                                remaining -= n.value
-                                if remaining == 0:
-                                    break
-                                text = text[n.value:]
-                    except Exception as e:
-                        _complain("%s.write: %r" % (self.name, e))
-                        raise
-
-                def writelines(self, lines):
-                    """Write a list of lines by using write."""
-                    try:
-                        for line in lines:
-                            self.write(line)
-                    except Exception as e:
-                        _complain("%s.writelines: %r" % (self.name, e))
-                        raise
-
             if real_stdin:
                 stdin = UnicodeInput(hStdin, name='<Unicode console stdin>')
 
@@ -294,3 +310,7 @@ if sys.platform == "win32":
 
     if argv == []:
         argv = [u'']
+
+
+register_cp65001()
+get_unicode_console()
