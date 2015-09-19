@@ -9,8 +9,6 @@ from __future__ import absolute_import, unicode_literals
 
 __version__ = '$Id$'
 
-from collections import Container, MutableMapping
-from email.mime.nonmultipart import MIMENonMultipart
 import datetime
 import hashlib
 import inspect
@@ -22,65 +20,32 @@ except ImportError:
     import pickle
 import pprint
 import re
-import traceback
 import time
+import traceback
 
+from collections import Container, MutableMapping
+from email.mime.nonmultipart import MIMENonMultipart
 from warnings import warn
 
 import pywikibot
+
 from pywikibot import config, login
-from pywikibot.tools import MediaWikiVersion, deprecated, itergroup, ip, PY2
+from pywikibot.comms import http
 from pywikibot.exceptions import (
     Server504Error, Server414Error, FatalServerError, NoUsername, Error
 )
-from pywikibot.comms import http
+from pywikibot.tools import MediaWikiVersion, deprecated, itergroup, ip, PY2
 
 if not PY2:
-    # Subclassing necessary to fix a possible bug of the email package
-    # in py3: see http://bugs.python.org/issue19003
-    # The following solution might be removed if/once the bug is fixed,
-    # unless the fix is not backported to py3.x versions that should
-    # instead support PWB.
-    basestring = (str, )
     from urllib.parse import urlencode, unquote
+
+    from pywikibot.tools.email import CTEBinaryMIMEMultipart as MIMEMultipart
+
+    basestring = (str, )
     unicode = str
-
-    from io import BytesIO
-
-    import email.generator
-    from email.mime.multipart import MIMEMultipart as MIMEMultipartOrig
-
-    class CTEBinaryBytesGenerator(email.generator.BytesGenerator):
-
-        """Workaround for bug in python 3 email handling of CTE binary."""
-
-        def __init__(self, *args, **kwargs):
-            """Constructor."""
-            super(CTEBinaryBytesGenerator, self).__init__(*args, **kwargs)
-            self._writeBody = self._write_body
-
-        def _write_body(self, msg):
-            if msg['content-transfer-encoding'] == 'binary':
-                self._fp.write(msg.get_payload(decode=True))
-            else:
-                super(CTEBinaryBytesGenerator, self)._handle_text(msg)
-
-    class CTEBinaryMIMEMultipart(MIMEMultipartOrig):
-
-        """Workaround for bug in python 3 email handling of CTE binary."""
-
-        def as_bytes(self, unixfrom=False, policy=None):
-            """Return unmodified binary payload."""
-            policy = self.policy if policy is None else policy
-            fp = BytesIO()
-            g = CTEBinaryBytesGenerator(fp, mangle_from_=False, policy=policy)
-            g.flatten(self, unixfrom=unixfrom)
-            return fp.getvalue()
-
-    MIMEMultipart = CTEBinaryMIMEMultipart
 else:
-    from urllib import urlencode, unquote
     from email.mime.multipart import MIMEMultipart
+    from urllib import urlencode, unquote
 
 _logger = "data.api"
 
