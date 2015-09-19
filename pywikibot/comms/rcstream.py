@@ -11,15 +11,10 @@ This module requires socketIO_client to be installed:
 """
 from __future__ import absolute_import, unicode_literals
 
-import sys
 import threading
 
-if sys.version_info[0] > 2:
-    from queue import Queue, Empty
-else:
-    from Queue import Queue, Empty
-
 from pywikibot.bot import debug, warning
+from pywikibot.tools import Queue
 
 _logger = 'pywikibot.rcstream'
 
@@ -70,7 +65,7 @@ class RcListenerThread(threading.Thread):
 
         self.daemon = True
         self.running = False
-        self.queue = Queue()
+        self.queue = Queue.Queue()
 
         self.warn_queue_length = 100
 
@@ -189,7 +184,7 @@ def rc_listener(wikihost, rchost, rcport=80, rcpath='/rc', total=None):
     while True:
         try:
             element = rc_thread.queue.get(timeout=0.1)
-        except Empty:
+        except Queue.Empty:
             continue
         if element is None:
             return

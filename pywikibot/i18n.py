@@ -26,12 +26,11 @@ from __future__ import absolute_import, unicode_literals
 __version__ = '$Id$'
 #
 
-import sys
-import re
-import locale
 import json
+import locale
 import os
 import pkgutil
+import re
 
 from collections import defaultdict
 
@@ -41,8 +40,9 @@ from pywikibot import __url__
 from pywikibot import Error
 from pywikibot import config
 from pywikibot.plural import plural_rules
+from pywikibot.tools import PY2
 
-if sys.version_info[0] > 2:
+if not PY2:
     basestring = (str, )
 
 PLURAL_PATTERN = r'{{PLURAL:(?:%\()?([^\)]*?)(?:\)d)?\|(.*?)}}'

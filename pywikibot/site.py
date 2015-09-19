@@ -20,7 +20,6 @@ import hashlib
 import itertools
 import os
 import re
-import sys
 import threading
 import time
 import json
@@ -37,7 +36,7 @@ from pywikibot.tools import (
     deprecated, deprecate_arg, deprecated_args, remove_last_args,
     redirect_func, issue_deprecation_warning,
     manage_wrapping, MediaWikiVersion, first_upper, normalize_username,
-    merge_unique_dicts,
+    merge_unique_dicts, PY2,
 )
 from pywikibot.comms.http import get_authentication
 from pywikibot.tools.ip import is_IP
@@ -69,15 +68,16 @@ from pywikibot.exceptions import (
 
 from pywikibot.echo import Notification
 
-if sys.version_info[0] > 2:
+if not PY2:
+    from itertools import zip_longest
     from urllib.parse import urlencode, urlparse
+
     basestring = (str,)
     unicode = str
-    from itertools import zip_longest
 else:
+    from itertools import izip_longest as zip_longest
     from urllib import urlencode
     from urlparse import urlparse
-    from itertools import izip_longest as zip_longest
 
 
 _logger = "wiki.site"

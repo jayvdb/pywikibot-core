@@ -12,13 +12,8 @@ __version__ = '$Id$'
 
 import difflib
 import math
-import sys
 
 from collections import Sequence
-if sys.version_info[0] > 2:
-    from itertools import zip_longest
-else:
-    from itertools import izip_longest as zip_longest
 
 try:
     from bs4 import BeautifulSoup
@@ -26,10 +21,16 @@ except ImportError as bserror:
     BeautifulSoup = False
 
 import pywikibot
+
 from pywikibot.tools import chars
 
 from pywikibot.backports import format_range_unified  # introduced in 2.7.2
-from pywikibot.tools import deprecated_args
+from pywikibot.tools import deprecated_args, PY2
+
+if not PY2:
+    from itertools import zip_longest
+else:
+    from itertools import izip_longest as zip_longest
 
 
 class Hunk(object):

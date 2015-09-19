@@ -17,16 +17,6 @@ from __future__ import absolute_import, unicode_literals
 __version__ = '$Id$'
 #
 
-import sys
-if sys.version_info[0] > 2:
-    import tkinter as Tkinter
-    from tkinter.scrolledtext import ScrolledText
-    from tkinter import simpledialog as tkSimpleDialog
-else:
-    import Tkinter
-    from ScrolledText import ScrolledText
-    import tkSimpleDialog
-
 from idlelib import SearchDialog, ReplaceDialog, configDialog
 from idlelib.configHandler import idleConf
 from idlelib.MultiCall import MultiCallCreator
@@ -34,6 +24,16 @@ from idlelib.MultiCall import MultiCallCreator
 import pywikibot
 
 from pywikibot import __url__
+from pywikibot.tools import PY2, unicode
+
+if not PY2:
+    import tkinter as Tkinter
+    from tkinter.scrolledtext import ScrolledText
+    from tkinter import simpledialog as tkSimpleDialog
+else:
+    import Tkinter
+    from ScrolledText import ScrolledText
+    import tkSimpleDialog
 
 
 class TextEditor(ScrolledText):
@@ -389,7 +389,7 @@ class EditBoxWindow(Tkinter.Frame):
         # if the editbox contains ASCII characters only, get() will
         # return string, otherwise unicode (very annoying). We only want
         # it to return unicode, so we work around this.
-        if sys.version[0] == 2 and isinstance(self.text, str):
+        if PY2 and isinstance(self.text, str):
             self.text = unicode(self.text)  # noqa
         self.parent.destroy()
 

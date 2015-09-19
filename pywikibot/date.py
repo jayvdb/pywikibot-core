@@ -18,11 +18,10 @@ __version__ = '$Id$'
 import calendar
 import datetime
 import re
-import sys
 
-from pywikibot.tools import first_lower, first_upper, deprecated
+from pywikibot.tools import first_lower, first_upper, deprecated, PY2
 
-if sys.version_info[0] > 2:
+if not PY2:
     unicode = str
     basestring = (str,)
 

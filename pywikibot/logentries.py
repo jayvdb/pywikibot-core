@@ -10,13 +10,12 @@ from __future__ import absolute_import, unicode_literals
 __version__ = '$Id$'
 #
 
-import sys
-
 import pywikibot
-from pywikibot.exceptions import Error
-from pywikibot.tools import deprecated
 
-if sys.version_info[0] > 2:
+from pywikibot.exceptions import Error
+from pywikibot.tools import deprecated, PY2
+
+if not PY2:
     basestring = (str, )
 
 _logger = "wiki"

@@ -28,7 +28,6 @@ import codecs
 import datetime
 import itertools
 import re
-import sys
 import time
 
 from warnings import warn
@@ -43,6 +42,7 @@ from pywikibot.tools import (
     DequeGenerator,
     intersect_generators,
     filter_unique,
+    PY2,
 )
 
 from pywikibot import date, config, i18n
@@ -50,7 +50,7 @@ from pywikibot.comms import http
 from pywikibot.data import wikidataquery as wdquery
 from pywikibot.exceptions import ArgumentDeprecationWarning
 
-if sys.version_info[0] > 2:
+if not PY2:
     basestring = (str, )
 
 _logger = "pagegenerators"

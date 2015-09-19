@@ -1,5 +1,5 @@
 # -*- coding: utf-8  -*-
-"""email workaround for Python issue 19003. See T113120."""
+"""Workaround for Python issue 19003. See T113120."""
 #
 # (C) Pywikibot team, 2014
 #

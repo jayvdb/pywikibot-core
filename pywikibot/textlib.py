@@ -19,14 +19,6 @@ __version__ = '$Id$'
 import collections
 import datetime
 import re
-import sys
-
-if sys.version_info[0] > 2:
-    from html.parser import HTMLParser
-    basestring = (str,)
-    unicode = str
-else:
-    from HTMLParser import HTMLParser
 
 try:
     import mwparserfromhell
@@ -41,7 +33,9 @@ from pywikibot.family import Family
 from pywikibot.tools import (
     DeprecatedRegex,
     OrderedDict,
-    issue_deprecation_warning
+    HTMLParser,
+    issue_deprecation_warning,
+    basestring, unicode,
 )
 
 # cache for replaceExcept to avoid recompile or regexes each call

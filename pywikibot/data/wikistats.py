@@ -6,13 +6,14 @@
 # Distributed under the terms of the MIT license.
 from __future__ import absolute_import, unicode_literals
 
-import sys
-
 from io import BytesIO, StringIO
 
 import pywikibot
 
-if sys.version_info[0] > 2:
+from pywikibot.comms import http
+from pywikibot.tools import PY2
+
+if not PY2:
     import csv
 else:
     try:
@@ -22,8 +23,6 @@ else:
             'WikiStats: unicodecsv package required for using csv in Python 2;'
             ' falling back to using the larger XML datasets.')
         csv = None
-
-from pywikibot.comms import http
 
 
 class WikiStats(object):
@@ -147,7 +146,7 @@ class WikiStats(object):
 
         data = self.raw_cached(table, 'csv')
 
-        if sys.version_info[0] > 2:
+        if not PY2:
             f = StringIO(data.decode('utf8'))
         else:
             f = BytesIO(data)

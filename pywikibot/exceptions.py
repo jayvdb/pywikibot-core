@@ -82,11 +82,9 @@ from __future__ import absolute_import, unicode_literals
 
 __version__ = '$Id$'
 
-import sys
+from pywikibot.tools import UnicodeMixin, _NotImplementedWarning, PY2
 
-from pywikibot.tools import UnicodeMixin, _NotImplementedWarning
-
-if sys.version_info[0] > 2:
+if not PY2:
     unicode = str
 
 

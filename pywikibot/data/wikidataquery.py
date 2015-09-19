@@ -7,22 +7,18 @@
 from __future__ import absolute_import, unicode_literals
 
 import json
-import sys
-if sys.version_info[0] > 2:
-    from urllib.parse import quote
-    basestring = (str, )
-else:
-    from urllib2 import quote
-import pickle
-import os
 import hashlib
-import time
+import os
+import pickle
 import tempfile
+import time
 
 import pywikibot
+
+from pywikibot import config
 from pywikibot.comms import http
 from pywikibot.page import ItemPage, PropertyPage, Claim
-from pywikibot import config
+from pywikibot.tools import PY2, quote, basestring
 
 
 def listify(x):

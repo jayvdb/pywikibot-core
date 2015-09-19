@@ -27,10 +27,25 @@ PY2 = (PYTHON_VERSION[0] == 2)
 
 if not PY2:
     import queue as Queue
-    basestring = (str,)
+
+    from html.parser import HTMLParser
+
+    from urllib.parse import quote, urlparse  # noqa
+
+    basestring = (str, )
     unicode = str
 else:
     import Queue
+
+    from HTMLParser import HTMLParser
+
+    from urllib2 import quote  # noqa
+    from urlparse import urlparse  # noqa
+
+    from types import (
+        StringTypes as basestring,
+        UnicodeType as unicode,
+    )
 
 from pywikibot.logging import debug
 

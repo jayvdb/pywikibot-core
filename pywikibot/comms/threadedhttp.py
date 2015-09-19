@@ -8,16 +8,10 @@ __docformat__ = 'epytext'
 
 # standard python libraries
 import codecs
-import sys
-
-if sys.version_info[0] > 2:
-    from urllib.parse import urlparse
-else:
-    from urlparse import urlparse
 
 import pywikibot
 
-from pywikibot.tools import UnicodeMixin
+from pywikibot.tools import UnicodeMixin, urlparse
 
 _logger = "comm.threadedhttp"
 
