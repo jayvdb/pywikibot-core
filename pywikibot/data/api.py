@@ -28,6 +28,7 @@ import time
 from warnings import warn
 
 import pywikibot
+
 from pywikibot import config, login
 from pywikibot.tools import MediaWikiVersion, deprecated, itergroup, ip, PY2
 from pywikibot.exceptions import (
@@ -3018,7 +3019,7 @@ class LoginManager(login.LoginManager):
 
     def storecookiedata(self, data):
         """Ignore data; cookies are set by threadedhttp module."""
-        pywikibot.cookie_jar.save()
+        http.cookie_jar.save()
 
 
 def update_page(page, pagedict, props=[]):

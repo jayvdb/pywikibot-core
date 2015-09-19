@@ -48,8 +48,10 @@ from pywikibot.exceptions import (
     FatalServerError, Server504Error, Server414Error
 )
 from pywikibot.comms import threadedhttp
+from pywikibot.logging import critical, debug, log, warning
 from pywikibot.tools import deprecate_arg, issue_deprecation_warning, PY2
-import pywikibot.version
+
+from pywikibot import __release__
 
 # The error message for failed SSL certificate verification
 # 'certificate verify failed' is a commonly detectable string
@@ -57,21 +59,21 @@ SSL_CERT_VERIFY_FAILED_MSG = 'certificate verify failed'
 
 _logger = "comm.http"
 
-if (isinstance(pywikibot.config2.socket_timeout, tuple) and
+if (isinstance(config.socket_timeout, tuple) and
         StrictVersion(requests.__version__) < StrictVersion('2.4.0')):
-    pywikibot.warning('The configured timeout is a tuple but requests does not '
-                      'support a tuple as a timeout. It uses the lower of the '
-                      'two.')
-    pywikibot.config2.socket_timeout = min(pywikibot.config2.socket_timeout)
+    warning('The configured timeout is a tuple but requests does not '
+            'support a tuple as a timeout. It uses the lower of the '
+            'two.')
+    config.socket_timeout = min(config.socket_timeout)
 
 cookie_jar = cookielib.LWPCookieJar(
     config.datafilepath('pywikibot.lwp'))
 try:
     cookie_jar.load()
 except (IOError, cookielib.LoadError):
-    pywikibot.debug(u"Loading cookies failed.", _logger)
+    debug(u"Loading cookies failed.", _logger)
 else:
-    pywikibot.debug(u"Loaded cookies from file.", _logger)
+    debug(u"Loaded cookies from file.", _logger)
 
 session = requests.Session()
 session.cookies = cookie_jar
@@ -84,22 +86,18 @@ def _flush():
     if hasattr(sys, 'last_type'):
         # we quit because of an exception
         print(sys.last_type)
-        pywikibot.critical(message)
+        critical(message)
     else:
-        pywikibot.log(message)
+        log(message)
 
-    pywikibot.log('Network session closed.')
+    log('Network session closed.')
 atexit.register(_flush)
-
-
-# export cookie_jar to global namespace
-pywikibot.cookie_jar = cookie_jar
 
 
 USER_AGENT_PRODUCTS = {
     'python': 'Python/' + '.'.join([str(i) for i in sys.version_info]),
     'http_backend': 'requests/' + requests.__version__,
-    'pwb': 'Pywikibot/' + pywikibot.__release__,
+    'pwb': 'Pywikibot/' + __release__,
 }
 
 
@@ -111,7 +109,8 @@ class _UserAgentFormatter(Formatter):
         """Get field as usual except for version and revision."""
         # This is the Pywikibot revision; also map it to {version} at present.
         if key == 'version' or key == 'revision':
-            return pywikibot.version.getversiondict()['rev']
+            from pywikibot.version import getversiondict
+            return getversiondict()['rev']
         else:
             return super(_UserAgentFormatter, self).get_value(key, args, kwargs)
 
@@ -160,12 +159,15 @@ def user_agent(site=None, format_string=None):
     @return: The formatted user agent
     @rtype: unicode
     """
+    from pywikibot.bot import calledModuleName
+    script_name = calledModuleName()
+
     values = USER_AGENT_PRODUCTS.copy()
 
-    values['script'] = pywikibot.calledModuleName()
+    values['script'] = script_name
 
     # TODO: script_product should add the script version, if known
-    values['script_product'] = pywikibot.calledModuleName()
+    values['script_product'] = script_name
 
     script_comments = []
     username = ''
@@ -280,8 +282,8 @@ def _http_process(session, http_request):
     if auth is not None and len(auth) == 4:
         if isinstance(requests_oauthlib, ImportError):
             warn('%s' % requests_oauthlib, ImportWarning)
-            pywikibot.error('OAuth authentication not supported: %s'
-                            % requests_oauthlib)
+            error('OAuth authentication not supported: %s'
+                  % requests_oauthlib)
             auth = None
         else:
             auth = requests_oauthlib.OAuth1(*auth)
@@ -326,8 +328,8 @@ def error_handling_callback(request):
     # HTTP status 207 is also a success status for Webdav FINDPROP,
     # used by the version module.
     if request.status not in (200, 207):
-        pywikibot.warning(u"Http response status %(status)s"
-                          % {'status': request.data.status_code})
+        warning("Http response status %(status)s"
+                % {'status': request.data.status_code})
 
 
 def _enqueue(uri, method="GET", body=None, headers=None, **kwargs):
