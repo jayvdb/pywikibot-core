@@ -18,7 +18,11 @@ import pywikibot.login
 import pywikibot.site
 import pywikibot.page
 
-from pywikibot.tools import MediaWikiVersion, PY2
+from pywikibot.tools import (
+    MediaWikiVersion,
+    PY2,
+    UnicodeType,
+)
 
 from tests.aspects import (
     unittest,
@@ -30,7 +34,6 @@ from tests.utils import allowed_failure, FakeLoginManager, PatchedHttp
 
 if not PY2:
     from urllib.parse import unquote_to_bytes
-    unicode = str
 else:
     from urllib import unquote_plus as unquote_to_bytes
 
@@ -73,7 +76,7 @@ class TestAPIMWException(DefaultSiteTestCase):
             for param, value in self.assert_parameters.items():
                 self.assertIn(param, parameters)
                 if value is not None:
-                    if isinstance(value, unicode):
+                    if isinstance(value, UnicodeType):
                         value = value.split('|')
                     self.assertLessEqual(set(value), parameters[param])
         return self.data

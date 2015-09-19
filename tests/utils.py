@@ -22,10 +22,10 @@ from collections import Mapping
 from types import ModuleType
 from warnings import warn
 
-if sys.version_info[0] > 2:
-    import six
+from pywikibot.tools import PY2
 
-    unicode = str
+if not PY2:
+    import six
 
 import pywikibot
 
@@ -34,7 +34,10 @@ from pywikibot.comms import threadedhttp
 from pywikibot.site import Namespace
 from pywikibot.data.api import CachedRequest
 from pywikibot.data.api import Request as _original_Request
-from pywikibot.tools import PYTHON_VERSION
+from pywikibot.tools import (
+    PYTHON_VERSION,
+    UnicodeType as unicode,
+)
 
 from tests import _pwb_py
 from tests import unittest  # noqa
@@ -104,7 +107,7 @@ def allowed_failure_if(expect):
 
 def add_metaclass(cls):
     """Call six's add_metaclass with the site's __metaclass__ in Python 3."""
-    if sys.version_info[0] > 2:
+    if not PY2:
         return six.add_metaclass(cls.__metaclass__)(cls)
     else:
         assert cls.__metaclass__
@@ -564,7 +567,7 @@ def execute(command, data_in=None, timeout=0, error=None):
 
     # sys.path may have been modified by the test runner to load dependencies.
     pythonpath = os.pathsep.join(sys.path)
-    if sys.platform == 'win32' and sys.version_info[0] < 3:
+    if sys.platform == 'win32' and PY2:
         pythonpath = str(pythonpath)
     env[str('PYTHONPATH')] = pythonpath
     env[str('PYTHONIOENCODING')] = str(config.console_encoding)
@@ -587,7 +590,7 @@ def execute(command, data_in=None, timeout=0, error=None):
         p = subprocess.Popen(command, env=env, **options)
     except TypeError as e:
         # Generate a more informative error
-        if sys.platform == 'win32' and sys.version_info[0] < 3:
+        if sys.platform == 'win32' and PY2:
             unicode_env = [(k, v) for k, v in os.environ.items()
                            if not isinstance(k, str) or
                            not isinstance(v, str)]
