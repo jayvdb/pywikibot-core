@@ -13,10 +13,9 @@ __version__ = '$Id$'
 import json
 import re
 
-import pywikibot
-
 from pywikibot.comms.http import fetch
 from pywikibot.exceptions import ServerError
+from pywikibot.logging import log
 from pywikibot.tools import MediaWikiVersion, PY2, PYTHON_VERSION
 
 if not PY2:
@@ -56,7 +55,7 @@ class MWSite(object):
             raise ServerError('Service Unavailable')
 
         if fromurl != r.data.url:
-            pywikibot.log('{0} redirected to {1}'.format(fromurl, r.data.url))
+            log('{0} redirected to {1}'.format(fromurl, r.data.url))
             fromurl = r.data.url
 
         self.fromurl = fromurl
@@ -74,13 +73,13 @@ class MWSite(object):
         try:
             self._parse_pre_117(data)
         except Exception as e:
-            pywikibot.log('MW pre-1.17 detection failed: {0!r}'.format(e))
+            log('MW pre-1.17 detection failed: {0!r}'.format(e))
 
         if self.api:
             try:
                 self._parse_post_117()
             except Exception as e:
-                pywikibot.log('MW 1.17+ detection failed: {0!r}'.format(e))
+                log('MW 1.17+ detection failed: {0!r}'.format(e))
 
             if not self.version:
                 self._fetch_old_version()
@@ -108,7 +107,7 @@ class MWSite(object):
     def _parse_pre_117(self, data):
         """Parse HTML."""
         if not self.REwgEnableApi.search(data):
-            pywikibot.log(
+            log(
                 'wgEnableApi is not enabled in HTML of %s'
                 % self.fromurl)
         try:
