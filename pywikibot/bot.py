@@ -272,8 +272,6 @@ def init_handlers(strm=None):
 
     _handlers_initialized = True
 
-    pywikibot.tools.debug = debug
-
     writelogheader()
 
 
