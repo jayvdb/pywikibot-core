@@ -528,7 +528,7 @@ class EntityTypeUnknownException(WikiBaseError):
 import pywikibot.data.api
 
 
-@pywikibot.tools.deprecated
+@deprecated
 class DeprecatedPageNotFoundError(Error):
 
     """Page not found (deprecated)."""
