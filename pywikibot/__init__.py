@@ -30,13 +30,19 @@ from warnings import warn
 # confusion with similarly-named modules in version 1 framework, for users
 # who want to continue using both
 
+from pywikibot.logging import (
+    output, warning, error, critical, debug, stdout, exception,
+)
+
 from pywikibot import config2 as config
 from pywikibot.bot import (
-    output, warning, error, critical, debug, stdout, exception,
     input, input_choice, input_yn, inputChoice, handle_args, showHelp, ui, log,
     calledModuleName, Bot, CurrentPageBot, WikidataBot,
     # the following are flagged as deprecated on usage
     handleArgs,
+)
+from pywikibot.bot_choice import (
+    QuitKeyboardInterrupt as _QuitKeyboardInterrupt,
 )
 from pywikibot.exceptions import (
     Error, InvalidTitle, BadTitle, NoPage, NoMoveTarget, SectionError,
@@ -50,6 +56,8 @@ from pywikibot.exceptions import (
     ServerError, FatalServerError, Server504Error,
     CaptchaError, SpamfilterError, CircularRedirect, InterwikiRedirectPage,
     WikiBaseError, CoordinateGlobeUnknownException,
+    DeprecatedPageNotFoundError as _DeprecatedPageNotFoundError,
+    _EmailUserError,
 )
 from pywikibot.tools import (
     PY2,
@@ -61,6 +69,8 @@ from pywikibot.tools import (
 from pywikibot.i18n import translate
 from pywikibot.data.api import UploadWarning
 from pywikibot.diff import PatchManager
+from pywikibot.site import BaseSite
+from pywikibot.family import Family
 import pywikibot.textlib as textlib
 
 
@@ -573,14 +583,14 @@ def Site(code=None, fam=None, user=None, sysop=None, interface=None, url=None):
             # Iterate through all families and look, which does apply to
             # the given URL
             for fam in config.family_files:
-                family = pywikibot.family.Family.load(fam)
+                family = Family.load(fam)
                 code = family.from_url(url)
                 if code is not None:
                     matched_sites += [(code, fam)]
 
             if matched_sites:
                 if len(matched_sites) > 1:
-                    pywikibot.warning(
+                    warning(
                         'Found multiple matches for URL "{0}": {1} (use first)'
                         .format(url, ', '.join(str(s) for s in matched_sites)))
                 _url_cache[url] = matched_sites[0]
@@ -617,7 +627,7 @@ def Site(code=None, fam=None, user=None, sysop=None, interface=None, url=None):
         except ImportError:
             raise ValueError("Invalid interface name '%(interface)s'" % locals())
 
-    if not issubclass(interface, pywikibot.site.BaseSite):
+    if not issubclass(interface, BaseSite):
         warning('Site called with interface=%s' % interface.__name__)
 
     user = normalize_username(user)
@@ -762,14 +772,14 @@ _putthread.setDaemon(True)
 wrapper = ModuleDeprecationWrapper(__name__)
 wrapper._add_deprecated_attr('ImagePage', FilePage)
 wrapper._add_deprecated_attr(
-    'PageNotFound', pywikibot.exceptions.DeprecatedPageNotFoundError,
+    'PageNotFound', _DeprecatedPageNotFoundError,
     warning_message=('{0}.{1} is deprecated, and no longer '
                      'used by pywikibot; use http.fetch() instead.'))
 wrapper._add_deprecated_attr(
-    'UserActionRefuse', pywikibot.exceptions._EmailUserError,
+    'UserActionRefuse', _EmailUserError,
     warning_message='UserActionRefuse is deprecated; '
                     'use UserRightsError and/or NotEmailableError')
 wrapper._add_deprecated_attr(
-    'QuitKeyboardInterrupt', pywikibot.bot.QuitKeyboardInterrupt,
+    'QuitKeyboardInterrupt', _QuitKeyboardInterrupt,
     warning_message='pywikibot.QuitKeyboardInterrupt is deprecated; '
                     'use pywikibot.bot.QuitKeyboardInterrupt instead')
