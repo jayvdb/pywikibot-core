@@ -520,7 +520,60 @@ class EntityTypeUnknownException(WikiBaseError):
     pass
 
 
-import pywikibot.data.api
+class APIError(Error):
+
+    """The wiki site returned an error message."""
+
+    def __init__(self, code, info, **kwargs):
+        """Save error dict returned by MW API."""
+        self.code = code
+        self.info = info
+        self.other = kwargs
+        self.unicode = unicode(self.__str__())
+
+    def __repr__(self):
+        """Return internal representation."""
+        return '{name}("{code}", "{info}", {other})'.format(
+            name=self.__class__.__name__, **self.__dict__)
+
+    def __str__(self):
+        """Return a string representation."""
+        if self.other:
+            return '{0}: {1} [{2}]'.format(
+                self.code,
+                self.info,
+                '; '.join(
+                    '{0}:{1}'.format(key, val)
+                    for key, val in self.other.items()))
+
+        return "%(code)s: %(info)s" % self.__dict__
+
+
+class UploadWarning(APIError):
+
+    """Upload failed with a warning message (passed as the argument)."""
+
+    def __init__(self, code, message, file_key=None, offset=0):
+        """
+        Create a new UploadWarning instance.
+
+        @param filekey: The filekey of the uploaded file to reuse it later. If
+            no key is known or it is an incomplete file it may be None.
+        @type filekey: str or None
+        @param offset: The starting offset for a chunked upload. Is False when
+            there is no offset.
+        @type offset: int or bool
+        """
+        super(UploadWarning, self).__init__(code, message)
+        self.file_key = file_key
+        self.offset = offset
+
+    @property
+    def message(self):
+        """Return warning message."""
+        return self.info
+
+
 import pywikibot.tools
 
 
@@ -541,7 +594,6 @@ class _EmailUserError(UserRightsError, NotEmailableError):
 
 
 wrapper = pywikibot.tools.ModuleDeprecationWrapper(__name__)
-wrapper._add_deprecated_attr('UploadWarning', pywikibot.data.api.UploadWarning)
 wrapper._add_deprecated_attr('PageNotFound', DeprecatedPageNotFoundError,
                              warning_message='{0}.{1} is deprecated, and no '
                                              'longer used by pywikibot; use '
