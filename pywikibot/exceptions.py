@@ -84,7 +84,12 @@ __version__ = '$Id$'
 
 import sys
 
-from pywikibot.tools import UnicodeMixin, _NotImplementedWarning
+from pywikibot.tools import (
+    deprecated,
+    ModuleDeprecationWrapper,
+    UnicodeMixin,
+    _NotImplementedWarning,
+)
 
 if sys.version_info[0] > 2:
     unicode = str
@@ -521,7 +526,6 @@ class EntityTypeUnknownException(WikiBaseError):
 
 
 import pywikibot.data.api
-import pywikibot.tools
 
 
 @pywikibot.tools.deprecated
@@ -532,7 +536,7 @@ class DeprecatedPageNotFoundError(Error):
     pass
 
 
-@pywikibot.tools.deprecated
+@deprecated
 class _EmailUserError(UserRightsError, NotEmailableError):
 
     """Email related error."""
@@ -540,7 +544,7 @@ class _EmailUserError(UserRightsError, NotEmailableError):
     pass
 
 
-wrapper = pywikibot.tools.ModuleDeprecationWrapper(__name__)
+wrapper = ModuleDeprecationWrapper(__name__)
 wrapper._add_deprecated_attr('UploadWarning', pywikibot.data.api.UploadWarning)
 wrapper._add_deprecated_attr('PageNotFound', DeprecatedPageNotFoundError,
                              warning_message='{0}.{1} is deprecated, and no '
