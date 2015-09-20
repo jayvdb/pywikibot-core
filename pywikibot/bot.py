@@ -272,8 +272,6 @@ def init_handlers(strm=None):
 
     _handlers_initialized = True
 
-    pywikibot.tools.debug = debug
-
     writelogheader()
 
 
@@ -357,9 +355,6 @@ def writelogheader():
         log(u'PYWIKI REPO VERSION: %s' % version.getversion_onlinerepo())
 
     log(u'=== ' * 14)
-
-
-add_init_routine(init_handlers)
 
 
 # User input functions

@@ -35,9 +35,13 @@ from pywikibot.bot import (
     output, warning, error, critical, debug, stdout, exception,
     input, input_choice, input_yn, inputChoice, handle_args, showHelp, ui, log,
     calledModuleName, Bot, CurrentPageBot, WikidataBot,
+    add_init_routine, init_handlers,
     # the following are flagged as deprecated on usage
     handleArgs,
 )
+
+add_init_routine(init_handlers)
+
 from pywikibot.exceptions import (
     Error, InvalidTitle, BadTitle, NoPage, NoMoveTarget, SectionError,
     SiteDefinitionError, NoSuchSite, UnknownSite, UnknownFamily,
