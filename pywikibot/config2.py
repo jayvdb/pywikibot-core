@@ -53,7 +53,7 @@ import types
 from warnings import warn
 
 from pywikibot import __url__
-from pywikibot.logging import error, output, warning
+from pywikibot.logging import debug, error, output, warning
 from pywikibot.tools import PY2
 
 OSWIN32 = (sys.platform == 'win32')
