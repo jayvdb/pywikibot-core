@@ -51,12 +51,18 @@ from pywikibot.exceptions import (
     CaptchaError, SpamfilterError, CircularRedirect, InterwikiRedirectPage,
     WikiBaseError, CoordinateGlobeUnknownException,
 )
-from pywikibot.tools import PY2, UnicodeMixin, redirect_func
+from pywikibot.tools import (
+    PY2,
+    UnicodeMixin,
+    redirect_func,
+    ModuleDeprecationWrapper,
+    normalize_username,
+)
 from pywikibot.i18n import translate
 from pywikibot.data.api import UploadWarning
 from pywikibot.diff import PatchManager
 import pywikibot.textlib as textlib
-import pywikibot.tools
+
 
 textlib_methods = (
     'unescape', 'replaceExcept', 'removeDisabledParts', 'removeHTMLParts',
@@ -106,8 +112,13 @@ for _name in textlib_methods:
     globals()[_name] = wrapped_func
 
 
-deprecated = redirect_func(pywikibot.tools.deprecated)
-deprecate_arg = redirect_func(pywikibot.tools.deprecate_arg)
+from pywikibot.tools import (
+    deprecated as tools_deprecated,
+    deprecate_arg as tools_deprecate_arg,
+)
+
+deprecated = redirect_func(tools_deprecated)
+deprecate_arg = redirect_func(tools_deprecate_arg)
 
 
 class Timestamp(datetime.datetime):
@@ -609,7 +620,7 @@ def Site(code=None, fam=None, user=None, sysop=None, interface=None, url=None):
     if not issubclass(interface, pywikibot.site.BaseSite):
         warning('Site called with interface=%s' % interface.__name__)
 
-    user = pywikibot.tools.normalize_username(user)
+    user = normalize_username(user)
     key = '%s:%s:%s:%s' % (interface.__name__, fam, code, user)
     if key not in _sites or not isinstance(_sites[key], interface):
         _sites[key] = interface(code=code, fam=fam, user=user, sysop=sysop)
@@ -624,7 +635,7 @@ def Site(code=None, fam=None, user=None, sysop=None, interface=None, url=None):
 
 
 # alias for backwards-compability
-getSite = pywikibot.tools.redirect_func(Site, old_name='getSite')
+getSite = redirect_func(Site, old_name='getSite')
 
 
 from pywikibot.page import (
@@ -643,7 +654,7 @@ from pywikibot.page import html2unicode, url2unicode, unicode2html
 link_regex = re.compile(r'\[\[(?P<title>[^\]|[<>{}]*)(\|.*?)?\]\]')
 
 
-@pywikibot.tools.deprecated("comment parameter for page saving method")
+@tools_deprecated("comment parameter for page saving method")
 def setAction(s):
     """Set a summary to use for changed page submissions."""
     config.default_edit_summary = s
@@ -748,7 +759,7 @@ _putthread = threading.Thread(target=async_manager)
 _putthread.setName('Put-Thread')
 _putthread.setDaemon(True)
 
-wrapper = pywikibot.tools.ModuleDeprecationWrapper(__name__)
+wrapper = ModuleDeprecationWrapper(__name__)
 wrapper._add_deprecated_attr('ImagePage', FilePage)
 wrapper._add_deprecated_attr(
     'PageNotFound', pywikibot.exceptions.DeprecatedPageNotFoundError,
