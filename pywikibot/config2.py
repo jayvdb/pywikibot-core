@@ -55,10 +55,12 @@ from warnings import warn
 from pywikibot import __url__
 from pywikibot.logging import error, output, warning
 
+import pywikibot.tools
+
 # pywikibot.tools can not be imported from config
 # otherwise generate_family_file fails when it uses logging
 # the report that it cant load cookies.
-PY2 = (sys.version_info[0] == 2)
+PY2 = pywikibot.tools.PY2
 OSWIN32 = (sys.platform == 'win32')
 
 if OSWIN32:
