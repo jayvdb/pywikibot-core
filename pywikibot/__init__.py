@@ -30,6 +30,7 @@ from warnings import warn
 # confusion with similarly-named modules in version 1 framework, for users
 # who want to continue using both
 
+import pywikibot.tools
 from pywikibot import config2 as config
 from pywikibot.bot import (
     output, warning, error, critical, debug, stdout, exception,
@@ -56,7 +57,6 @@ from pywikibot.i18n import translate
 from pywikibot.data.api import UploadWarning
 from pywikibot.diff import PatchManager
 import pywikibot.textlib as textlib
-import pywikibot.tools
 
 textlib_methods = (
     'unescape', 'replaceExcept', 'removeDisabledParts', 'removeHTMLParts',
