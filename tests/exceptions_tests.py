@@ -24,7 +24,8 @@ class TestDeprecatedExceptions(DeprecationTestCase):
         """Test exceptions.UploadWarning is deprecated only."""
         # Accessing from the main package should work fine.
         cls = pywikibot.UploadWarning
-        self.assertNoDeprecation()
+        self.assertOneDeprecation()
+
         e = cls('foo', 'bar')
         self.assertIsInstance(e, pywikibot.Error)
         self.assertNoDeprecation()
