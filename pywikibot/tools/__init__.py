@@ -1515,6 +1515,21 @@ class ModuleDeprecationWrapper(types.ModuleType):
                  DeprecationWarning, 2)
             if self._deprecated[attr][1]:
                 return self._deprecated[attr][1]
+            elif '.' in self._deprecated[attr][0]:
+                try:
+                    package_name = self._deprecated[attr][0].split('.', 1)[0]
+                    module = __import__(package_name)
+                    context = {package_name: module}
+                    replacement = eval(self._deprecated[attr][0], context)
+                    self._deprecated[attr] = (
+                        self._deprecated[attr][0],
+                        replacement,
+                        self._deprecated[attr][2]
+                    )
+                    return replacement
+                except Exception as e:
+                    print('exception', e)
+                    pass
         return getattr(self._module, attr)
 
 
