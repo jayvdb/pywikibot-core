@@ -89,11 +89,9 @@ from pywikibot.tools import (
     deprecated as __deprecated,
     ModuleDeprecationWrapper as _ModuleDeprecationWrapper,
     UnicodeMixin,
+    UnicodeType,
     _NotImplementedWarning,
 )
-
-if sys.version_info[0] > 2:
-    unicode = str
 
 
 class NotImplementedWarning(_NotImplementedWarning):
@@ -185,7 +183,7 @@ class PageSaveRelatedError(PageRelatedError):  # noqa
     @property
     def args(self):
         """Expose args."""
-        return unicode(self)
+        return UnicodeType(self)
 
 
 class OtherPageSaveError(PageSaveRelatedError):
@@ -206,7 +204,7 @@ class OtherPageSaveError(PageSaveRelatedError):
     @property
     def args(self):
         """Expose args."""
-        return unicode(self.reason)
+        return UnicodeType(self.reason)
 
 
 class NoUsername(Error):
@@ -526,9 +524,6 @@ class EntityTypeUnknownException(WikiBaseError):
     pass
 
 
-import pywikibot.data.api
-
-
 @__deprecated
 class DeprecatedPageNotFoundError(Error):
 
@@ -546,7 +541,11 @@ class _EmailUserError(UserRightsError, NotEmailableError):
 
 
 wrapper = _ModuleDeprecationWrapper(__name__)
-wrapper._add_deprecated_attr('UploadWarning', pywikibot.data.api.UploadWarning)
+wrapper._add_deprecated_attr(
+    'UploadWarning',
+    replacement_name='pywikibot.data.api.UploadWarning',
+    warning_message='pywikibot.exceptions.UploadWarning is deprecated; '
+                    'use APISite.upload with a warning handler instead.')
 wrapper._add_deprecated_attr('PageNotFound', DeprecatedPageNotFoundError,
                              warning_message='{0}.{1} is deprecated, and no '
                                              'longer used by pywikibot; use '

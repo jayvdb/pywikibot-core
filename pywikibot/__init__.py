@@ -26,10 +26,13 @@ else:
 
 from warnings import warn
 
+from pywikibot.logging import (
+    critical, debug, error, exception, log, output, stdout, warning
+)
+
 from pywikibot import config2 as config
 from pywikibot.bot import (
-    output, warning, error, critical, debug, stdout, exception,
-    input, input_choice, input_yn, inputChoice, handle_args, showHelp, ui, log,
+    input, input_choice, input_yn, inputChoice, handle_args, showHelp, ui,
     calledModuleName, Bot, CurrentPageBot, WikidataBot,
     # the following are flagged as deprecated on usage
     handleArgs,
@@ -38,6 +41,8 @@ from pywikibot.bot import (
 from pywikibot.bot_choice import (
     QuitKeyboardInterrupt as _QuitKeyboardInterrupt,
 )
+from pywikibot.data.api import UploadWarning as _UploadWarning
+from pywikibot.diff import PatchManager
 from pywikibot.exceptions import (
     Error, InvalidTitle, BadTitle, NoPage, NoMoveTarget, SectionError,
     SiteDefinitionError, NoSuchSite, UnknownSite, UnknownFamily,
@@ -53,10 +58,6 @@ from pywikibot.exceptions import (
     DeprecatedPageNotFoundError as _DeprecatedPageNotFoundError,
     _EmailUserError,
 )
-
-# 'data' can not be imported before 'exceptions'
-from pywikibot.data.api import UploadWarning as _UploadWarning
-from pywikibot.diff import PatchManager
 from pywikibot.family import Family
 from pywikibot.i18n import translate
 from pywikibot.site import BaseSite

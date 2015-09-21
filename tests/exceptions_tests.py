@@ -36,7 +36,7 @@ class TestDeprecatedExceptions(DeprecationTestCase):
         cls = pywikibot.exceptions.UploadWarning
 
         self.assertOneDeprecationParts('pywikibot.exceptions.UploadWarning',
-                                       'pywikibot.data.api.UploadWarning')
+                                       'APISite.upload with a warning handler')
 
         e = cls('foo', 'bar')
         self.assertIsInstance(e, pywikibot.Error)
