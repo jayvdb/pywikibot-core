@@ -53,18 +53,27 @@ from __future__ import absolute_import, unicode_literals
 
 __version__ = '$Id$'
 
-import Tkinter
 import re
 import webbrowser
+import sys
 import threading
-from Queue import Queue
+
 from datetime import datetime
 
 import pywikibot
 
 from pywikibot import pagegenerators, i18n
 
+from pywikibot.tools import PY2
+
 from scripts import add_text, imagerecat, image, upload
+
+if not PY2:
+    import tkinter as Tkinter
+    from queue import Queue
+else:
+    import Tkinter
+    from Queue import Queue
 
 try:
     from pywikibot.userinterfaces.gui import Tkdialog
@@ -937,11 +946,6 @@ class uploader(threading.Thread):
 
 
 def main(*args):
-    pywikibot.warning(u'This is an experimental bot')
-    pywikibot.warning(u'It will only work on self published work images')
-    pywikibot.warning(u'This bot is still full of bugs')
-    pywikibot.warning(u'Use at your own risk!')
-
     generator = None
     autonomous = False
     checkTemplate = True
@@ -959,12 +963,17 @@ def main(*args):
 
     generator = genFactory.getCombinedGenerator()
     if not generator:
-        raise add_text.NoEnoughData(
-            'You have to specify the generator you want to use for the script!')
+        pywikibot.bot.suggest_help(missing_generator=True)
+        return False
 
     if not supportedSite():
         pywikibot.output(u'Sorry, this site is not supported (yet).')
         return False
+
+    pywikibot.warning(u'This is an experimental bot')
+    pywikibot.warning(u'It will only work on self published work images')
+    pywikibot.warning(u'This bot is still full of bugs')
+    pywikibot.warning(u'Use at your own risk!')
 
     pregenerator = pagegenerators.PreloadingGenerator(generator)
 

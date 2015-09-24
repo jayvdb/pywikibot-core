@@ -85,7 +85,6 @@ from __future__ import absolute_import, unicode_literals
 
 __version__ = '$Id$'
 
-import Tkinter
 import sys
 import re
 import codecs
@@ -100,9 +99,13 @@ from pywikibot import pagegenerators, config, i18n
 from scripts import add_text, image, upload
 
 if sys.version_info[0] > 2:
+    import tkinter as Tkinter
+
     from urllib.parse import urlencode
     from urllib.request import urlopen
 else:
+    import Tkinter
+
     from urllib import urlencode, urlopen
 
 try:
@@ -486,8 +489,8 @@ def main(*args):
 
     generator = genFactory.getCombinedGenerator()
     if not generator:
-        raise add_text.NoEnoughData(
-            'You have to specify the generator you want to use for the script!')
+        pywikibot.bot.suggest_help(missing_generator=True)
+        return False
 
     pregenerator = pagegenerators.PreloadingGenerator(generator)
 
