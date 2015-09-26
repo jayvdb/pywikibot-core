@@ -25,9 +25,9 @@ Commandline parameters that are supported:
 from __future__ import absolute_import, unicode_literals
 
 __version__ = '$Id$'
-import mwlib.uparser  # used to parse the whitelist
-import mwlib.parser  # used to parse the whitelist
 import time
+
+import mwparserfromhell
 
 import pywikibot
 
@@ -92,6 +92,13 @@ class PatrolBot(SingleSiteBot):
 
         self.rc_item_counter = 0  # counts how many items have been reviewed
         self.patrol_counter = 0  # and how many times an action was taken
+        for entry in self.site.siteinfo['specialpagealiases']:
+            if entry['realname'] == 'Prefixindex':
+                self._prefixindex_aliases = set(alias.lower()
+                                                for alias in entry['aliases'])
+                break
+        else:
+            raise RuntimeError('No alias for "prefixindex"')
 
     def load_whitelist(self):
         """Load most recent watchlist_page for further processing."""
@@ -183,34 +190,31 @@ class PatrolBot(SingleSiteBot):
         """Parse page details apart from 'user:' for use."""
         tuples = {}
 
-        # for any structure, the only first 'user:' page
-        # is registered as the user the rest of the structure
-        # refers to.
-        def process_children(obj, current_user):
-            pywikibot.debug(u'Parsing node: %s' % obj, _logger)
-            for c in obj.children:
-                temp = process_node(c, current_user)
-                if temp and not current_user:
-                    current_user = temp
-
-        def process_node(obj, current_user):
-            # links are analysed; interwiki links are included because mwlib
-            # incorrectly calls 'Wikisource:' namespace links an interwiki
-            if isinstance(obj, mwlib.parser.NamespaceLink) or \
-               isinstance(obj, mwlib.parser.InterwikiLink) or \
-               isinstance(obj, mwlib.parser.ArticleLink):
+        current_user = False
+        parsed = mwparserfromhell.parse(wikitext)
+        for node in parsed.nodes:
+            if isinstance(node, mwparserfromhell.nodes.tag.Tag):
+                if node.tag == 'li':
+                    current_user = None
+            elif isinstance(node, mwparserfromhell.nodes.text.Text):
+                if node.endswith('\n'):
+                    current_user = False
+            elif (isinstance(node, mwparserfromhell.nodes.wikilink.Wikilink) and
+                    current_user is not False):
+                obj = pywikibot.Link(node.title, self.site)
                 if obj.namespace == -1:
                     # the parser accepts 'special:prefixindex/' as a wildcard
                     # this allows a prefix that doesnt match an existing page
                     # to be a blue link, and can be clicked to see what pages
                     # will be included in the whitelist
-                    if obj.target[:20].lower() == 'special:prefixindex/':
-                        if len(obj.target) == 20:
+                    name, sep, prefix = obj.title.partition('/')
+                    if name.lower() in self._prefixindex_aliases:
+                        if not prefix:
                             if pywikibot.config.verbose_output:
                                 pywikibot.output(u'Whitelist everything')
                             page = ''
                         else:
-                            page = obj.target[20:]
+                            page = prefix
                             if pywikibot.config.verbose_output:
                                 pywikibot.output(u'Whitelist prefixindex hack '
                                                  u'for: %s' % page)
@@ -222,13 +226,12 @@ class PatrolBot(SingleSiteBot):
                     # if a target user hasn't been found yet, and the link is
                     # 'user:'
                     # the user will be the target of subsequent rules
-                    page_prefix_len = len(self.site.namespace(2))
-                    current_user = obj.target[(page_prefix_len + 1):]
+                    current_user = obj.title
                     if pywikibot.config.verbose_output:
                         pywikibot.output(u'Whitelist user: %s' % current_user)
-                    return current_user
+                    continue
                 else:
-                    page = obj.target
+                    page = obj.canonical_title()
 
                 if current_user:
                     if not user or current_user == user:
@@ -246,11 +249,6 @@ class PatrolBot(SingleSiteBot):
                                          u'another user: %s' % page)
                 else:
                     raise Exception(u'No user set for page %s' % page)
-            else:
-                process_children(obj, current_user)
-
-        root = mwlib.uparser.parseString(title='Not used', raw=wikitext)
-        process_children(root, None)
 
         return tuples
 
