@@ -91,12 +91,12 @@ script:
       nosetests --version ;
       if [[ "$SITE_ONLY" == "1" ]]; then
         echo "Running site tests only code ${LANGUAGE} on family ${FAMILY}" ;
-        python setup.py nosetests --tests tests --verbosity=2 -a "family=$FAMILY,code=$LANGUAGE" ;
+        python setup.py nosetests --tests tests --verbosity=2 -a "family=$FAMILY,code=$LANGUAGE"  --with-coverage ;
       else
-        python setup.py nosetests --tests tests --verbosity=2 ;
+        python setup.py nosetests --tests tests --verbosity=2 --with-coverage ;
       fi ;
     else
-      python setup.py test ;
+      coverage run --source pywikibot setup.py test;
     fi
 
 env:
@@ -133,6 +133,13 @@ matrix:
       env: LANGUAGE=ar FAMILY=wiktionary PYWIKIBOT2_TEST_NO_RC=1
     - python: '2.6'
       env: LANGUAGE=wikidata FAMILY=wikidata SITE_ONLY=1
+
+addons:
+  artifacts: true
+    paths:
+      - /home/travis/build/jayvdb/pywikibot-core/.coverage
+      - /home/travis/build/jayvdb/pywikibot-core/coverage.xml
+  s3_region: "us-west-2" # defaults to "us-east-1"
 
 notifications:
   email:
