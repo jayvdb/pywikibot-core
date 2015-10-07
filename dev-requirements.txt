@@ -5,6 +5,7 @@ unittest2==0.8.0 ; python_full_version < '2.7.3'
 six
 
 nose
+codecov
 
 pep8
 pep257>=0.6
