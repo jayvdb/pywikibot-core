@@ -372,6 +372,7 @@ class ParamInfo(Container):
         }
 
         if _mw_ver >= MediaWikiVersion('1.12'):
+            self._generate_submodules(['main'])
             return
 
         query_help_list_prefix = "Values (separate with '|'): "
@@ -451,7 +452,7 @@ class ParamInfo(Container):
             ],
         }
         # Converted entries added, now treat them like they have been fetched
-        self._generate_submodules(['main', 'query'])
+        self._generate_submodules(['main', 'paraminfo', 'query'])
 
         # TODO: rewrite 'help' parser to determine prefix from the parameter
         # names, as API 1.10 help does not include prefix on the first line.
