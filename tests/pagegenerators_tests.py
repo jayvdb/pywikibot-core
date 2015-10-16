@@ -828,8 +828,9 @@ class TestLogeventsFactoryGenerator(DefaultSiteTestCase,
         self.assertTrue(all(isinstance(item, pywikibot.Page) for item in pages))
 
 
-class PageGeneratorIntersectTestCase(DefaultSiteTestCase,
-                                     GeneratorIntersectTestCase):
+class PageGeneratorIntersectTestCase(GeneratorIntersectTestCase,
+                                     RecentChangesTestCase,
+                                     DefaultSiteTestCase):
 
     """Page intersect_generators test cases."""
 
@@ -846,7 +847,8 @@ class PageGeneratorIntersectTestCase(DefaultSiteTestCase,
              pagegenerators.RecentChangesPageGenerator(site=site, total=200)])
 
 
-class EnglishWikipediaPageGeneratorIntersectTestCase(GeneratorIntersectTestCase):
+class EnWikipediaPageGeneratorIntersectTestCase(GeneratorIntersectTestCase,
+                                                RecentChangesTestCase):
 
     """Page intersect_generators test cases."""
 
