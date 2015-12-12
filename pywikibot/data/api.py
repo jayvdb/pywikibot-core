@@ -1764,7 +1764,7 @@ class Request(MutableMapping):
 
         URL encodes the parameters provided by _encoded_items()
         """
-        return encode_url(self._encoded_items())
+        return encode_url(self._encoded_items(), encoding=False)
 
     def __str__(self):
         """Return a string representation."""
@@ -3028,7 +3028,7 @@ class LoginManager(login.LoginManager):
         http.cookie_jar.save()
 
 
-def encode_url(query):
+def encode_url(query, encoding='utf-8'):
     """
     Encode parameters to pass with a url.
 
@@ -3045,14 +3045,17 @@ def encode_url(query):
     if hasattr(query, 'items'):
         query = list(query.items())
 
-    if PY2:
-        query = [(pair[0], pair[1].encode('utf-8')) for pair in query]
+    if PY2 and not encoding is False:
+        query = [(pair[0], pair[1].encode(encoding)) for pair in query]
 
     # parameters ending on 'token' should go last
     # wpEditToken should go very last
     query.sort(key=lambda x: x[0].lower().endswith('token') +
                (x[0] == 'wpEditToken'))
-    return urlencode(query)
+    if PY2 or encoding is False:
+        return urlencode(query)
+    else:
+        return urlencode(query, encoding=encoding)
 
 
 def update_page(page, pagedict, props=[]):
