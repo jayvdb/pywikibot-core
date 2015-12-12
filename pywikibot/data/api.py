@@ -3028,7 +3028,7 @@ class LoginManager(login.LoginManager):
         http.cookie_jar.save()
 
 
-def encode_url(query):
+def encode_url(query, encoding='utf-8'):
     """
     Encode parameters to pass with a url.
 
@@ -3039,6 +3039,8 @@ def encode_url(query):
 
     @param query: keys and values to be uncoded for passing with a url
     @type query: mapping object or a sequence of two-element tuples
+    @param encoding: Encoding to use
+    @type encoding: str
     @return: encoded parameters with token parameters at the end
     @rtype: str
     """
@@ -3046,13 +3048,17 @@ def encode_url(query):
         query = list(query.items())
 
     if PY2:
-        query = [(pair[0], pair[1].encode('utf-8')) for pair in query]
+        if any(not isinstance(pair[1], bytes) for pair in query):
+            query = [(pair[0], pair[1].encode(encoding)) for pair in query]
 
     # parameters ending on 'token' should go last
     # wpEditToken should go very last
     query.sort(key=lambda x: x[0].lower().endswith('token') +
                (x[0] == 'wpEditToken'))
-    return urlencode(query)
+    if PY2:
+        return urlencode(query)
+    else:
+        return urlencode(query, encoding=encoding)
 
 
 def update_page(page, pagedict, props=[]):
