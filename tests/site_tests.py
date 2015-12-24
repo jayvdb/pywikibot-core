@@ -47,6 +47,9 @@ from tests.aspects import (
 from tests.basepage_tests import BasePageLoadRevisionsCachingTestBase
 from tests.utils import allowed_failure, allowed_failure_if, entered_loop
 
+if __debug__ and not PY2:
+    long = NotImplemented  # pyflakes workaround
+
 
 class TokenTestBase(TestCaseBase):
 

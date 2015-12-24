@@ -10,12 +10,15 @@ from __future__ import absolute_import, unicode_literals
 __version__ = '$Id$'
 
 import re
-import sys
 
 from distutils.version import StrictVersion
 from warnings import warn
 
-from pywikibot.tools import DeprecatedRegex, UnicodeType
+from pywikibot.tools import (
+    DeprecatedRegex,
+    PY2,
+    UnicodeType,
+)
 
 _ipaddress_e = _ipaddr_e = _ipaddr_version = None
 
@@ -25,7 +28,7 @@ except ImportError as e:
     _ipaddress_e = e
     ip_address = None
 
-if not ip_address or sys.version_info[0] < 3:
+if not ip_address or PY2:
     try:
         from ipaddr import __version__ as _ipaddr_version
     except ImportError as e:
@@ -38,7 +41,7 @@ if not ip_address or sys.version_info[0] < 3:
             _ipaddr_e = ImportError('ipaddr %s is broken.' % _ipaddr_version)
 
 if ip_address and ip_address.__module__ == 'ipaddress':
-    if sys.version_info[0] < 3:
+    if PY2:
         # This backport fails many tests
         # https://pypi.python.org/pypi/py2-ipaddress
         # It accepts u'1111' as a valid IP address.
