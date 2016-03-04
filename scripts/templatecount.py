@@ -65,19 +65,16 @@ class TemplateCountRobot(object):
         @type namespaces: list
         """
         templateDict = cls.template_dict(templates, namespaces)
-        pywikibot.output(u'\nNumber of transclusions per template',
-                         toStdout=True)
-        pywikibot.output(u'-' * 36, toStdout=True)
+        pywikibot.stdout('\nNumber of transclusions per template')
+        pywikibot.stdout('-' * 36)
         total = 0
         for key in templateDict:
             count = len(templateDict[key])
-            pywikibot.output(u'%-10s: %5d' % (key, count),
-                             toStdout=True)
+            pywikibot.stdout('%-10s: %5d' % (key, count))
             total += count
-        pywikibot.output(u'TOTAL     : %5d' % total, toStdout=True)
-        pywikibot.output(u'Report generated on %s'
-                         % datetime.datetime.utcnow().isoformat(),
-                         toStdout=True)
+        pywikibot.stdout('TOTAL     : %5d' % total)
+        pywikibot.stdout('Report generated on %s'
+                         % datetime.datetime.utcnow().isoformat())
 
     @classmethod
     def listTemplates(cls, templates, namespaces):
@@ -93,20 +90,18 @@ class TemplateCountRobot(object):
         @type namespaces: list
         """
         templateDict = cls.template_dict(templates, namespaces)
-        pywikibot.output(u'\nList of pages transcluding templates:',
-                         toStdout=True)
+        pywikibot.stdout('\nList of pages transcluding templates:')
         for key in templates:
             pywikibot.output(u'* %s' % key)
-        pywikibot.output(u'-' * 36, toStdout=True)
+        pywikibot.stdout('-' * 36)
         total = 0
         for key in templateDict:
             for page in templateDict[key]:
-                pywikibot.output(page.title(), toStdout=True)
+                pywikibot.stdout(page.title())
                 total += 1
         pywikibot.output(u'Total page count: %d' % total)
-        pywikibot.output(u'Report generated on %s'
-                         % datetime.datetime.utcnow().isoformat(),
-                         toStdout=True)
+        pywikibot.stdout('Report generated on %s'
+                         % datetime.datetime.utcnow().isoformat())
 
     @classmethod
     def template_dict(cls, templates, namespaces):
