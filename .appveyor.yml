@@ -15,6 +15,14 @@ environment:
 
   matrix:
 
+    - PYTHON: "C:\\Python2710"
+      PYTHON_VERSION: "2.7.10"
+      PYTHON_ARCH: "32"
+
+    - PYTHON: "C:\\Python2710-x64"
+      PYTHON_VERSION: "2.7.10"
+      PYTHON_ARCH: "64"
+
     # Test the lowest supported release of each major Python version.
 
     # Pywikibot support matrix suggests 'should run' on Python 2.6.5+
