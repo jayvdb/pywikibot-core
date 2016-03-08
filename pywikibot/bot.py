@@ -841,32 +841,35 @@ def handle_args(args=None, do_help=True):
     username = None
     do_help = None if do_help else False
     for arg in args:
-        option, sep, value = arg.partition(':')
-        if do_help is not False and option == '-help':
+        if do_help is not False and arg == '-help':
             do_help = True
-        elif option == '-dir':
+        elif arg.startswith('-dir:'):
             pass
-        elif option == '-family':
-            config.family = value
-        elif option == '-lang':
-            config.mylang = value
-        elif option == '-user:':
-            username = value
-        elif option in ('-putthrottle', '-pt'):
-            config.put_throttle = int(value)
-        elif option == '-log':
+        elif arg.startswith('-family:'):
+            config.family = arg[len("-family:"):]
+        elif arg.startswith('-lang:'):
+            config.mylang = arg[len("-lang:"):]
+        elif arg.startswith("-user:"):
+            username = arg[len("-user:"):]
+        elif arg.startswith('-putthrottle:'):
+            config.put_throttle = int(arg[len("-putthrottle:"):])
+        elif arg.startswith('-pt:'):
+            config.put_throttle = int(arg[len("-pt:"):])
+        elif arg == '-log':
             if moduleName not in config.log:
                 config.log.append(moduleName)
-            if value:
-                config.logfilename = value
-        elif option == '-nolog':
+        elif arg.startswith('-log:'):
+            if moduleName not in config.log:
+                config.log.append(moduleName)
+            config.logfilename = arg[len("-log:"):]
+        elif arg == '-nolog':
             if moduleName in config.log:
                 config.log.remove(moduleName)
-        elif option in ('-cosmeticchanges', '-cc'):
+        elif arg in ('-cosmeticchanges', '-cc'):
             config.cosmetic_changes = not config.cosmetic_changes
             output(u'NOTE: option cosmetic_changes is %s\n'
                    % config.cosmetic_changes)
-        elif option == '-simulate':
+        elif arg == '-simulate':
             config.simulate = True
         #
         #  DEBUG control:
@@ -893,28 +896,31 @@ def handle_args(args=None, do_help=True):
         #    If used, "-debug" turns on file logging, regardless of any
         #    other settings.
         #
-        elif option == '-debug':
+        elif arg == '-debug':
             if moduleName not in config.log:
                 config.log.append(moduleName)
-            if value:
-                if value not in config.debug_log:
-                    config.debug_log.append(value)
-            elif '' not in config.debug_log:
+            if "" not in config.debug_log:
                 config.debug_log.append("")
-        elif option in ('-verbose', '-v'):
+        elif arg.startswith("-debug:"):
+            if moduleName not in config.log:
+                config.log.append(moduleName)
+            component = arg[len("-debug:"):]
+            if component not in config.debug_log:
+                config.debug_log.append(component)
+        elif arg in ('-verbose', '-v'):
             config.verbose_output += 1
-        elif option == '-daemonize':
-            redirect_std = value if value else None
+        elif arg.startswith('-daemonize'):
+            redirect_std = arg[len('-daemonize:'):] if ':' in arg else None
             daemonize.daemonize(redirect_std=redirect_std)
         else:
             # the argument depends on numerical config settings
             # e.g. -maxlag:
             try:
-                _arg = option[1:]
+                _arg, _val = arg[1:].split(':')
                 # explicitly check for int (so bool doesn't match)
                 if not isinstance(getattr(config, _arg), int):
                     raise TypeError
-                setattr(config, _arg, int(value))
+                setattr(config, _arg, int(_val))
             except (ValueError, TypeError, AttributeError):
                 # argument not global -> specific bot script will take care
                 nonGlobalArgs.append(arg)
