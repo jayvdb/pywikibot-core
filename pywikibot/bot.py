@@ -906,7 +906,7 @@ def handle_args(args=None, do_help=True):
         elif option == '-daemonize':
             redirect_std = value if value else None
             daemonize.daemonize(redirect_std=redirect_std)
-        else:
+        elif False:
             # the argument depends on numerical config settings
             # e.g. -maxlag:
             try:

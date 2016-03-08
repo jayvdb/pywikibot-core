@@ -289,7 +289,7 @@ class TestScriptMeta(MetaTestCaseClass):
 
                     exit_codes = [0, 1, 2, -9]
                 elif not is_autorun:
-                    if stderr_other == []:
+                    if stderr_other == ['']:
                         stderr_other = None
                     if stderr_other is not None:
                         self.assertIn('Use -help for further information.',
