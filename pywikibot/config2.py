@@ -1087,7 +1087,7 @@ if OSWIN32 and editor:
             'path delimiter.')
 
 if userinterface_lang is None:
-    userinterface_lang = getdefaultlocale()[0].split('_')[0]
+    userinterface_lang = (getdefaultlocale()[0] or 'C').split('_')[0]
 
 # Fix up default site
 if family == 'wikipedia' and mylang == 'language':
