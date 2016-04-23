@@ -473,6 +473,13 @@ class BasePage(UnicodeMixin, ComparableMixin):
                   (oldid if oldid is not None else self.latest_revision_id))
 
     @property
+    def pageid(self):
+        """Return the page id if already fetched, None otherwise."""
+        if hasattr(self, '_pageid'):
+            return self._pageid
+        return None
+
+    @property
     def latest_revision_id(self):
         """Return the current revision id for this page."""
         if not hasattr(self, '_revid'):
