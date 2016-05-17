@@ -167,6 +167,10 @@ class SiteDetectionTestCase(TestWikiSiteDetection):
 
     net = True
 
+    def test_proofwiki_site(self):
+        self.allow_multiple = True
+        self.assertSite('http://www.proofwiki.org/wiki/$1')
+
     def test_detect_site(self):
         """Test detection of MediaWiki sites."""
         self.assertSite('http://www.hrwiki.org/index.php/$1')  # v 1.15
