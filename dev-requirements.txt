@@ -6,6 +6,7 @@ six
 
 nose
 git+https://github.com/jayvdb/nosetrim@py3
+git+https://github.com/jayvdb/nose-faulthandler@py33
 
 pep257>=0.6
 pyflakes>=0.9
