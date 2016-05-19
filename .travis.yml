@@ -21,6 +21,8 @@ addons:
       - graphviz
       - liblua5.1-0-dev
       - python-ipaddr
+      - python-bs4
+      - python-pycountry
 
 before_install:
   # When PYSETUP_TEST_EXTRAS is not enabled, do not allow the
@@ -123,26 +125,37 @@ env:
 
 matrix:
   include:
-    - python: '2.7_with_system_site_packages'  # equivalent to virtualenv: system_site_packages: true
-      env: LANGUAGE=he FAMILY=wikivoyage SITE_ONLY=1
+    # equivalent to virtualenv: system_site_packages: true
+    - python: '2.7_with_system_site_packages'
+      env: LANGUAGE=en FAMILY=wsbeta SITE_ONLY=1
+      os: linux
     - python: '2.7'
       env: LANGUAGE=en FAMILY=wpbeta SITE_ONLY=1 OAUTH_DOMAIN="en.wikipedia.beta.wmflabs.org"
+      os: linux
     - python: '3.3'
       env: LANGUAGE=zh FAMILY=wpbeta SITE_ONLY=1 OAUTH_DOMAIN="zh.wikipedia.beta.wmflabs.org"
+      os: linux
     - python: '3.4'
-      env: LANGUAGE=en FAMILY=wsbeta SITE_ONLY=1
+      env: LANGUAGE=he FAMILY=wikivoyage SITE_ONLY=1
+      os: linux
     - python: '2.7'
       env: LANGUAGE=wikia FAMILY=wikia PYWIKIBOT2_TEST_NO_RC=1
+      os: linux
     - python: '3.3'
       env: LANGUAGE=en FAMILY=musicbrainz SITE_ONLY=1
+      os: linux
     - python: '3.4'
       env: LANGUAGE=test FAMILY=wikipedia SITE_ONLY=1 OAUTH_DOMAIN="test.wikipedia.org"
+      os: linux
     - python: '3.4'
       env: LANGUAGE=test FAMILY=wikidata SITE_ONLY=1
+      os: linux
     - python: '3.4'
       env: LANGUAGE=ar FAMILY=wiktionary PYWIKIBOT2_TEST_NO_RC=1
+      os: linux
     - python: '2.6'
       env: LANGUAGE=wikidata FAMILY=wikidata SITE_ONLY=1
+      os: linux
 
 notifications:
   email:
