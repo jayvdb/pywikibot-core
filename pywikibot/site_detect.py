@@ -51,7 +51,7 @@ class MWSite(object):
         """
         if fromurl.endswith("$1"):
             fromurl = fromurl[:-2]
-        r = fetch(fromurl)
+        r = fetch(fromurl, disable_ssl_certificate_validation=True)
         if r.status == 503:
             raise ServerError('Service Unavailable')
 
@@ -113,7 +113,8 @@ class MWSite(object):
         """Build interwikimap."""
         response = fetch(
             self.api +
-            "?action=query&meta=siteinfo&siprop=interwikimap&sifilteriw=local&format=json")
+            "?action=query&meta=siteinfo&siprop=interwikimap&sifilteriw=local&format=json",
+            disable_ssl_certificate_validation=True)
         iw = json.loads(response.content)
         if 'error' in iw:
             raise RuntimeError('%s - %s' % (iw['error']['code'],
@@ -160,7 +161,8 @@ class MWSite(object):
 
     def _parse_post_117(self):
         """Parse 1.17+ siteinfo data."""
-        response = fetch(self.api + '?action=query&meta=siteinfo&format=json')
+        response = fetch(self.api + '?action=query&meta=siteinfo&format=json',
+                         disable_ssl_certificate_validation=True)
         # remove preleading newlines and Byte Order Mark (BOM), see T128992
         content = response.content.strip().lstrip('\uFEFF')
         info = json.loads(content)
