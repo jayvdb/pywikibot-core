@@ -134,6 +134,10 @@ matrix:
       env: LANGUAGE=he FAMILY=wikivoyage SITE_ONLY=1
     - python: '2.7'
       env: LANGUAGE=nb FAMILY=wikipedia DIST=trusty
+      dist: precise
+      sudo: required
+    - python: '2.7'
+      env: LANGUAGE=mo FAMILY=wikipedia DIST=precise
       dist: trusty
       sudo: required
     - python: '2.7'

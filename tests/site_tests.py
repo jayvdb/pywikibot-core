@@ -10,7 +10,6 @@ from __future__ import absolute_import, unicode_literals
 __version__ = '$Id$'
 
 import json
-import os
 import pickle
 import re
 import sys
@@ -45,7 +44,12 @@ from tests.aspects import (
     AlteredDefaultSiteTestCase,
 )
 from tests.basepage_tests import BasePageLoadRevisionsCachingTestBase
-from tests.utils import allowed_failure, allowed_failure_if, entered_loop
+from tests.utils import (
+    allowed_failure,
+    allowed_failure_if,
+    entered_loop,
+    TRAVIS_CI,
+)
 
 
 class TokenTestBase(TestCaseBase):
@@ -1035,7 +1039,7 @@ class TestImageUsage(DefaultSiteTestCase):
             self.assertIsInstance(using, pywikibot.Page)
             self.assertIn(imagepage, list(using.imagelinks()))
 
-    @allowed_failure_if(os.environ.get('TRAVIS', 'false') == 'true')
+    @allowed_failure_if(TRAVIS_CI)
     def test_image_usage_in_redirects(self):
         """Test the site.imageusage() method on redirects only."""
         mysite = self.get_site()

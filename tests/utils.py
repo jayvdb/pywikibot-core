@@ -12,7 +12,9 @@ import inspect
 import json
 import locale
 import os
+import platform
 import re
+import stat
 import subprocess
 import sys
 import tempfile
@@ -48,6 +50,8 @@ from tests import unittest_print
 
 OSWIN32 = (sys.platform == 'win32')
 
+TRAVIS_CI = (os.environ.get('TRAVIS', 'false') == 'true')
+
 PYTHON_26_CRYPTO_WARN = ('Python 2.6 is no longer supported by the Python core '
                          'team, please upgrade your Python.')
 
@@ -63,6 +67,20 @@ WIN32_LOCALE_UPDATE = """
     </gs:UserLocale>
 </gs:GlobalizationServices>
 """
+
+
+def _is_travis_precise_container():
+    """Detect Travis Ubuntu precise container, without sudo access."""
+    if not TRAVIS_CI:
+        return False
+
+    sudo_enabled = os.lstat('/usr/bin/sudo')[0] & stat.S_ISUID
+    if sudo_enabled:
+        return False
+
+    assert platform.linux_distribution()[1] == 'wheezy/sid'
+
+    return True
 
 
 class DrySiteNote(RuntimeWarning):

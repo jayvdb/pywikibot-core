@@ -1,7 +1,7 @@
 # -*- coding: utf-8  -*-
 """Tests for http module."""
 #
-# (C) Pywikibot team, 2014-2015
+# (C) Pywikibot team, 2014-2016
 #
 # Distributed under the terms of the MIT license.
 #
@@ -10,6 +10,7 @@ from __future__ import absolute_import, unicode_literals
 __version__ = '$Id$'
 
 import re
+import ssl
 import warnings
 
 import requests
@@ -25,6 +26,9 @@ from pywikibot.tools import (
 
 from tests import join_images_path
 from tests.aspects import unittest, TestCase, DeprecationTestCase
+
+NO_TLS_v1_2 = (
+    PYTHON_VERSION < (2, 7, 9) or PYTHON_VERSION[0:2] == (3, 3))
 
 
 class HttpTestCase(TestCase):
@@ -150,6 +154,34 @@ class HttpsCertificateTestCase(TestCase):
         self.assertEqual(len(warning_log), 1)
         self.assertEqual(warning_log[0].category.__name__,
                          'InsecureRequestWarning')
+
+
+class HttpsTLSv12TestCase(TestCase):
+
+    """HTTPS certificate test."""
+
+    # Do not use `hostname` attribute to failover, as that would
+    # skip TLSv1.2 sites on Travis Ubuntu precise.
+
+    net = True
+
+    def test_proofwiki(self):
+        """Test proofwiki.org with urllib3 TLSv1.2."""
+        has_tls_v12 = hasattr(ssl, 'PROTOCOL_TLSv1_2')
+
+        self.assertNotEqual(NO_TLS_v1_2, has_tls_v12)
+
+        # If proofwiki stops accepting TLSv1.2 connections, remove the
+        # proofwiki.org hostname check in http.error_handling_callback .
+        try:
+            r = http._check_get_with_tls12('https://www.proofwiki.org/wiki/')
+        except ImportError as e:
+            # ssl.PROTOCOL_TLSv1_2 was introduced in Python 3.4
+            if not has_tls_v12 and 'ssl.PROTOCOL_TLSv1_2' in str(e):
+                raise unittest.SkipTest(e)
+            else:
+                raise e
+        self.assertEqual(r.status, 200)
 
 
 class TestHttpStatus(TestCase):
