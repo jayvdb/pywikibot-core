@@ -9,13 +9,18 @@ from __future__ import absolute_import, unicode_literals
 
 __version__ = '$Id$'
 
+import platform
+
 from requests.exceptions import Timeout
 
-from pywikibot.exceptions import ServerError
+from pywikibot.exceptions import FatalServerError, ServerError
 from pywikibot.site_detect import MWSite
 from pywikibot.tools import MediaWikiVersion
 
 from tests.aspects import unittest, TestCase
+from tests.utils import _is_travis_precise_container
+
+from tests.http_tests import NO_TLS_v1_2
 
 
 class TestWikiSiteDetection(TestCase):
@@ -110,6 +115,13 @@ class TestWikiSiteDetection(TestCase):
         """Assert a url is not a MediaWiki site."""
         self._wiki_detection(url, None)
 
+    def assertAllSkip(self):
+        """Assert that all urls skipped detection as a MediaWiki site."""
+        self.assertEqual(set(self.all), set(self.skips))
+        self.assertEqual(self.failures, {})
+        self.assertEqual(self.errors, {})
+        self.assertEqual(self.passes, {})
+
     def assertAllPass(self):
         """Assert that all urls were detected as a MediaWiki site."""
         self.assertEqual(set(self.passes), set(self.all) - set(self.skips))
@@ -170,7 +182,6 @@ class SiteDetectionTestCase(TestWikiSiteDetection):
     def test_detect_site(self):
         """Test detection of MediaWiki sites."""
         self.assertSite('http://www.hrwiki.org/index.php/$1')  # v 1.15
-        self.assertSite('http://www.proofwiki.org/wiki/$1')
         self.assertSite(
             'http://www.ck-wissen.de/ckwiki/index.php?title=$1')
         self.assertSite('http://en.citizendium.org/wiki/$1')
@@ -181,6 +192,28 @@ class SiteDetectionTestCase(TestWikiSiteDetection):
         self.assertSite('http://bluwiki.com/go/$1')
         self.assertSite('http://kino.skripov.com/index.php/$1')
         self.assertAllPass()
+
+    def test_proofwiki_TLS12(self):
+        """Test proofwiki.org which requires TLS v1.2."""
+        self.assertSite('http://www.proofwiki.org/wiki/$1')
+
+        # Travis Ubuntu 12.04 containers have TLS v1.2 disabled by default.
+        if _is_travis_precise_container():
+            # The following will fail when Travis changes their 'precise'
+            # container image.  If the new images doesnt have this bug,
+            # this block can be removed.
+            self.assertEqual(platform.uname()[3],
+                             '#69-Ubuntu SMP Thu Nov 13 17:53:56 UTC 2014')
+            self.assertAllSkip()
+            e = self.skips['http://www.proofwiki.org/wiki/$1']
+            self.assertIsInstance(e, FatalServerError)
+            if NO_TLS_v1_2:
+                self.assertIn('Connection aborted to ', str(e))
+            else:
+                self.assertIn(' requires TLSv1.2 and negotiation failed',
+                              str(e))
+        else:
+            self.assertAllPass()
 
     def test_wikisophia(self):
         """Test wikisophia.org which has redirect problems."""

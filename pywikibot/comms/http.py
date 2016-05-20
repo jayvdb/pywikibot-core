@@ -14,7 +14,7 @@ This module is responsible for
 from __future__ import absolute_import, print_function, unicode_literals
 
 #
-# (C) Pywikibot team, 2007-2015
+# (C) Pywikibot team, 2007-2016
 #
 # Distributed under the terms of the MIT license.
 #
@@ -25,11 +25,25 @@ __docformat__ = 'epytext'
 import atexit
 import sys
 
+try:
+    import ssl
+except ImportError as e:
+    ssl = e
+
 from distutils.version import StrictVersion
 from string import Formatter
 from warnings import warn
 
 import requests
+
+try:
+    from requests.packages.urllib3 import poolmanager as urllib3_poolmanager
+except ImportError:
+    try:
+        from urllib3 import poolmanager as urllib3_poolmanager
+    except ImportError as e:
+        urllib3_poolmanager = e
+        warn('Unable to find urllib3.poolmanager')
 
 try:
     import requests_oauthlib
@@ -51,7 +65,7 @@ from pywikibot.comms import threadedhttp
 from pywikibot.exceptions import (
     FatalServerError, Server504Error, Server414Error
 )
-from pywikibot.logging import critical, debug, error, log, warning
+from pywikibot.logging import critical, debug, error, exception, log, warning
 from pywikibot.tools import (
     deprecate_arg,
     issue_deprecation_warning,
@@ -303,6 +317,22 @@ def get_authentication(uri):
     return None
 
 
+def _check_get_with_tls12(url):
+    """Check getting url with TLSv1.2."""
+    if isinstance(urllib3_poolmanager, Exception):
+        raise urllib3_poolmanager
+
+    if isinstance(ssl, Exception):
+        raise ssl
+
+    if not hasattr(ssl, 'PROTOCOL_TLSv1_2'):
+        raise ImportError('Can not import ssl.PROTOCOL_TLSv1_2')
+
+    pm = urllib3_poolmanager.PoolManager(ssl_version=ssl.PROTOCOL_TLSv1_2)
+    r = pm.request('HEAD', url)
+    return r
+
+
 def _http_process(session, http_request):
     method = http_request.method
     uri = http_request.uri
@@ -342,13 +372,43 @@ def error_handling_callback(request):
     @param request: Request that has completed
     @type request: L{threadedhttp.HttpRequest}
     """
-    # TODO: do some error correcting stuff
     if isinstance(request.data, requests.exceptions.SSLError):
         if SSL_CERT_VERIFY_FAILED_MSG in str(request.data):
             raise FatalServerError(str(request.data))
 
-    # if all else fails
     if isinstance(request.data, Exception):
+
+        # Detect Ubuntu 12.04 pre USN-2606-1 using feature detection via
+        # _check_get_with_tls12, as other Unix may have also used this approach.
+        # On Python 2.7 & 3.3 it is a ConnectionError('Connection aborted', ..)
+        # On Python 2.6 it is SSLError('bad handshake', ..)
+        # In both cases it is caused by SysCallError(104, 'ECONNRESET')
+        if isinstance(request.data, requests.exceptions.ConnectionError):
+            s = str(request.data)
+            if 'Connection aborted' in s or 'bad handshake' in s:
+                try:
+                    _check_get_with_tls12(request.uri)
+                except ImportError as e:
+                    log('Unable to check TLSv1.2: {0}'.format(e))
+                except Exception:
+                    warn('Exception while checking TLSv1.2:')
+                    exception(tb=True)
+                else:
+                    raise FatalServerError(
+                        'Server {0} requires TLSv1.2 and negotiation failed.\n'
+                        'Probably caused by Ubuntu 12.04 prior to May, 2015. '
+                        'See http://www.ubuntu.com/usn/usn-2606-1/ .'
+                        .format(request.hostname))
+
+                # Python lower than 3.4 will error in _check_get_with_tls12
+                # and should fail here for any TLSv1.2-only wiki.
+                if 'proofwiki.org' in request.uri:
+                    raise FatalServerError(
+                        'Connection aborted to {0}: {1}\n'
+                        'Possibly caused by Ubuntu 12.04 prior to May, 2015. '
+                        'See http://www.ubuntu.com/usn/usn-2606-1/ .'
+                        .format(request.uri, request.data))
+
         raise request.data
 
     if request.status == 504:
