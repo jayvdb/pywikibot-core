@@ -9,6 +9,8 @@ from __future__ import absolute_import, unicode_literals
 
 __version__ = '$Id$'
 
+import os
+
 from requests.exceptions import Timeout
 
 from pywikibot.exceptions import ServerError
@@ -170,7 +172,6 @@ class SiteDetectionTestCase(TestWikiSiteDetection):
     def test_detect_site(self):
         """Test detection of MediaWiki sites."""
         self.assertSite('http://www.hrwiki.org/index.php/$1')  # v 1.15
-        self.assertSite('http://www.proofwiki.org/wiki/$1')
         self.assertSite(
             'http://www.ck-wissen.de/ckwiki/index.php?title=$1')
         self.assertSite('http://en.citizendium.org/wiki/$1')
@@ -180,6 +181,16 @@ class SiteDetectionTestCase(TestWikiSiteDetection):
         self.assertSite('https://en.wikifur.com/wiki/$1')
         self.assertSite('http://bluwiki.com/go/$1')
         self.assertSite('http://kino.skripov.com/index.php/$1')
+        self.assertAllPass()
+
+    def test_proofwiki_TLS12(self):
+        self.assertSite('http://www.proofwiki.org/wiki/$1')
+        if os.environ.get('TRAVIS', 'false') == 'true':
+            _system_version = os.environ['_system_version']
+            if _system_version == '12.04':
+                self.assertAllError()
+                return
+
         self.assertAllPass()
 
     def test_wikisophia(self):

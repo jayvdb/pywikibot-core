@@ -23,6 +23,7 @@ __version__ = '$Id$'
 __docformat__ = 'epytext'
 
 import atexit
+import ssl
 import sys
 
 from distutils.version import StrictVersion
@@ -30,6 +31,16 @@ from string import Formatter
 from warnings import warn
 
 import requests
+
+from requests.adapters import HTTPAdapter
+try:
+    from requests.packages.urllib3.poolmanager import PoolManager
+except ImportError:
+    try:
+        from urllib3.poolmanager import PoolManager
+    except ImportError as e:
+        PoolManager = e
+        warn('Unable to find urllib3.poolmanager')
 
 try:
     import requests_oauthlib
@@ -85,6 +96,15 @@ else:
 
 session = requests.Session()
 session.cookies = cookie_jar
+
+
+class Tls12HttpAdapter(HTTPAdapter):
+    """"Transport adapter" that allows forces use of TLSv1.2."""
+
+    def init_poolmanager(self, connections, maxsize, block=False):
+        self.poolmanager = PoolManager(
+            num_pools=connections, maxsize=maxsize,
+            block=block, ssl_version=ssl.PROTOCOL_TLSv1_2)
 
 
 # Prepare flush on quit
@@ -342,13 +362,32 @@ def error_handling_callback(request):
     @param request: Request that has completed
     @type request: L{threadedhttp.HttpRequest}
     """
-    # TODO: do some error correcting stuff
     if isinstance(request.data, requests.exceptions.SSLError):
         if SSL_CERT_VERIFY_FAILED_MSG in str(request.data):
             raise FatalServerError(str(request.data))
 
-    # if all else fails
     if isinstance(request.data, Exception):
+
+        # Detect Ubuntu 12.04 pre USN-2606-1
+        if isinstance(request.data, requests.exceptions.ConnectionError):
+            if isinstance(PoolManager, Exception):
+                # Detection not possible
+                warn('Unable to find urllib3.poolmanager')
+                raise request.data
+
+            try:
+                s = requests.Session()
+                s.mount(request.uri, Tls12HttpAdapter())
+                r = s.get(request.uri)
+            except Exception as e:
+                r = None
+
+            if r:
+                raise FatalServerError(
+                    'Server only supports TLSv1.2 and negotiation failed. '
+                    'Probably caused by Ubuntu 12.04 prior to May, 2015. '
+                    'See http://www.ubuntu.com/usn/usn-2606-1/ for details.')
+
         raise request.data
 
     if request.status == 504:
