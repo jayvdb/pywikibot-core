@@ -1,0 +1,23 @@
+codecov:
+  bot: jayvdb
+
+coverage:
+  status:
+    project:
+      default:
+        enabled: yes
+    patch:
+      default:
+        enabled: yes
+    changes:
+      default:
+        enabled: yes
+
+  ignore:
+    - ez_setup.py
+    - tests/*edit*.py
+    - tests/*upload*.py
+  notify:
+    irc:
+      default:
+        server: chat.freenode.net#pywikibot
