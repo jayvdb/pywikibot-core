@@ -21,6 +21,12 @@ from tests import join_tests_path, create_path_func
 from tests.utils import execute, execute_pwb
 from tests.aspects import unittest, PwbTestCase
 
+try:
+    sys.pypy_version_info
+    PYPY = True
+except AttributeError:
+    PYPY = False
+
 join_pwb_tests_path = create_path_func(join_tests_path, 'pwb')
 
 
@@ -44,7 +50,15 @@ class TestPwb(PwbTestCase):
         script_path = join_pwb_tests_path(name + '.py')
 
         direct = execute([sys.executable, '-m', package_name])
+        self.assertNotIn('Traceback (most recent call last)', direct['stderr'])
+
         vpwb = execute_pwb([script_path])
+        self.assertNotIn('Traceback (most recent call last)', vpwb['stderr'])
+
+        # PyPy RuntimeError maximum recursion does not show a traceback
+        self.assertNotIn('RuntimeError', direct['stderr'])
+        self.assertNotIn('RuntimeError', vpwb['stderr'])
+
         self.maxDiff = None
         self.assertEqual(direct['stdout'], vpwb['stdout'])
 
@@ -57,6 +71,8 @@ class TestPwb(PwbTestCase):
         Make sure the environment is not contaminated, and is the same as
         the environment we get when directly running a script.
         """
+        if PYPY:
+            raise unittest.SkipTest('Fails on PyPy, dumping secure env vars')
         self._do_check('print_env')
 
     def test_locals(self):

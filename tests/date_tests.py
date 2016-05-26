@@ -15,7 +15,7 @@ from tests.aspects import unittest, MetaTestCaseClass, TestCase
 from tests.utils import add_metaclass
 
 
-class TestDateMeta(MetaTestCaseClass):
+class _TestDateMeta(MetaTestCaseClass):
 
     """Date test meta class."""
 
@@ -52,7 +52,7 @@ class TestDateMeta(MetaTestCaseClass):
             cls.add_method(dct, 'test_' + formatname, test_method(formatname),
                            doc_suffix='using {0} format'.format(formatname))
 
-        return super(TestDateMeta, cls).__new__(cls, name, bases, dct)
+        return super(_TestDateMeta, cls).__new__(cls, name, bases, dct)
 
 
 @add_metaclass
@@ -60,7 +60,7 @@ class TestDate(TestCase):
 
     """Test cases for date library processed by unittest."""
 
-    __metaclass__ = TestDateMeta
+    __metaclass__ = _TestDateMeta
 
     net = False
 

@@ -75,7 +75,7 @@ if (isinstance(config.socket_timeout, tuple) and
     config.socket_timeout = min(config.socket_timeout)
 
 cookie_jar = cookielib.LWPCookieJar(
-    config.datafilepath('pywikibot.lwp'))
+    config.datafilepath(str('pywikibot.lwp')))
 try:
     cookie_jar.load()
 except (IOError, cookielib.LoadError):

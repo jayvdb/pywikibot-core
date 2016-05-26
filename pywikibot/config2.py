@@ -287,7 +287,8 @@ def get_base_dir(test_directory=None):
         if directory == test_directory:
             return True
         else:
-            return os.path.exists(os.path.join(directory, 'user-config.py'))
+            return os.path.exists(os.path.join(directory,
+                                               str('user-config.py')))
 
     if test_directory is not None:
         test_directory = os.path.abspath(test_directory)
@@ -385,7 +386,8 @@ def register_families_folder(folder_path):
 
 # Get the names of all known families, and initialize with empty dictionaries.
 # ‘families/’ is a subdirectory of the directory in which config2.py is found.
-register_families_folder(os.path.join(os.path.dirname(__file__), 'families'))
+register_families_folder(os.path.join(os.path.dirname(__file__),
+                                      str('families')))
 register_family_file('wikiapiary', 'https://wikiapiary.com')
 
 # Set to True to override the {{bots}} exclusion protocol (at your own risk!)
@@ -968,7 +970,7 @@ if __no_user_config:
         warning('Skipping loading of user-config.py.')
     _fns = []
 else:
-    _fns = [os.path.join(_base_dir, "user-config.py")]
+    _fns = [os.path.join(_base_dir, str('user-config.py'))]
 for _filename in _fns:
     _thislevel += 1
     if os.path.exists(_filename):

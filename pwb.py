@@ -9,7 +9,7 @@ Run scripts using:
 and it will use the package directory to store all user files, will fix up
 search paths so the package does not need to be installed, etc.
 """
-# (C) Pywikibot team, 2015
+# (C) Pywikibot team, 2016
 #
 # Distributed under the terms of the MIT license.
 #
@@ -147,8 +147,9 @@ def abspath(path):
 absolute_path = abspath(os.path.dirname(sys.argv[0]))
 rewrite_path = absolute_path
 
+# str() needed to workaround https://bitbucket.org/pypy/pypy/issues/2314/
 sys.path = [sys.path[0], rewrite_path,
-            os.path.join(rewrite_path, 'pywikibot', 'compat'),
+            os.path.join(rewrite_path, str('pywikibot'), str('compat')),
             ] + sys.path[1:]
 
 try:
@@ -171,6 +172,12 @@ if len(sys.argv) > 1 and sys.argv[1][0] != '-':
     filename = sys.argv[1]
 else:
     filename = None
+
+if PY2:
+    try:
+        filename = filename.encode('ascii')
+    except UnicodeEncodeError:
+        pass
 
 # Skip the filename if one was given
 args = sys.argv[(2 if filename else 1):]
@@ -207,15 +214,17 @@ def main():
         tryimport_pwb()
         argvu = pwb.argvu[1:]
         if not filename.endswith('.py'):
-            filename += '.py'
+            filename += str('.py')
         if not os.path.exists(filename):
             testpath = os.path.join(os.path.split(__file__)[0],
-                                    'scripts',
+                                    str('scripts'),
                                     filename)
             file_package = 'scripts'
             if not os.path.exists(testpath):
                 testpath = os.path.join(
-                    os.path.split(__file__)[0], 'scripts/archive', filename)
+                    os.path.split(__file__)[0],
+                                  str('scripts/archive'),
+                                  filename)
                 file_package = 'scripts.archive'
 
             if os.path.exists(testpath):

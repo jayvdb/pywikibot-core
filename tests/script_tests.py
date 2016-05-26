@@ -25,6 +25,12 @@ scripts_path = join_root_path('scripts')
 
 archive_path = join_root_path('scripts', 'archive')
 
+try:
+    sys.pypy_version_info
+    PYPY = True
+except AttributeError:
+    PYPY = False
+
 if PY2:
     TK_IMPORT = 'Tkinter'
 else:
@@ -96,6 +102,10 @@ runnable_script_list = (['login'] +
                         sorted(set(script_list) -
                                set(['login']) -
                                set(unrunnable_script_list)))
+
+if PYPY:
+    unrunnable_script_list = script_list
+
 
 script_input = {
     'catall': 'q\n',  # q for quit
@@ -231,7 +241,7 @@ def load_tests(loader=unittest.loader.defaultTestLoader,
     return collector(loader)
 
 
-class TestScriptMeta(MetaTestCaseClass):
+class _TestScriptMeta(MetaTestCaseClass):
 
     """Test meta class."""
 
@@ -367,7 +377,7 @@ class TestScriptMeta(MetaTestCaseClass):
                 dct[test_name] = unittest.expectedFailure(dct[test_name])
                 dct[test_name].__test__ = False
 
-        return super(TestScriptMeta, cls).__new__(cls, name, bases, dct)
+        return super(_TestScriptMeta, cls).__new__(cls, name, bases, dct)
 
 
 @add_metaclass
@@ -378,7 +388,7 @@ class TestScriptHelp(PwbTestCase):
     All scripts should not create a Site for -help, so net = False.
     """
 
-    __metaclass__ = TestScriptMeta
+    __metaclass__ = _TestScriptMeta
 
     net = False
 
@@ -400,7 +410,7 @@ class TestScriptSimulate(DefaultSiteTestCase, PwbTestCase):
     run in pwb can automatically login using the saved cookies.
     """
 
-    __metaclass__ = TestScriptMeta
+    __metaclass__ = _TestScriptMeta
 
     user = True
 

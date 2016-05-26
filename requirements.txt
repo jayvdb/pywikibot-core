@@ -22,15 +22,15 @@
 requests>=2.4.1
 
 # requests security extra
-pyOpenSSL>=0.13 ; python_full_version < '2.7.9'
-ndg-httpsclient ; python_full_version < '2.7.9'
-pyasn1 ; python_full_version < '2.7.9'
+pyOpenSSL>=0.13 ; platform_python_implementation != 'PyPy' and python_full_version < '2.7.9'
+ndg-httpsclient ; platform_python_implementation != 'PyPy' and python_full_version < '2.7.9'
+pyasn1 ; platform_python_implementation != 'PyPy' and python_full_version < '2.7.9'
 
 future>=0.15.0 ; python_version < '2.7'
 
 ipaddr>=2.1.10 ; python_version < '3'
 
-unicodedata2>=7.0.0-2 ; python_version < '3'
+unicodedata2>=7.0.0-2 ; python_version < '3' and platform_python_implementation != 'PyPy'
 
 # OAuth support
 # mwoauth 0.2.4 is needed because it supports getting identity information
