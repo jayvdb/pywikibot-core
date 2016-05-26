@@ -17,6 +17,7 @@ import pywikibot.bot
 from pywikibot import i18n
 from pywikibot.tools import PY2
 
+from tests import unittest_print
 from tests.aspects import (
     unittest, DefaultSiteTestCase, SiteAttributeTestCase, TestCase,
 )
@@ -83,6 +84,9 @@ class FakeSaveBotTestCase(TestCase):
         super(FakeSaveBotTestCase, self).setUp()
         self.assert_saves = getattr(self, 'default_assert_saves', 1)
         self.save_called = 0
+        # Ensure that exceptions outside the test do not break these tests
+        if PY2:
+            sys.exc_clear()
 
     def tearDown(self):
         """Tear down by asserting the counters."""
@@ -160,6 +164,7 @@ class TestBotTreatExit(object):
         """Get tests which are executed on exit."""
         def exit():
             exc = sys.exc_info()[0]
+            tb = sys.exc_info()[2]
             if exc is AssertionError:
                 # When an AssertionError happened we shouldn't do these
                 # assertions as they are invalid anyway and hide the actual
@@ -170,6 +175,10 @@ class TestBotTreatExit(object):
             if exception:
                 self.assertIs(exc, exception)
             else:
+                if exc:
+                    unittest_print('saw exception')
+                    import traceback
+                    unittest_print(traceback.format_tb(tb))
                 self.assertIsNone(exc)
                 self.assertRaises(StopIteration, next, self._page_iter)
         return exit

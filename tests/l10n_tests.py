@@ -23,7 +23,7 @@ PACKAGES = (
 )
 
 
-class TestValidTemplateMeta(MetaTestCaseClass):
+class _TestValidTemplateMeta(MetaTestCaseClass):
 
     """Test meta class."""
 
@@ -73,7 +73,7 @@ class TestValidTemplateMeta(MetaTestCaseClass):
                     doc_suffix='{0} and language {1}'.format(
                         package, code))
 
-        return super(TestValidTemplateMeta, cls).__new__(cls, name, bases, dct)
+        return super(_TestValidTemplateMeta, cls).__new__(cls, name, bases, dct)
 
 
 @add_metaclass
@@ -81,7 +81,7 @@ class TestValidTemplate(TestCase):
 
     """Test cases L10N message templates processed by unittest."""
 
-    __metaclass__ = TestValidTemplateMeta
+    __metaclass__ = _TestValidTemplateMeta
 
     family = 'wikipedia'
     code = 'en'

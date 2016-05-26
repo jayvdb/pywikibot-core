@@ -96,7 +96,7 @@ class TestLogentriesBase(TestCase):
         self.assertGreaterEqual(logentry.pageid(), 0)
 
 
-class TestLogentriesMeta(MetaTestCaseClass):
+class _TestLogentriesMeta(MetaTestCaseClass):
 
     """Test meta class for TestLogentries."""
 
@@ -114,7 +114,7 @@ class TestLogentriesMeta(MetaTestCaseClass):
             cls.add_method(dct, 'test_%sEntry' % logtype.title(),
                            test_method(logtype))
 
-        return super(TestLogentriesMeta, cls).__new__(cls, name, bases, dct)
+        return super(_TestLogentriesMeta, cls).__new__(cls, name, bases, dct)
 
 
 @add_metaclass
@@ -122,7 +122,7 @@ class TestLogentries(TestLogentriesBase):
 
     """Test general LogEntry properties."""
 
-    __metaclass__ = TestLogentriesMeta
+    __metaclass__ = _TestLogentriesMeta
 
 
 class TestSimpleLogentries(TestLogentriesBase):

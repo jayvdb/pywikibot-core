@@ -300,9 +300,13 @@ class TestTWNTranslate(TWNTestCaseBase, AutoDeprecationTestCase):
 
     def testMultipleNonNumbers(self):
         """Test error handling for multiple non-numbers."""
-        with self.assertRaisesRegex(ValueError, "invalid literal for int\(\) with base 10: 'drei'"):
+        with self.assertRaisesRegex(
+                ValueError,
+                "invalid literal for int\(\) with base 10: u?'drei'"):
             i18n.twntranslate('de', 'test-multiple-plurals', ["drei", "1", 1])
-        with self.assertRaisesRegex(ValueError, "invalid literal for int\(\) with base 10: 'elf'"):
+        with self.assertRaisesRegex(
+                ValueError,
+                "invalid literal for int\(\) with base 10: u?'elf'"):
             i18n.twntranslate('de', 'test-multiple-plurals',
                               {'action': u'Ändere', 'line': "elf", 'page': 2})
 
@@ -334,12 +338,19 @@ class TestTWNTranslate(TWNTestCaseBase, AutoDeprecationTestCase):
             u'Robot: Changer seulement une page.')
 
 
-class ScriptMessagesTestCase(TWNTestCaseBase):
+class ScriptMessagesTestBase(TWNTestCaseBase):
+
+    """Normal script messages base."""
+
+    net = False
+    message_package = 'scripts.i18n'
+
+
+class ScriptMessagesTestCase(ScriptMessagesTestBase):
 
     """Real messages test."""
 
     net = False
-    message_package = 'scripts.i18n'
 
     def test_basic(self):
         """Verify that real messages are able to be loaded."""

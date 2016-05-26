@@ -130,6 +130,12 @@ for _name in textlib_methods:
 deprecated = redirect_func(__deprecated)
 deprecate_arg = redirect_func(__deprecate_arg)
 
+try:
+    sys.pypy_version_info
+    PYPY = True
+except AttributeError:
+    PYPY = False
+
 
 class Timestamp(datetime.datetime):
 
@@ -154,6 +160,16 @@ class Timestamp(datetime.datetime):
 
     mediawikiTSFormat = "%Y%m%d%H%M%S"
     ISO8601Format = "%Y-%m-%dT%H:%M:%SZ"
+
+    if PYPY:
+        def replace(self, *args, **kwargs):
+            obj = super(Timestamp, self).replace(*args, **kwargs)
+            return self.__class__(
+                year=obj.year, month=obj.month, day=obj.day,
+                hour=obj.hour, minute=obj.minute, second=obj.second,
+                microsecond=obj.microsecond,
+                tzinfo=obj.tzinfo,
+            )
 
     def clone(self):
         """Clone this instance."""

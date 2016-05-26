@@ -1,7 +1,8 @@
 requests>=2.4.1
 
 # requests security extra
+# not possible on PyPy 2.5 and lower, so defer to setup.py to handle PyPy
 # Bug T105767 on Python 2.7 release 9+
-pyOpenSSL>=0.13 ; python_full_version < '2.7.9' or python_version >= '3'
-ndg-httpsclient ; python_full_version < '2.7.9' or python_version >= '3'
-pyasn1 ; python_full_version < '2.7.9' or python_version >= '3'
+pyOpenSSL>=0.13 ; platform_python_implementation != 'PyPy' and (python_full_version < '2.7.9' or python_version >= '3')
+ndg-httpsclient ; platform_python_implementation != 'PyPy' and (python_full_version < '2.7.9' or python_version >= '3')
+pyasn1 ; platform_python_implementation != 'PyPy' and (python_full_version < '2.7.9' or python_version >= '3')

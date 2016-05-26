@@ -13,10 +13,11 @@ import pywikibot
 
 from scripts.add_text import add_text
 
-from tests.aspects import unittest, TestCase
+from tests.aspects import unittest
+from tests.i18n_tests import ScriptMessagesTestBase
 
 
-class TestStarList(TestCase):
+class TestStarList(ScriptMessagesTestBase):
 
     """Test starlist."""
 

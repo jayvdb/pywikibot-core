@@ -14,6 +14,7 @@ import decimal
 import inspect
 import os.path
 import subprocess
+import sys
 import tempfile
 import warnings
 
@@ -24,6 +25,12 @@ from tests.aspects import (
     unittest, require_modules, DeprecationTestCase, TestCase, MetaTestCaseClass
 )
 from tests.utils import expected_failure_if, add_metaclass
+
+try:
+    sys.pypy_version_info
+    PYPY = True
+except AttributeError:
+    PYPY = False
 
 
 class ContextManagerWrapperTestCase(TestCase):
@@ -538,9 +545,9 @@ class TestFilterUnique(TestCase):
         deduper = tools.filter_unique(self.strs, container=deduped, key=hash)
         self._test_dedup_str(deduped, deduper, hash)
 
-    @expected_failure_if(not tools.PY2)
+    @expected_failure_if(not tools.PY2 or PYPY)
     def test_str_id(self):
-        """Test str using id as key fails on Python 3."""
+        """Test str using id as key fails on Python 3 and PyPy 2."""
         # str in Python 3 behave like objects.
         deduped = set()
         deduper = tools.filter_unique(self.strs, container=deduped, key=id)

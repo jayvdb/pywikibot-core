@@ -133,7 +133,7 @@ class InterWikiMapDetection(TestWikiSiteDetection):
 
     allow_multiple = True
 
-    def test_IWM(self):
+    def _test_IWM(self):
         """Test the load_site method for MW sites on the IWM list."""
         data = self.get_site().siteinfo['interwikimap']
         for item in data:

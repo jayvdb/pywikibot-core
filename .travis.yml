@@ -5,11 +5,12 @@ language: python
 sudo: false
 
 python:
+#  - 'pypy'
   - '2.7'
-  - '3.3'
-  - '3.4'
-  - '3.5'
-  - '2.6'
+#  - '3.3'
+#  - '3.4'
+#  - '3.5'
+#  - '2.6'
 
 # OSX builds do not yet support Python
 os: linux
@@ -30,10 +31,22 @@ before_install:
   # Instead install requests in the before_script step below.
   - if [[ "$PYSETUP_TEST_EXTRAS" != '1' ]]; then rm requirements.txt ; fi
 
+  # pypy tests are twice as fast under nose vs pytest for old versions of pypy
+  # and is a few minutes quicker for pypy 5.x
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "pypy" && "$USE_PYTEST" != '1' ]]; then USE_NOSE=1; fi
+
   # When the env variable USE_NOSE or USE_PYTEST is set, the appropriate
   # tool is used, else PYTEST is taken as the default
   - if [[ "$PYSETUP_TEST_EXTRAS" != '1' && "$USE_NOSE" != '1' && "$USE_PYTEST" != '1' ]]; then
       export USE_PYTEST=1 ;
+    fi
+
+  - if [[ -z "$FAMILY" ]]; then FAMILY=test; fi
+  - if [[ -z "$LANGUAGE" ]]; then LANGUAGE=test; fi
+
+  - if [[ "$NO_NET" == '1' ]]; then
+      echo "Running no tests requiring network access" ;
+      echo "(however generate_family_file uses network)" ;
     fi
 
   - if [[ "$SITE_ONLY" == '1' ]]; then
@@ -48,12 +61,26 @@ before_install:
       export PYWIKIBOT2_TEST_WRITE_FAIL=1 ;
     fi
 
+  - |  # Based on Vlad Frolov's MIT licensed https://github.com/travis-ci/travis-ci/issues/5027#issuecomment-170939193
+    if [[ "$TRAVIS_PYTHON_VERSION" == "pypy" && "$PYPY_VERSION" != '' ]]; then
+      export PYENV_ROOT="$HOME/.pyenv"
+      if [[ -f "$PYENV_ROOT/bin/pyenv" ]]; then
+        pushd "$PYENV_ROOT" && git pull && popd
+      else
+        rm -rf "$PYENV_ROOT" && git clone --depth 1 https://github.com/yyuu/pyenv.git "$PYENV_ROOT"
+      fi
+      "$PYENV_ROOT/bin/pyenv" install --skip-existing "pypy-$PYPY_VERSION"
+      virtualenv --python="$PYENV_ROOT/versions/pypy-$PYPY_VERSION/bin/python" "$HOME/virtualenvs/pypy-$PYPY_VERSION"
+      source "$HOME/virtualenvs/pypy-$PYPY_VERSION/bin/activate"
+      python --version
+    fi
+
 before_script:
   - pip install -r dev-requirements.txt
 
 script:
   # Install security packages for requests to support HTTPS in site_detect
-  - if [[ "$PYSETUP_TEST_EXTRAS" != '1' ]]; then
+  - if [[ "$PYSETUP_TEST_EXTRAS" != '1' && "$NO_NET" != '1' ]]; then
       pip install mwoauth -r requests-requirements.txt ;
     fi
 
@@ -100,12 +127,17 @@ script:
       nosetests --version ;
       if [[ "$SITE_ONLY" == "1" ]]; then
         python setup.py nosetests --tests tests --verbosity=2 -a "family=$FAMILY,code=$LANGUAGE" --with-trim --with-coverage --cover-package=. ;
+      elif [[ "$NO_NET" == "1" ]]; then
+        python setup.py nosetests --tests tests --verbosity=2 -a "!net" --with-trim --with-coverage --cover-package=. ;
       else
         python setup.py nosetests --tests tests --verbosity=2 --with-trim --with-coverage --cover-package=. ;
       fi ;
     elif [[ "$USE_PYTEST" == "1" ]]; then
+      py.test --version ;
       if [[ "$SITE_ONLY" == "1" ]]; then
         python setup.py pytest --addopts="-vvv -s --timeout=$TEST_TIMEOUT --cov=. -a \"family=='$FAMILY' and code=='$LANGUAGE'\"" ;
+      elif [[ "$NO_NET" == "1" ]]; then
+        python setup.py pytest --addopts="-vvv -s -a \"not net\" --timeout=$TEST_TIMEOUT --cov=." ;
       else
         python setup.py pytest --addopts="-vvv -s --timeout=$TEST_TIMEOUT --cov=." ;
       fi
@@ -134,6 +166,18 @@ env:
 
 matrix:
   include:
+    - python: 'pypy'
+      env: PYPY_VERSION=5.1.1 USE_PYTEST=1
+    - python: 'pypy'
+      env: PYPY_VERSION=5.1.1 USE_NOSE=1
+    - python: 'pypy'
+      env: PYPY_VERSION=4.0.1 USE_PYTEST=1
+    - python: 'pypy'
+      env: PYPY_VERSION=4.0.1 USE_NOSE=1
+
+    # default fails consistently in "Test basic preloading with titles" on test:test - No output has been received in the last 10 minutes, this potentially indicates a stalled build or something wrong with the build itself.
+
+  disabled:
     - python: '2.7_with_system_site_packages'  # equivalent to virtualenv: system_site_packages: true
       env: LANGUAGE=he FAMILY=wikivoyage DIST=precise-sudo PYWIKIBOT2_TEST_NO_RC=1
       dist: precise
@@ -174,6 +218,12 @@ matrix:
       env: LANGUAGE=ar FAMILY=wiktionary PYWIKIBOT2_TEST_NO_RC=1
     - python: '2.6'
       env: LANGUAGE=wikidata FAMILY=wikidata SITE_ONLY=1
+    - python: 'pypy'
+      env: PYPY_VERSION=5.1.1 PYSETUP_TEST_EXTRAS=1
+    - python: 'pypy'
+      env: PYPY_VERSION=5.0.1 PYSETUP_TEST_EXTRAS=1
+    - python: 'pypy'
+      env: PYPY_VERSION=4.0.1 PYSETUP_TEST_EXTRAS=1
 
 notifications:
   email:

@@ -25,6 +25,12 @@ PYTHON_VERSION = sys.version_info[:3]
 PY2 = (PYTHON_VERSION[0] == 2)
 PY26 = (PYTHON_VERSION < (2, 7))
 
+try:
+    PYPY_VERSION = sys.pypy_version_info[:3]
+    PYPY = True
+except AttributeError:
+    PYPY = False
+
 versions_required_message = """
 Pywikibot not available on:
 %s
@@ -62,7 +68,6 @@ extra_deps = {
     'Tkinter': ['Pillow'],
     # 0.6.1 supports socket.io 1.0, but WMF is using 0.9 (T91393 and T85716)
     'rcstream': ['socketIO-client<0.6.1'],
-    'security': ['requests[security]'],
     'mwoauth': ['mwoauth>=0.2.4'],
     'html': ['BeautifulSoup4'],
 }
@@ -72,7 +77,17 @@ if PY2:
     extra_deps.update({
         'csv': [csv_dep],
         'MySQL': ['oursql'],
+    })
+
+if PY2 and not PYPY:
+    extra_deps.update({
         'unicode7': ['unicodedata2>=7.0.0-2'],
+    })
+
+# security component cryptography does not install on PyPy 2.5 and lower
+if not PYPY or PYPY_VERSION >= (2, 6):
+    extra_deps.update({
+        'security': ['requests[security]'],
     })
 
 script_deps = {
@@ -93,7 +108,7 @@ script_deps['flickrripper.py'].append(
     'flickrapi>=1.4.5,<2' if PY26 else 'flickrapi')
 
 # lunatic-python is only available for Linux
-if sys.platform.startswith('linux'):
+if sys.platform.startswith('linux') and not PYPY:
     script_deps['script_wui.py'] = [irc_dep, 'lunatic-python', 'crontab']
 
 # The main pywin32 repository contains a Python 2 only setup.py with a small
@@ -134,7 +149,7 @@ if sys.version_info[0] == 2:
     # ipaddr 2.1.10+ is distributed with Debian and Fedora.  See T105443.
     dependencies.append('ipaddr>=2.1.10')
 
-    if sys.version_info < (2, 7, 9):
+    if sys.version_info < (2, 7, 9) and 'security' in extra_deps:
         # Python versions before 2.7.9 will cause urllib3 to trigger
         # InsecurePlatformWarning warnings for all HTTPS requests. By
         # installing with security extras, requests will automatically set
@@ -186,6 +201,10 @@ if sys.version_info[0] == 2:
     test_deps += extra_deps['csv'] + ['mock']
 else:
     test_deps += ['six']
+
+# Before commencing unit tests, clear the last exception
+if PY2:
+    sys.exc_clear()
 
 from setuptools import setup, find_packages
 
