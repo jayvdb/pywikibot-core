@@ -5,6 +5,7 @@ language: python
 sudo: false
 
 python:
+  - 'pypy'
   - '2.7'
   - '3.3'
   - '3.4'
@@ -32,9 +33,9 @@ before_install:
 
   # When the env variable USE_NOSE or USE_PYTEST is set, the appropriate
   # tool is used, else PYTEST is taken as the default
-  - if [[ "$PYSETUP_TEST_EXTRAS" != '1' && "$USE_NOSE" != '1' && "$USE_PYTEST" != '1' ]]; then
-      export USE_PYTEST=1 ;
-    fi
+  # if [[ "$PYSETUP_TEST_EXTRAS" != '1' && "$USE_NOSE" != '1' && "$USE_PYTEST" != '1' ]]; then
+  #   export USE_PYTEST=1 ;
+  # fi
 
   - if [[ "$SITE_ONLY" == '1' ]]; then
       echo "Running site tests only code ${LANGUAGE} on family ${FAMILY}" ;
@@ -53,7 +54,7 @@ before_script:
 
 script:
   # Install security packages for requests to support HTTPS in site_detect
-  - if [[ "$PYSETUP_TEST_EXTRAS" != '1' ]]; then
+  - if [[ "$PYSETUP_TEST_EXTRAS" != '1' && "$NO_NET" != '1' ]]; then
       pip install mwoauth -r requests-requirements.txt ;
     fi
 
@@ -129,10 +130,9 @@ env:
     - TEST_TIMEOUT: 300
 
   matrix:
-    - LANGUAGE=en FAMILY=wikipedia PYWIKIBOT2_TEST_PROD_ONLY=1
-    - LANGUAGE=zh FAMILY=wikisource PYSETUP_TEST_EXTRAS=1 PYWIKIBOT2_TEST_PROD_ONLY=1 PYWIKIBOT2_TEST_NO_RC=1
+    - LANGUAGE=ar FAMILY=wikiquote PYWIKIBOT_TEST_MODULES=bot NO_NET=1
 
-matrix:
+no_matrix:
   include:
     - python: '2.7_with_system_site_packages'  # equivalent to virtualenv: system_site_packages: true
       env: LANGUAGE=he FAMILY=wikivoyage DIST=precise-sudo PYWIKIBOT2_TEST_NO_RC=1

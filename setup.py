@@ -25,6 +25,12 @@ PYTHON_VERSION = sys.version_info[:3]
 PY2 = (PYTHON_VERSION[0] == 2)
 PY26 = (PYTHON_VERSION < (2, 7))
 
+try:
+    sys.pypy_version_info
+    PYPY = True
+except AttributeError:
+    PYPY = False
+
 versions_required_message = """
 Pywikibot not available on:
 %s
@@ -134,13 +140,15 @@ if sys.version_info[0] == 2:
     # ipaddr 2.1.10+ is distributed with Debian and Fedora.  See T105443.
     dependencies.append('ipaddr>=2.1.10')
 
-    if sys.version_info < (2, 7, 9):
+    if sys.version_info < (2, 7, 9) and not PYPY:
         # Python versions before 2.7.9 will cause urllib3 to trigger
         # InsecurePlatformWarning warnings for all HTTPS requests. By
         # installing with security extras, requests will automatically set
         # them up and the warnings will stop. See
         # <https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning>
         # for more details.
+        # Cryptography package refuses to compile on PyPy 2.5 (Python 2.7.8) so they
+        # have to remain insecure and see warnings
         dependencies += extra_deps['security']
 
     script_deps['data_ingestion.py'] = extra_deps['csv']
