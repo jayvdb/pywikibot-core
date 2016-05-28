@@ -5,11 +5,13 @@ language: python
 sudo: false
 
 python:
-  - '2.7'
-  - '3.3'
-  - '3.4'
-  - '3.5'
-  - '2.6'
+  # Python minor versions pre-installed by Travis, with default patch level
+  - '2.7.9'
+  - '3.3.5'
+  - '3.4.2'
+  - '2.6.9'
+  # Installed on demand
+  - '3.5.1'
 
 # OSX builds do not yet support Python
 os: linux
@@ -24,6 +26,14 @@ addons:
       - liblua5.1-0-dev
 
 before_install:
+  # Use pyenv to install versions specified by $PYENV_VERSION
+  - |
+    git clone --depth 1 https://github.com/yyuu/pyenv.git "$PYENV_ROOT"
+    $PYENV_ROOT/bin/pyenv install --skip-existing "$PYENV_VERSION"
+    virtualenv --python="$PYENV_ROOT/versions/$PYENV_VERSION/bin/python" "$HOME/virtualenvs/$PYENV_VERSION"
+    source "$HOME/virtualenvs/$PYENV_VERSION/bin/activate"
+    python --version
+
   # When PYSETUP_TEST_EXTRAS is not enabled, do not allow the
   # default 'install' step to install all dependencies listed in
   # requirements.txt to verify that a minimal install works as expected.
@@ -126,7 +136,8 @@ env:
     # the github repository 'wikimedia/pywikibot-core'.
     # See http://docs.travis-ci.com/user/encryption-keys/ for more information.
     - secure: kofInMlisiTBt9o/Ustc/vySlkKfxGzGCX2LwA1D2waym8sDTS0o5gMJ5LsrT/BUKwZbe1vLozPHqZrrkQvsdTml+DpZuotzdILs0m0f3BUoexEC6OON5IDljuxFyETrD1Ug44ih5Mc4lVFOdTcBzg501ZmswGwQrBvg/OyEFfE=
-    - TEST_TIMEOUT: 300
+    - TEST_TIMEOUT=300
+    - PYENV_ROOT=$HOME/.pyenv
 
   matrix:
     - LANGUAGE=en FAMILY=wikipedia PYWIKIBOT2_TEST_PROD_ONLY=1
@@ -134,6 +145,7 @@ env:
 
 matrix:
   include:
+    # precise uses 2.7.3
     - python: '2.7_with_system_site_packages'  # equivalent to virtualenv: system_site_packages: true
       env: LANGUAGE=he FAMILY=wikivoyage DIST=precise-sudo PYWIKIBOT2_TEST_NO_RC=1
       dist: precise
@@ -145,6 +157,7 @@ matrix:
             - graphviz
             - liblua5.1-0-dev
             - python-ipaddr
+      # trusty uses 2.7.6
     - python: '2.7_with_system_site_packages'
       env: LANGUAGE=nb FAMILY=wikipedia DIST=trusty PYSETUP_TEST_EXTRAS=1
       dist: trusty
@@ -156,24 +169,24 @@ matrix:
             - graphviz
             - liblua5.1-0-dev
             - python-ipaddr
-    - python: '2.7'
+    - python: '2.7.8'
       env: LANGUAGE=en FAMILY=wpbeta SITE_ONLY=1 OAUTH_DOMAIN="en.wikipedia.beta.wmflabs.org"
-    - python: '3.3'
+    - python: '3.3.3'
       env: LANGUAGE=zh FAMILY=wpbeta SITE_ONLY=1 OAUTH_DOMAIN="zh.wikipedia.beta.wmflabs.org"
     - python: '3.4'
-      env: LANGUAGE=en FAMILY=wsbeta SITE_ONLY=1
-    - python: '2.7'
+      env: LANGUAGE=en FAMILY=wsbeta SITE_ONLY=1 PYENV_VERSION=3.4.0
+    - python: '2.7.11'
       env: LANGUAGE=wikia FAMILY=wikia PYWIKIBOT2_TEST_NO_RC=1
-    - python: '3.3'
+    - python: '3.3.6'
       env: LANGUAGE=en FAMILY=musicbrainz SITE_ONLY=1
-    - python: '3.4'
+    - python: '3.4.4'
       env: LANGUAGE=test FAMILY=wikipedia SITE_ONLY=1 OAUTH_DOMAIN="test.wikipedia.org"
-    - python: '3.4'
+    - python: '3.4.3'
       env: LANGUAGE=test FAMILY=wikidata SITE_ONLY=1
-    - python: '3.4'
+    - python: '3.5.0'
       env: LANGUAGE=ar FAMILY=wiktionary PYWIKIBOT2_TEST_NO_RC=1
     - python: '2.6'
-      env: LANGUAGE=wikidata FAMILY=wikidata SITE_ONLY=1
+      env: LANGUAGE=wikidata FAMILY=wikidata SITE_ONLY=1 PYENV_VERSION=2.6.6
 
 notifications:
   email:
