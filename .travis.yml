@@ -6,10 +6,8 @@ sudo: false
 
 python:
   - 'pypy'
-  - '2.7'
-  - '3.3'
-  - '3.4'
-  - '3.5'
+  - '2.7.9'
+  - '2.7.11'
   - '2.6'
 
 # OSX builds do not yet support Python
@@ -113,12 +111,6 @@ script:
     else
       coverage run setup.py test ;
     fi
-
-after_success:
-    codecov
-
-after_failure:
-    codecov
 
 env:
   global:

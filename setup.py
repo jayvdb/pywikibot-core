@@ -28,7 +28,8 @@ PY26 = (PYTHON_VERSION < (2, 7))
 try:
     sys.pypy_version_info
     PYPY = True
-except AttributeError:
+except AttributeError as e:
+    print(e)
     PYPY = False
 
 versions_required_message = """
