@@ -283,6 +283,7 @@ def get_base_dir(test_directory=None):
     @rtype: unicode
     """
     def exists(directory):
+        assert directory
         directory = os.path.abspath(directory)
         if directory == test_directory:
             return True
@@ -303,12 +304,12 @@ def get_base_dir(test_directory=None):
             base_dir = os.path.expanduser(base_dir)
             break
     else:
-        if ('PYWIKIBOT2_DIR' in os.environ and
+        if ('PYWIKIBOT2_DIR' in os.environ and os.environ['PYWIKIBOT2_DIR'] and
                 exists(os.path.abspath(os.environ['PYWIKIBOT2_DIR']))):
             base_dir = os.path.abspath(os.environ['PYWIKIBOT2_DIR'])
         elif exists('.'):
             base_dir = os.path.abspath('.')
-        elif ('PYWIKIBOT2_DIR_PWB' in os.environ and
+        elif ('PYWIKIBOT2_DIR_PWB' in os.environ and os.environ['PYWIKIBOT2_DIR_PWB'] and
                 exists(os.path.abspath(os.environ['PYWIKIBOT2_DIR_PWB']))):
             base_dir = os.path.abspath(os.environ['PYWIKIBOT2_DIR_PWB'])
         else:

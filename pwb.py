@@ -157,7 +157,7 @@ pywikibot_compat_dirpath = os.path.join(rewrite_path, 'pywikibot', 'compat')
 
 if PYPY:
     # Workaround https://bitbucket.org/pypy/pypy/issues/2314
-    sys.path += [rewrite_path, pywikibot_compat_dirpath]
+    sys.path = [sys.path[0], rewrite_path] + sys.path[1:]
 else:
     sys.path = [sys.path[0], rewrite_path,
                 os.path.join(rewrite_path, 'pywikibot', 'compat'),
