@@ -288,7 +288,9 @@ def get_base_dir(test_directory=None):
         if directory == test_directory:
             return True
         else:
-            return os.path.exists(os.path.join(directory, 'user-config.py'))
+            uc = os.path.join(directory, 'user-config.py')
+            assert uc
+            return os.path.exists(uc)
 
     if test_directory is not None:
         test_directory = os.path.abspath(test_directory)

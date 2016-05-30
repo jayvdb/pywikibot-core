@@ -151,17 +151,29 @@ def abspath(path):
 # Either it is '.' if the user's current working directory is the same,
 # or it is the absolute path for the directory of pwb.py
 absolute_path = abspath(os.path.dirname(sys.argv[0]))
-rewrite_path = absolute_path
 
-pywikibot_compat_dirpath = os.path.join(rewrite_path, 'pywikibot', 'compat')
 
-if PYPY:
+def update_sys_path():
+    """Add pywikibot to sys.path and remove duplicates."""
+    old_path = sys.path[:]
+
+    new_path = old_path[:1]
+    if absolute_path != new_path[1]:
+        new_path.append(absolute_path)
+
     # Workaround https://bitbucket.org/pypy/pypy/issues/2314
-    sys.path = [sys.path[0], rewrite_path] + sys.path[1:]
-else:
-    sys.path = [sys.path[0], rewrite_path,
-                os.path.join(rewrite_path, 'pywikibot', 'compat'),
-                ] + sys.path[1:]
+    if not PYPY:
+        new_path.append(
+            os.path.join(absolute_path, 'pywikibot', 'compat')
+        )
+
+    new_path += [path for path in old_path[1:]
+                 if path not in new_path[:]]
+    if old_path != new_path:
+        sys.path = new_path
+
+
+update_sys_path()
 
 try:
     import requests
