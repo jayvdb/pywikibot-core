@@ -145,7 +145,7 @@ matrix:
   include:
     # precise uses 2.7.3
     - python: '2.7_with_system_site_packages'
-      env: LANGUAGE=he FAMILY=wikivoyage DIST=precise-sudo PYSETUP_TEST_EXTRAS=1 PYWIKIBOT2_TEST_NO_RC=1 USE_NOSE=1
+      env: LANGUAGE=he FAMILY=wikivoyage DIST=precise-sudo PYSETUP_TEST_EXTRAS=1 PYWIKIBOT2_TEST_NO_RC=1 USE_PYTEST=1
       dist: precise
       sudo: required
       addons:
@@ -172,7 +172,7 @@ matrix:
             - python-unittest2  # 0.5.1
     # trusty uses 2.7.6
     - python: '2.7_with_system_site_packages'
-      env: LANGUAGE=nb FAMILY=wikipedia DIST=trusty PYSETUP_TEST_EXTRAS=1 USE_NOSE=1
+      env: LANGUAGE=nb FAMILY=wikipedia DIST=trusty PYSETUP_TEST_EXTRAS=1 USE_PYTEST=1
       dist: trusty
       sudo: required
       addons:
@@ -202,7 +202,7 @@ matrix:
             - python-six  # pre-installed at latest version
             - python-unittest2  # 0.5.1
     - python: '2.7_with_system_site_packages'
-      env: LANGUAGE=test FAMILY=wikipedia DIST=trusty+sid PYSETUP_TEST_EXTRAS=1 USE_NOSE=1
+      env: LANGUAGE=test FAMILY=wikipedia DIST=trusty+sid PYSETUP_TEST_EXTRAS=1 USE_PYTEST=1
       dist: trusty
       sudo: required
       addons:
@@ -225,8 +225,8 @@ matrix:
             - python-pycountry  # 1.8+ds1-0.1
             # python-requests  # 2.10.0  causes errors due to SNI warnings
             - python-stdnum  # 1.3
-            - python-tk  # 2.7.11
-            - python-tz  # 2015.7+dfsg-0.1
+            # python-tk  # 2.7.11
+            # python-tz  # 2015.7+dfsg-0.1
             - python-unicodecsv  # 0.14.1
             # dev requirements
             - pep8  # 1.7.0-2

@@ -186,6 +186,9 @@ if 'PYSETUP_TEST_EXTRAS' in os.environ:
         import PIL.ImageTk
         test_deps.remove('Pillow')
         print('removing Pillow')
+        # it looks like nose on precise includes Pillow anyway
+        # all jobs print the line above, but precise then does 'Pillow'
+        # anyway; trying pytest
         __unused__ += (PIL, )
     except ImportError:
         pass
