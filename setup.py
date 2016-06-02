@@ -181,6 +181,15 @@ if 'PYSETUP_TEST_EXTRAS' in os.environ:
         if sys.version_info[:2] == (2, 7) and sys.version_info[2] >= 9:
             test_deps.remove('requests[security]')
 
+    # Allow python-imaging-tk to be used
+    try:
+        import PIL.ImageTk
+        test_deps.remove('Pillow')
+        print('removing Pillow')
+        __unused__ += (PIL, )
+    except ImportError:
+        pass
+
 # These extra dependencies are needed other unittest fails to load tests.
 if sys.version_info[0] == 2:
     test_deps += extra_deps['csv'] + ['mock']

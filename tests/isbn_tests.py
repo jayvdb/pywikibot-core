@@ -12,8 +12,14 @@ import pywikibot
 __version__ = '$Id$'
 
 try:
-    from stdnum.exceptions import ValidationError as StdNumValidationError
-except ImportError:
+    import stdnum
+    # Prior to 0.8, isbn raised ValueError
+    try:
+        from stdnum.exceptions import ValidationError as StdNumValidationError
+    except ImportError:
+        StdNumValidationError = ValueError
+except ImportError as e:
+    stdnum = e
     StdNumValidationError = None
 
 from pywikibot import Bot, Claim, ItemPage

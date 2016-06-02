@@ -64,9 +64,23 @@ import re
 from warnings import warn
 
 try:
-    import stdnum.isbn as stdnum_isbn
+    from stdnum import isbn as stdnum_isbn
+    # 0.8 includes validate which raises useful exceptions
+    try:
+        from stdnum.exceptions import ValidationError as StdNumValidationError
+        from stdnum.isbn import validate as stdnum_isbn_validate
+    except ImportError:
+        stdnum_isbn_validate = None
+        StdNumValidationError = ValueError
+        try:
+            from stdnum.isbn import is_valid as stdnum_isbn_is_valid
+        except ImportError:
+            from stdnum.isbn import validate as stdnum_isbn_is_valid
 except ImportError:
     stdnum_isbn = None
+    stdnum_isbn_validate = None
+    stdnum_isbn_is_valid = None
+    StdNumValidationError = None
 
 import pywikibot
 
@@ -159,8 +173,13 @@ def _format_isbn_match(match, strict=True):
     isbn = match.group('code')
     if stdnum_isbn:
         try:
-            stdnum_isbn.validate(isbn)
-        except stdnum_isbn.ValidationError as e:
+            if stdnum_isbn_validate:
+                stdnum_isbn_validate(isbn)
+            else:
+                if not stdnum_isbn_is_valid(isbn):
+                    raise StdNumValidationError(
+                        'ISBN {0} not valid'.format(isbn))
+        except StdNumValidationError as e:
             if strict:
                 raise
             pywikibot.log('ISBN "%s" validation error: %s' % (isbn, e))

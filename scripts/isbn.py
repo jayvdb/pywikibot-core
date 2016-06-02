@@ -1361,8 +1361,8 @@ def is_valid(isbn):
     # isbnlib marks any ISBN10 with lowercase 'X' as invalid
     isbn = isbn.upper()
     try:
-        stdnum.isbn
-    except NameError:
+        stdnum.isbn.validate
+    except (NameError, AttributeError):
         pass
     else:
         try:
@@ -1373,6 +1373,16 @@ def is_valid(isbn):
             raise InvalidIsbnException(str(e))
         except stdnum.isbn.InvalidLength as e:
             raise InvalidIsbnException(str(e))
+        return True
+
+    try:
+        stdnum.isbn.is_valid
+    except (NameError, AttributeError):
+        pass
+    else:
+        if not stdnum.isbn.is_valid(isbn):
+            raise InvalidIsbnException(
+                'ISBN {0} not valid'.format(isbn))
         return True
 
     try:
