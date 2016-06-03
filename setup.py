@@ -51,7 +51,7 @@ test_deps = ['bz2file']
 dependencies = ['requests']
 
 # the irc module has no Python 2.6 support since 10.0
-irc_dep = 'irc==8.9' if sys.version_info < (2, 7) else 'irc'
+#irc_dep = 'irc==8.9' if sys.version_info < (2, 7) else 'irc'
 csv_dep = 'unicodecsv!=0.14.0' if PYTHON_VERSION < (2, 7) else 'unicodecsv'
 
 # requests[security] requires ndg-httpsclient, which depends on pyOpenSSL>=0.13
@@ -79,7 +79,7 @@ extra_deps = {
     'isbn': ['python-stdnum'],
     'Graphviz': ['pydot>=1.0.28'],
     'Google': ['google>=1.7'],
-    'IRC': [irc_dep],
+    'IRC': [],
     'mwparserfromhell': ['mwparserfromhell>=0.3.3'],
     'Tkinter': ['Pillow'],
     # 0.6.1 supports socket.io 1.0, but WMF is using 0.9 (T91393 and T85716)
@@ -116,7 +116,7 @@ script_deps['flickrripper.py'].append(
 
 # lunatic-python is only available for Linux
 if sys.platform.startswith('linux'):
-    script_deps['script_wui.py'] = [irc_dep, 'lunatic-python', 'crontab']
+    script_deps['script_wui.py'] = ['lunatic-python', 'crontab']
 
 # The main pywin32 repository contains a Python 2 only setup.py with a small
 # wrapper setup3.py for Python 3.
