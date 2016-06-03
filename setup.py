@@ -11,6 +11,8 @@ import itertools
 import os
 import sys
 
+from distutils.version import StrictVersion
+
 try:
     # Work around a traceback on Python < 2.7.4 and < 3.3.1
     # http://bugs.python.org/issue15881#msg170215
@@ -48,6 +50,21 @@ test_deps = ['bz2file']
 
 dependencies = ['requests']
 
+security_dep = ['requests[security]']
+try:
+    import requests
+except ImportError:
+    requests = None
+if requests:
+    try:
+        requests_version = requests.__version__
+    except AttributeError:
+        requests_version = None
+    if requests_version:
+        requests_version = StrictVersion(requests_version)
+        if requests_version < (2, 4, 1):
+            security_dep = ['pyOpenSSL', 'ndg-httpsclient', 'pyasn1']
+
 # the irc module has no Python 2.6 support since 10.0
 irc_dep = 'irc==8.9' if sys.version_info < (2, 7) else 'irc'
 csv_dep = 'unicodecsv!=0.14.0' if PYTHON_VERSION < (2, 7) else 'unicodecsv'
@@ -62,7 +79,7 @@ extra_deps = {
     'Tkinter': ['Pillow'],
     # 0.6.1 supports socket.io 1.0, but WMF is using 0.9 (T91393 and T85716)
     'rcstream': ['socketIO-client<0.6.1'],
-    'security': ['requests[security]'],
+    'security': security_dep,
     'mwoauth': ['mwoauth>=0.2.4'],
     'html': ['BeautifulSoup4'],
 }

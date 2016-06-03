@@ -69,8 +69,9 @@ before_script:
 
 script:
   # Install security packages for requests to support HTTPS in site_detect
-  # this shouldnt be necessary, but site installed requests doesnt have 'security'
-  - pip install mwoauth -r requests-requirements.txt ;
+  - if [[ "$PYSETUP_TEST_EXTRAS" != '1' ]]; then
+      pip install mwoauth -r requests-requirements.txt ;
+    fi
 
   - mkdir ~/.pywikibot
 
