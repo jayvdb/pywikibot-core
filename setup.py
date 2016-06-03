@@ -11,6 +11,8 @@ import itertools
 import os
 import sys
 
+from distutils.version import StrictVersion
+
 try:
     # Work around a traceback on Python < 2.7.4 and < 3.3.1
     # http://bugs.python.org/issue15881#msg170215
@@ -54,7 +56,23 @@ csv_dep = 'unicodecsv!=0.14.0' if PYTHON_VERSION < (2, 7) else 'unicodecsv'
 
 # requests[security] requires ndg-httpsclient, which depends on pyOpenSSL>=0.13
 # On raw Ubuntu precise (no virtualenv), pyOpenSSL can not be upgraded to 0.13
-# by setup.py because setuptools wont touch it if it is in dist-packages.
+# by 'setup.py test' because setuptools wont touch it if it is in dist-packages.
+# Workaround is to do 'setup.py install test'.
+# requests 2.4.0 and lower fail if 'requests[security]' is requested (T110636)
+security_dep = ['requests[security]']
+try:
+    import requests
+except ImportError:
+    requests = None
+if requests:
+    try:
+        requests_version = requests.__version__
+    except AttributeError:
+        requests_version = None
+    if requests_version:
+        requests_version = StrictVersion(requests_version)
+        if requests_version < StrictVersion('2.4.1'):
+            security_dep = ['pyOpenSSL>=0.13', 'ndg-httpsclient', 'pyasn1']
 
 extra_deps = {
     # Core library dependencies
@@ -66,7 +84,7 @@ extra_deps = {
     'Tkinter': ['Pillow'],
     # 0.6.1 supports socket.io 1.0, but WMF is using 0.9 (T91393 and T85716)
     'rcstream': ['socketIO-client<0.6.1'],
-    'security': ['requests[security]'],
+    'security': security_dep,
     'mwoauth': ['mwoauth>=0.2.4'],
     'html': ['BeautifulSoup4'],
 }
