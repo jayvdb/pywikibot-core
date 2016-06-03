@@ -12,6 +12,8 @@ __version__ = '$Id$'
 import re
 import warnings
 
+from distutils.version import StrictVersion
+
 import requests
 
 import pywikibot
@@ -145,6 +147,10 @@ class HttpsCertificateTestCase(TestCase):
         self.assertRaises(pywikibot.FatalServerError,
                           http.fetch,
                           uri='https://testssl-expire-r2i2.disig.sk/index.en.html')
+
+        # InsecureRequestWarning was introduced in 2.4.0
+        if StrictVersion(http.requests.__version__) < StrictVersion('2.4.0'):
+            return
 
         # Verify that the warning occurred
         self.assertEqual(len(warning_log), 1)
