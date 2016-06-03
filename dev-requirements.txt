@@ -8,7 +8,7 @@ pytest-runner
 pytest-cov
 pytest-attrib
 
-six
+six>=0.7  # something else depends on this version, and we need it installed before setup.py test (T136918)
 
 nose
 git+https://github.com/jayvdb/nosetrim@py3
