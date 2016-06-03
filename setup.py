@@ -210,9 +210,11 @@ else:
     test_deps += ['six']
 
 if 'PYSETUP_TEST_INSTALL' in os.environ:
-    dependencies += test_deps
-
-test_deps = []
+    if 'install' in sys.argv:
+        dependencies += test_deps
+    else:
+        install_requires = test_deps = []
+        extras_require = {}
 
 from setuptools import setup, find_packages
 

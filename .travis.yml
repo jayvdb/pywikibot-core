@@ -105,7 +105,7 @@ script:
     else
       coverage run setup.py install ;
       echo "Install done. Now testing ..." ;
-      PYSETUP_TEST_INSTALL=1 python -c "import setuptools; print(setuptools.__version__)" ;
+      python -c "import setuptools; print(setuptools.__version__)" ;
       python -c "import six; print(six.__version__)" ;
       echo "Now really testing ..." ;
       coverage run setup.py test ;
@@ -133,7 +133,7 @@ env:
 matrix:
   include:
     - python: '2.7_with_system_site_packages'  # equivalent to virtualenv: system_site_packages: true
-      env: LANGUAGE=he FAMILY=wikivoyage DIST=precise-sudo PYSETUP_TEST_EXTRAS=1 PYWIKIBOT2_TEST_NO_RC=1
+      env: LANGUAGE=he FAMILY=wikivoyage DIST=precise-sudo PYSETUP_TEST_EXTRAS=1 PYWIKIBOT2_TEST_NO_RC=1 PYSETUP_TEST_INSTALL=1
       dist: precise
       sudo: required
       addons:
@@ -150,7 +150,7 @@ matrix:
             - python-setuptools
             - python-six
     - python: '2.7_with_system_site_packages'
-      env: LANGUAGE=nb FAMILY=wikipedia DIST=trusty PYSETUP_TEST_EXTRAS=1
+      env: LANGUAGE=nb FAMILY=wikipedia DIST=trusty PYSETUP_TEST_EXTRAS=1 PYSETUP_TEST_INSTALL=1
       dist: trusty
       sudo: required
       addons:
