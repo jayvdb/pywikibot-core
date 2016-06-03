@@ -172,7 +172,7 @@ extra_deps.update(script_deps)
 # Add all dependencies as test dependencies,
 # so all scripts can be compiled for script_tests, etc.
 if 'PYSETUP_TEST_EXTRAS' in os.environ:
-    test_deps += list(itertools.chain(*(extra_deps.values())))
+    test_deps += list(set(itertools.chain(*(extra_deps.values()))))
     if 'oursql' in test_deps and os.name == 'nt':
         test_deps.remove('oursql')  # depends on Cython
 
