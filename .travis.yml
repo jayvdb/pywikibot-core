@@ -139,8 +139,9 @@ matrix:
             - graphviz
             - liblua5.1-0-dev
             - python-ipaddr
-            - python-requests
             - python-openssl
+            - python-requests
+            - python-six
     - python: '2.7_with_system_site_packages'
       env: LANGUAGE=nb FAMILY=wikipedia DIST=trusty PYSETUP_TEST_EXTRAS=1
       dist: trusty
@@ -152,8 +153,9 @@ matrix:
             - graphviz
             - liblua5.1-0-dev
             - python-ipaddr
-            - python-requests
             - python-openssl
+            - python-requests
+            - python-six
 
 notifications:
   email:
