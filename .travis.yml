@@ -122,7 +122,7 @@ env:
     - TEST_TIMEOUT: 300
 
 matrix:
-  include:
+  no_include:
     - python: '2.7_with_system_site_packages'  # equivalent to virtualenv: system_site_packages: true
       env: LANGUAGE=he FAMILY=wikivoyage DIST=precise-sudo PYSETUP_TEST_EXTRAS=1 PYWIKIBOT2_TEST_NO_RC=1 PYSETUP_TEST_INSTALL=1
       dist: precise
@@ -154,8 +154,9 @@ matrix:
             - python-requests
             - python-six
 
+  include:
     - python: '2.7_with_system_site_packages'
-      env: LANGUAGE=nb FAMILY=wikipedia DIST=trusty PYSETUP_TEST_EXTRAS=1 PYSETUP_TEST_INSTALL=1
+      env: LANGUAGE=nb FAMILY=wikipedia DIST=trusty+sid PYSETUP_TEST_EXTRAS=1 PYSETUP_TEST_INSTALL=1
       dist: trusty
       sudo: required
       addons:
@@ -171,6 +172,7 @@ matrix:
             - python-requests
             - python-urllib3
             - python-six
+            - python-certifi
 
 notifications:
   email:
