@@ -5,10 +5,6 @@ language: python
 sudo: false
 
 python:
-  - '2.7'
-  - '3.3'
-  - '3.4'
-  - '3.5'
   - '2.6'
 
 # OSX builds do not yet support Python
@@ -52,11 +48,6 @@ before_script:
   - pip install -r dev-requirements.txt
 
 script:
-  # Install security packages for requests to support HTTPS in site_detect
-  - if [[ "$PYSETUP_TEST_EXTRAS" != '1' ]]; then
-      pip install mwoauth -r requests-requirements.txt ;
-    fi
-
   - mkdir ~/.pywikibot
 
   - python pwb.py generate_family_file 'https://wiki.musicbrainz.org/' musicbrainz 'n'
@@ -157,24 +148,6 @@ matrix:
             - liblua5.1-0-dev
             - python-ipaddr
             - python-requests
-    - python: '2.7'
-      env: LANGUAGE=en FAMILY=wpbeta SITE_ONLY=1 OAUTH_DOMAIN="en.wikipedia.beta.wmflabs.org"
-    - python: '3.3'
-      env: LANGUAGE=zh FAMILY=wpbeta SITE_ONLY=1 OAUTH_DOMAIN="zh.wikipedia.beta.wmflabs.org"
-    - python: '3.4'
-      env: LANGUAGE=en FAMILY=wsbeta SITE_ONLY=1
-    - python: '2.7'
-      env: LANGUAGE=wikia FAMILY=wikia PYWIKIBOT2_TEST_NO_RC=1
-    - python: '3.3'
-      env: LANGUAGE=en FAMILY=musicbrainz SITE_ONLY=1
-    - python: '3.4'
-      env: LANGUAGE=test FAMILY=wikipedia SITE_ONLY=1 OAUTH_DOMAIN="test.wikipedia.org"
-    - python: '3.4'
-      env: LANGUAGE=test FAMILY=wikidata SITE_ONLY=1
-    - python: '3.4'
-      env: LANGUAGE=ar FAMILY=wiktionary PYWIKIBOT2_TEST_NO_RC=1
-    - python: '2.6'
-      env: LANGUAGE=wikidata FAMILY=wikidata SITE_ONLY=1
 
 notifications:
   email:
