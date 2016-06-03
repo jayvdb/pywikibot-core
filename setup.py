@@ -52,6 +52,10 @@ dependencies = ['requests']
 irc_dep = 'irc==8.9' if sys.version_info < (2, 7) else 'irc'
 csv_dep = 'unicodecsv!=0.14.0' if PYTHON_VERSION < (2, 7) else 'unicodecsv'
 
+# requests[security] requires ndg-httpsclient, which depends on pyOpenSSL>=0.13
+# On raw Ubuntu precise (no virtualenv), pyOpenSSL can not be upgraded to 0.13
+# by setup.py because setuptools wont touch it if it is in dist-packages.
+
 extra_deps = {
     # Core library dependencies
     'isbn': ['python-stdnum'],
@@ -62,7 +66,7 @@ extra_deps = {
     'Tkinter': ['Pillow'],
     # 0.6.1 supports socket.io 1.0, but WMF is using 0.9 (T91393 and T85716)
     'rcstream': ['socketIO-client<0.6.1'],
-    'security': ['pyOpenSSL>=0.13', 'requests[security]'],
+    'security': ['requests[security]'],
     'mwoauth': ['mwoauth>=0.2.4'],
     'html': ['BeautifulSoup4'],
 }
