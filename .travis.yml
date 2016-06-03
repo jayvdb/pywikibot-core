@@ -87,6 +87,7 @@ script:
   - echo "console_encoding = 'utf8'" >> ~/.pywikibot/user-config.py
 
   - python -c "import setuptools; print(setuptools.__version__)"
+  - python -c "import six; print(six.__version__)"
 
   - if [[ "$USE_NOSE" == "1" ]]; then
       nosetests --version ;

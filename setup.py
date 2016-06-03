@@ -212,6 +212,8 @@ else:
 if 'PYSETUP_TEST_INSTALL' in os.environ:
     dependencies += test_deps
 
+test_deps = []
+
 from setuptools import setup, find_packages
 
 name = 'pywikibot'
