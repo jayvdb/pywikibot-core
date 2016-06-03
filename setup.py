@@ -85,7 +85,7 @@ extra_deps = {
     # 0.6.1 supports socket.io 1.0, but WMF is using 0.9 (T91393 and T85716)
     'rcstream': ['socketIO-client<0.6.1'],
     'security': security_dep,
-    'mwoauth': ['mwoauth>=0.2.4'],
+    # 'mwoauth': ['mwoauth>=0.2.4'],
     'html': ['BeautifulSoup4'],
 }
 
@@ -111,8 +111,8 @@ script_deps = {
 # and will be first packaged for Fedora Core 21.
 # flickrapi 1.4.x does not run on Python 3, and setuptools can only
 # select flickrapi 2.x for Python 3 installs.
-script_deps['flickrripper.py'].append(
-    'flickrapi>=1.4.5,<2' if PY26 else 'flickrapi')
+#script_deps['flickrripper.py'].append(
+#    'flickrapi>=1.4.5,<2' if PY26 else 'flickrapi')
 
 # lunatic-python is only available for Linux
 if sys.platform.startswith('linux'):
