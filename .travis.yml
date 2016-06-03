@@ -102,6 +102,7 @@ script:
         python setup.py pytest --addopts="-vvv -s --timeout=$TEST_TIMEOUT --cov=." ;
       fi
     else
+      coverage run setup.py install ;
       coverage run setup.py test ;
     fi
 
@@ -127,7 +128,7 @@ env:
 matrix:
   include:
     - python: '2.7_with_system_site_packages'  # equivalent to virtualenv: system_site_packages: true
-      env: LANGUAGE=he FAMILY=wikivoyage DIST=precise-sudo PYWIKIBOT2_TEST_NO_RC=1
+      env: LANGUAGE=he FAMILY=wikivoyage DIST=precise-sudo PYSETUP_TEST_EXTRAS=1 PYWIKIBOT2_TEST_NO_RC=1
       dist: precise
       sudo: required
       addons:
