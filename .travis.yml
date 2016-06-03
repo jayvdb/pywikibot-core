@@ -24,7 +24,7 @@ before_install:
   # default 'install' step to install all dependencies listed in
   # requirements.txt to verify that a minimal install works as expected.
   # Instead install requests in the before_script step below.
-  # pip install --upgrade setuptools
+  - pip install --upgrade setuptools
   - rm requirements.txt
 
   # When the env variable USE_NOSE or USE_PYTEST is set, the appropriate
