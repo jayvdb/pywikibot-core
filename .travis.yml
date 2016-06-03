@@ -173,6 +173,7 @@ matrix:
             - python-urllib3
             - python-six
             - python-certifi
+            - python-cryptography
 
 notifications:
   email:
