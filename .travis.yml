@@ -99,7 +99,9 @@ script:
       echo "Install done. Now testing ..." ;
       python -c "import setuptools; print('setuptools', setuptools.__version__)" ;
       python -c "import six; print('six', six.__version__)" ;
-      python -c "import six; print('requests', requests.__version__)" ;
+      python -c "import requests; print('requests', requests.__version__)" ;
+      python -c "import requests.packages.urllib3; print('requests urllib3', requests.packages.urllib3.__version__)" || true ;
+      python -c "import urllib3; print('urllib3', urllib3.__version__)" ;
       echo "Now really testing ..." ;
       coverage run setup.py test ;
     fi
@@ -167,6 +169,7 @@ matrix:
             - python-ipaddr
             - python-openssl
             - python-requests
+            - python-urllib3
             - python-six
 
 notifications:
