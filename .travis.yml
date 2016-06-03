@@ -24,6 +24,14 @@ addons:
       - liblua5.1-0-dev
 
 before_install:
+  # python-coverage package creates `python-coverage` instead of `coverage`.
+  # ~/bin/ is in PATH, but hasnt been created.
+  - |
+    if [[ -f /usr/bin/python-coverage ]]; then
+      mkdir -p ~/bin/
+      ln -s /usr/bin/python-coverage ~/bin/coverage
+    fi
+
   # When PYSETUP_TEST_EXTRAS is not enabled, do not allow the
   # default 'install' step to install all dependencies listed in
   # requirements.txt to verify that a minimal install works as expected.
@@ -61,9 +69,8 @@ before_script:
 
 script:
   # Install security packages for requests to support HTTPS in site_detect
-  - if [[ "$PYSETUP_TEST_EXTRAS" != '1' ]]; then
-      pip install mwoauth -r requests-requirements.txt ;
-    fi
+  # this shouldnt be necessary, but site installed requests doesnt have 'security'
+  - pip install mwoauth -r requests-requirements.txt ;
 
   - mkdir ~/.pywikibot
 
@@ -145,7 +152,7 @@ matrix:
   include:
     # precise uses 2.7.3
     - python: '2.7_with_system_site_packages'
-      env: LANGUAGE=he FAMILY=wikivoyage DIST=precise-sudo PYSETUP_TEST_EXTRAS=1 PYWIKIBOT2_TEST_NO_RC=1 USE_PYTEST=1
+      env: LANGUAGE=he FAMILY=wikivoyage DIST=precise-sudo PYSETUP_TEST_EXTRAS=1 PYWIKIBOT2_TEST_NO_RC=1
       dist: precise
       sudo: required
       addons:
@@ -172,7 +179,7 @@ matrix:
             - python-unittest2  # 0.5.1
     # trusty uses 2.7.6
     - python: '2.7_with_system_site_packages'
-      env: LANGUAGE=nb FAMILY=wikipedia DIST=trusty PYSETUP_TEST_EXTRAS=1 USE_PYTEST=1
+      env: LANGUAGE=nb FAMILY=wikipedia DIST=trusty PYSETUP_TEST_EXTRAS=1
       dist: trusty
       sudo: required
       addons:
@@ -202,7 +209,7 @@ matrix:
             - python-six  # pre-installed at latest version
             - python-unittest2  # 0.5.1
     - python: '2.7_with_system_site_packages'
-      env: LANGUAGE=test FAMILY=wikipedia DIST=trusty+sid PYSETUP_TEST_EXTRAS=1 USE_PYTEST=1
+      env: LANGUAGE=test FAMILY=wikipedia DIST=trusty+sid PYSETUP_TEST_EXTRAS=1
       dist: trusty
       sudo: required
       addons:
