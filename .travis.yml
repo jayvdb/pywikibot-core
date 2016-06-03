@@ -141,6 +141,7 @@ matrix:
             - python-ipaddr
             - python-openssl
             - python-requests
+            - python-setuptools
             - python-six
     - python: '2.7_with_system_site_packages'
       env: LANGUAGE=nb FAMILY=wikipedia DIST=trusty PYSETUP_TEST_EXTRAS=1 PYSETUP_TEST_INSTALL=1
