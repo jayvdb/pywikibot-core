@@ -139,6 +139,7 @@ matrix:
             - graphviz
             - liblua5.1-0-dev
             - python-ipaddr
+            - python-irclib
             - python-openssl
             - python-requests
             - python-mock
