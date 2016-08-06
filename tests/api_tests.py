@@ -704,7 +704,7 @@ class TestLazyLoginBase(TestCase):
         cls.site = pywikibot.site.APISite('steward', fam)
 
 
-class TestLazyLoginNotExistUsername(TestLazyLoginBase):
+class _LazyLoginNotExistUsername(TestLazyLoginBase):
 
     """Test missing username."""
 
@@ -719,7 +719,7 @@ class TestLazyLoginNotExistUsername(TestLazyLoginBase):
     def tearDown(self):
         pywikibot.data.api.LoginManager = self.orig_login_manager
 
-    def test_access_denied_notexist_username(self):
+    def _test_access_denied_notexist_username(self):
         """Test the query with a username which does not exist."""
         self.site._username = ['Not registered username', None]
         req = api.Request(site=self.site, action='query')
@@ -728,11 +728,11 @@ class TestLazyLoginNotExistUsername(TestLazyLoginBase):
         self.assertRaises(api.APIError, req.submit)
 
 
-class TestLazyLoginNoUsername(TestLazyLoginBase):
+class _LazyLoginNoUsername(TestLazyLoginBase):
 
     """Test no username."""
 
-    def test_access_denied_no_username(self):
+    def _test_access_denied_no_username(self):
         """Test the query without a username."""
         self.site._username = [None, None]
 
