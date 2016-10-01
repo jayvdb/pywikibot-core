@@ -20,8 +20,6 @@ addons:
       - debian-sid
     packages:
       - libssl1.0.0
-      - djvulibre-bin
-      - liblua5.1-0-dev
 
 before_install:
   # When PYSETUP_TEST_EXTRAS is not enabled, do not allow the
