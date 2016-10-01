@@ -20,7 +20,6 @@ addons:
       - debian-sid
     packages:
       - libssl1.0.0
-      - djvulibre-bin
       - liblua5.1-0-dev
 
 before_install:
